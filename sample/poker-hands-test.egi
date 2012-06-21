@@ -1,0 +1,23 @@
+(test (poker-hands {<card <club> 4>
+                    <card <club> 2>
+                    <card <club> 5>
+                    <card <club> 1>
+                    <card <club> 3>}))
+
+(test (poker-hands {<card <diamond> 1>
+                    <card <club> 2>
+                    <card <club> 1>
+                    <card <heart> 1>
+                    <card <diamond> 2>}))
+
+(test (poker-hands {<card <diamond> 4>
+                    <card <club> 2>
+                    <card <club> 5>
+                    <card <heart> 1>
+                    <card <diamond> 3>}))
+
+(test (poker-hands {<card <diamond> 4>
+                    <card <club> 10>
+                    <card <club> 5>
+                    <card <heart> 1>
+                    <card <diamond> 3>}))

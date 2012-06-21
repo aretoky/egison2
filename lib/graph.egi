@@ -1,0 +1,43 @@
+(define $Node Integer)
+
+(define $NodeInfo
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[node [Node (Multiset Node) (Multiset Node)]
+          {[<node $n $in $out> {[n in out]}]}]})]
+     [$equal? (lambda [$val $tgt]
+                (match [val tgt] [NodeInfo NodeInfo]
+                  {[[<node $n $in $out> <node ,n ,in ,out>] <true>]
+                   [[_ _] <false>]}))]}))
+
+(define $Graph (Multiset NodeInfo))
+
+
+(define $hamilton-cycle
+  (lambda [$g]
+    (let {[$n (size g)]}
+      (match-all g Graph
+        [<cons <node $a_1 <cons $a_2 _> _>
+               (loop $l $i (between 3 n)
+                     <cons <node ,a_(- i 1) <cons $a_i _> _>
+                           l>
+                     <cons <node ,a_n <cons ,a_1 _> _>
+                           _>)>
+         [@(loop $l $i (between 1 n) {a_i @l} {})]
+         ]))))
+
+(define $hamilton-path
+  (lambda [$g]
+    (let {[$n (size g)]}
+      (match-all g Graph
+        [<cons <node $a_1 <cons $a_2 _> _>
+               (loop $l $i (between 3 n)
+                     <cons <node ,a_(- i 1) <cons $a_i _> _>
+                           l>
+                     <cons <node ,a_n _ _>
+                           <nil>>)>
+         [@(loop $l $i (between 1 n) {a_i @l} {})]
+         ]))))
+

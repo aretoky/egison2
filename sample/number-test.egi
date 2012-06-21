@@ -1,0 +1,38 @@
+(define $fib
+  (lambda [$n]
+    (match n Nat
+      {[<o> 1]
+       [<s <o>> 1]
+       [<s <s $n1>> (+ (fib (+ n1 1)) (fib n1))]})))
+
+(test (fib 10))
+
+(define $fact
+  (lambda [$n]
+    (match n Nat
+      {[<o> 1]
+       [<s $n1> (* n (fact n1))]})))
+
+(test (fact 10))
+
+(define $min
+  (lambda [$ns]
+    (match ns (List Integer)
+      {[<cons $n <nil>> n]
+       [<cons $n $rs>
+        (let {[$r (min rs)]}
+          (match (compare-integer n r) Order
+            {[<less> n]
+             [_ r]}))]})))
+
+(define $gcd
+  (lambda [$ns]
+    (let {[$ns2 ((remove-all Integer) ns 0)]}
+      (match ns2 (Set Integer)
+        {[<cons $n <nil>> n]
+         [<cons ,(min ns2)
+                $rs>
+          (gcd {(min ns2) @(map (lambda [$r] (mod r (min ns2)))
+                                rs)})]}))))
+
+(test (gcd {10 20 40 35}))

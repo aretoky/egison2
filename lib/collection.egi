@@ -1,0 +1,193 @@
+;;
+;; Collection.egi
+;;
+
+(define $List
+  (lambda [$a]
+    (type
+      {[$var-match (lambda [$tgt] {tgt})]
+       [$inductive-match
+        (destructor
+          {[nil []
+            {[{} {[]}]
+             [_ {}]}]
+           [cons [a (List a)]
+            {[{$x .$xs} {[x xs]}]
+             [_ {}]}]
+           [snoc [a (List a)]
+            {[{.$xs $x} {[x xs]}]
+             [_ {}]}]
+           [join [(List a) (List a)]
+            {[$tgt (let {[$loop-fn
+                          (lambda [$ts]
+                            (match ts (List a)
+                              {[<nil> {[{} {}]}]
+                               [<cons $x $xs>
+                                {[{} ts]
+                                 @(map (lambda [$as $bs] [{x @as} bs])
+                                       (loop-fn xs))}]}))]}
+                     (loop-fn tgt))]}]
+           [nioj [(List a) (List a)]
+            {[$tgt (let {[$loop-fn
+                          (lambda [$ts]
+                            (match ts (List a)
+                              {[<nil> {[{} {}]}]
+                               [<snoc $x $xs>
+                                {[{} ts]
+                                 @(map (lambda [$as $bs] [{@as x} bs])
+                                       (loop-fn xs))}]}))]}
+                     (loop-fn tgt))]}]})]
+       [$equal? (lambda [$val $tgt]
+                  (match [val tgt] [(List a) (List a)]
+                    {[[<nil> <nil>] <true>]
+                     [[<cons $x $xs> <cons ,x ,xs>] <true>]
+                     [[_ _] <false>]}))]})))
+
+(define $map
+  (lambda [$fn $ls]
+    (match ls (List Something)
+      {[<nil> {}]
+       [<cons $x $xs> {(fn x) @(map fn xs)}]})))
+
+(define $remove
+  (lambda [$a]
+    (lambda [$xs $x]
+      (match xs (List a)
+        {[<nil> {}]
+         [<cons ,x $rs> rs]
+         [<cons $y $rs> {y @((remove a) rs x)}]}))))
+
+(define $remove-all
+  (lambda [$a]
+    (lambda [$xs $x]
+      (match xs (List a)
+        {[<nil> {}]
+         [<cons ,x $rs> ((remove-all a) rs x)]
+         [<cons $y $rs> {y @((remove-all a) rs x)}]}))))
+
+(define $remove-collection
+  (lambda [$a]
+    (lambda [$xs $ys]
+      (match ys (List a)
+        {[<nil> xs]
+         [<cons $y $rs> ((remove-collection a) ((remove a) xs y) rs)]}))))
+
+(define $add
+  (lambda [$a]
+    (lambda [$xs $x]
+      (match ((member? Integer) x xs) Bool
+        {[<true> xs]
+         [<false> {@xs x}]}))))
+
+(define $union
+  (lambda [$a]
+    (lambda [$xs $ys]
+      (match ys (List a)
+        {[<nil> xs]
+         [<cons $y $rs> ((union a) ((add a) xs y) rs)]}))))
+
+(define $subcollections
+  (lambda [$xs]
+    (match xs (List Something)
+      {[<nil> {{}}]
+       [<cons $x $rs>
+        (let {[$subs (subcollections rs)]}
+          {@subs @(map (lambda [$sub] {x @sub})
+                       subs)})]})))
+
+(define $size
+  (lambda [$xs]
+    (match xs (List Something)
+      {[<nil> 0]
+       [<cons _ $rs> (+ 1 (size rs))]})))
+
+(define $car
+  (lambda [$xs]
+    (match xs (List Something)
+      {[<cons $x _> x]})))
+
+(define $reverse
+  (lambda [$xs]
+    (match xs (List Something)
+      {[<nil> {}]
+       [<cons $x $rs>
+        {@(reverse rs) x}]})))
+
+(define $member?
+  (lambda [$a]
+    (lambda [$x $ys]
+      (match ys (List a)
+        {[<nil> <false>]
+         [<cons ,x $ys> <true>]
+         [<cons $y $ys> ((member? a) x ys)]}))))
+
+(define $unique
+  (lambda [$a]
+    (lambda [$xs]
+      (let {[$loop-fn (lambda [$xs $ys]
+                        (match xs (List a)
+                          {[<nil> ys]
+                           [<cons $x $rs>
+                            (match ((member? a) x ys) Bool
+                              {[<true> (loop-fn rs ys)]
+                               [<false> (loop-fn rs {@ys x})]
+                               [_ {}]})]}))]}
+        (loop-fn xs {})))))
+
+(define $subcollection?
+  (lambda [$a]
+    (lambda [$xs $ys]
+      (match xs (List a)
+        {[<nil> <true>]
+         [<cons $x $rest>
+          (match ((member? a) x ys) Bool
+            {[<false> <false>]
+             [<true> ((subcollection? a) rest ys)]})]}))))
+
+(define $concat
+  (lambda [$xs]
+    (match xs (List Something)
+      {[<nil> {}]
+       [<cons $x $rs> {@x @(concat rs)}]})))
+
+(define $Multiset
+  (lambda [$a]
+    (type
+      {[$var-match (lambda [$tgt] {tgt})]
+       [$inductive-match
+        (destructor
+          {[nil []
+            {[{} {[]}]
+             [_ {}]}]
+           [cons [a (Multiset a)]
+            {[$tgt (map (lambda [$t] [t ((remove a) tgt t)])
+                        ((unique a) tgt))]}]
+           [join [(Multiset a) (Multiset a)]
+            {[$tgt (map (lambda [$ts] [ts ((remove-collection a) tgt ts)])
+                        (subcollections tgt))]}]})]
+       [$equal? (lambda [$val $tgt]
+                  (match [val tgt] [(Multiset a) (Multiset a)]
+                    {[[<nil> <nil>] <true>]
+                     [[<cons $x $xs> <cons ,x ,xs>] <true>]
+                     [[_ _] <false>]}))]})))
+
+(define $Set
+  (lambda [$a]
+    (type
+      {[$var-match (lambda [$tgt] {tgt})]
+       [$inductive-match
+        (destructor
+          {[nil []
+            {[{} {[]}]
+             [_ {}]}]
+           [cons [a (Set a)]
+            {[$tgt (let {[$tgt2 ((unique a) tgt)]}
+                     {@(match-all tgt2 (Multiset a) [<cons $x $xs> [x xs]])
+                      @(match-all tgt2 (Multiset a) [<cons $x $xs> [x {@xs x}]])})]}]
+           [join [(Set a) (Set a)]
+            {[$tgt (let {[$tgt2 ((unique a) tgt)]}
+                     (concat (map (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
+                                                         (subcollections xs)))
+                                  (match-all tgt2 (Multiset a) [<join $xs $ys> [xs ys]]))))]}]})]
+       [$equal? (lambda [$val $tgt]
+                  (and ((subcollection? a) val tgt) ((subcollection? a) tgt val)))]})))

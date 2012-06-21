@@ -1,0 +1,34 @@
+(define $g {<node 1 {2 3 4 5} {2 3 4 5}>
+            <node 2 {1 3} {1 3}>
+            <node 3 {1 2 4} {1 2 4}>
+            <node 4 {1 3 5} {1 3 5}>
+            <node 5 {1 5} {1 5}>})
+
+(test (match-all g Graph
+        [<cons <node $n1 <cons $n2 _> _>
+          <cons <node ,n2 <cons $n3 _> _>
+           <cons <node ,n3 <cons ,n1 _> _>
+            _>>>
+         [n1 n2 n3]]))
+
+(test (match-all g Graph
+        [<cons <node $n1 <cons $n2 _> _>
+          <cons <node ,n2 <cons $n3 _> _>
+           <cons <node ,n3 <cons $n4 _> _>
+            <cons <node ,n4 <cons $n5 _> _>
+             <cons <node ,n5 <cons ,n1 _> _>
+              _>>>>>
+         [n1 n2 n3 n4 n5]]))
+
+(test (match-all g Graph
+        [<cons <node $n1 <cons $n2 _> _>
+          <cons <node ,n2 <cons $n3 _> _>
+           <cons <node ,n3 <cons $n4 _> _>
+            <cons <node ,n4 <cons $n5 _> _>
+             <cons <node ,n5 _ _>
+              <nil>>>>>>
+         [n1 n2 n3 n4 n5]]))
+
+(test (hamilton-cycle g))
+
+(test (hamilton-path g))

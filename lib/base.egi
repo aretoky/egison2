@@ -1,0 +1,65 @@
+;;
+;; Base.egi
+;;
+
+
+(define $Something (type {[$var-match (lambda [$tgt] {tgt})]}))
+
+(define $Bool
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[true []
+          {[<true> {[]}]
+           [_ {}]}]
+         [false []
+          {[<false> {[]}]
+           [_ {}]}]})]
+     [$equal?
+      (lambda [$val $tgt]
+        (match [val tgt] [Bool Bool]
+          {[[<true> <true>] <true>]
+           [[<false> <false>] <true>]
+           [[_ _] <false>]}))]}))
+
+(define $or
+  (lambda [$b1 $b2]
+    (match b1 Bool
+      {[<true> <true>]
+       [<false> b2]})))
+
+(define $and
+  (lambda [$b1 $b2]
+    (match b1 Bool
+      {[<true> b2]
+       [<false> <false>]})))
+
+(define $not
+  (lambda [$b]
+    (match b Bool
+      {[<true> <false>]
+       [<false> <true>]})))
+
+(define $Order
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[less []
+          {[<less> {[]}]
+           [_ {}]}]
+         [equal []
+          {[<equal> {[]}]
+           [_ {}]}]
+         [greater []
+          {[<greater> {[]}]
+           [_ {}]}]})]
+     [$equal?
+      (lambda [$val $tgt]
+        (match [val tgt] [Order Order]
+          {[[<less> <less>] <true>]
+           [[<equal> <equal>] <true>]
+           [[<greater> <greater>] <true>]
+           [[_ _] <false>]}))]}))
+

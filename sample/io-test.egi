@@ -1,0 +1,37 @@
+(define $main
+  (lambda [$:]
+    (do {[$: (print : "input char : ")]
+         [[$: $c] (read-char :)]
+         [$: (print : "output : ")]
+         [$: (write-char : c)]
+         [$: (write-char : '\n')]
+         [$: (print : "input number :")]
+         [[$: $e] (read :)]
+         [$: (print : "output : ")]
+         [$: (write : e)]
+         [$: (write-char : '\n')]}
+      :)))
+
+(execute)
+
+
+(define $main
+  (lambda [$:]
+    (do {[$: (print : "Return world? (y/n) : ")]
+         [[$: $c] (read-char :)]}
+        (match c Character
+          {['y' :]
+           ['n' 0]}))))
+
+(execute)
+
+
+(define $main
+  (lambda [$:]
+    (do {[$: (print : "Return world? (1/0) : ")]
+         [[$: $n] (read :)]}
+        (match n Integer
+          {[,1 :]
+           [,0 0]}))))
+
+(execute)

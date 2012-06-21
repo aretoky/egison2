@@ -1,0 +1,163 @@
+(load "lib/base.egi")
+(load "lib/number.egi")
+(load "lib/collection.egi")
+(load "lib/graph.egi")
+(load "lib/poker-hands.egi")
+
+(load-file  "./etc/sample/flowchart.egi")
+
+
+(define $Material
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[material Integer
+          {[<material $n> {n}]}]})]
+     [$equal? (lambda [$val $tgt]
+                (match [val tgt] [Material Material]
+                  {[[<material $n> <material ,n>] <true>]
+                   [[_ _] <false>]}))]}))
+
+(define $Experiment
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[experiment Integer
+          {[<experiment $n> {n}]}]})]
+     [$equal? (lambda [$val $tgt]
+                (match [val tgt] [Experiment Experiment]
+                  {[[<experiment $n> <experiment ,n>] <true>]
+                   [[_ _] <false>]}))]}))
+
+(define $Process
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[process [Experiment (Multiset Material) (Multiset Material)]
+          {[<process $e $in $out> {[e in out]}]}]})]
+     [$equal? (lambda [$val $tgt]
+                (match [val tgt] [Process Process]
+                  {[[<process $e $in $out> <process ,e ,in ,out>] <true>]
+                   [[_ _] <false>]}))]}))
+
+(define $Recipe (Multiset Process))
+
+(define $r1 {<process <experiment 1> {<material 1>} {<material 2>}>
+             <process <experiment 2> {<material 2>} {<material 3>}>
+             <process <experiment 3> {<material 4>} {<material 5>}>
+             <process <experiment 4> {<material 3> <material 5>} {<material 6>}>
+             })
+
+(define $r2 {<process <experiment 1> {<material 1>} {<material 2>}>
+             <process <experiment 2> {<material 2>} {<material 3>}>
+             <process <experiment 3> {<material 4>} {<material 5>}>
+             <process <experiment 4> {<material 3> <material 5>} {<material 6>}>
+             <process <experiment 5> {<material 5>} {<material 7>}>
+             })
+
+(define $bottoms
+  (lambda [$r]
+    (match-all r Recipe
+      [<cons <process $e _ <cons $m _>>
+             ^<cons <process _ <cons ,m _> _>
+                    _>>
+       e])))
+
+(define $up
+  (lambda [$r $e]
+    (match-all r Recipe
+      [<cons <process ,e <cons $m _> _>
+             <cons <process $e1 _ <cons ,m _>>
+                   _>>
+       e1])))
+
+(define $down
+  (lambda [$r $e]
+    (match-all r Recipe
+      [<cons <process ,e _ <cons $m _>>
+             <cons <process $e2 <cons ,m _> _>
+                   _>>
+       e2])))
+
+(define $height
+  (lambda [$r $e]
+    (let {[$es (up r e)]}
+      (match es (List Something)
+        {[<nil> 1]
+         [_ (max (map (lambda [$e1] (+ (height r e1) 1))
+                      es))]}))))
+
+(define $get-root
+  (lambda [$r]
+    (max-height r (bottoms r))))
+
+(define $max-height
+  (lambda [$r $es]
+    (match es (List Something)
+      {[<cons $e <nil>> e]
+       [<cons $e $res>
+        (let {[$h (height r e)]
+              [$re (max-height r res)]}
+          (match (compare-integer h (height r re)) Order
+            {[<greater> e]
+             [_ re]}))]})))
+
+(define $get-tree2
+  (lambda [$r $es]
+    (let {[$nes ((unique Experiment) (concat (map (lambda [$e] (up r e)) es)))]}
+      (match nes (List Something)
+        {[<nil> {es}]
+         [_ {@(get-tree2 r nes) es}]}))))
+
+(define $merge-tree4
+  (lambda [$t1 $t2]
+    (match [t1 t2] [(List Something) (List Something)]
+      {[[_ <nil>] t1]
+       [[<cons $es1 $st1> <cons $es2 $st2>] {((unique Experiment) {@es1 @es2}) @(merge-tree4 st1 st2)}]})))
+
+(define $merge-tree3
+  (lambda [$t1 $t2]
+    (match [t1 t2] [(List (Multiset Experiment)) (List (Multiset Experiment))]
+      {[[<join $st1 (& <cons <cons $e _> _> $st2)>  (& <cons <cons ,e _> _> $st3)]
+        {@st1 @(merge-tree4 st2 st3)}]
+       [_ <not-merged>]})))
+
+(define $merge-tree2
+  (lambda [$t1 $t2]
+    (match (compare-integer (size t1) (size t2)) Order
+      {[<greater> (merge-tree3 t1 t2)]
+       [_ (merge-tree3 t2 t1)]})))
+
+(define $merge-tree
+  (lambda [$ts]
+    (match ts (List Something)
+      {[<cons $t <nil>> t]
+       [<cons $t1 <cons $t2 $rs>>
+        (merge-tree {(merge-tree2 t1 t2) @rs})]})))
+
+(define $get-tree
+  (lambda [$r]
+    (merge-tree (map (lambda [$bot] (get-tree2 r {bot}))
+                     (bottoms r)))))
+
+
+(test (bottoms r2))
+=> {<experiment 4> <experiment 5>}
+
+(test (get-tree2 r2 {<experiment 4>}))
+=> {{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4>}}
+
+(test (get-tree2 r2 {<experiment 5>}))
+=> {{<experiment 3>} {<experiment 5>}}
+
+(test (merge-tree2 {{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4>}}
+                   {{<experiment 3>} {<experiment 5>}}))
+=> {{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4> <experiment 5>}}
+
+(test (merge-tree {{{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4>}}
+                   {{<experiment 3>} {<experiment 5>}}}))
+
+(test (get-tree r2))

@@ -1,0 +1,184 @@
+(test (match-all {{1 2 3} {11} {21 22}} (List (Multiset Integer))
+        [<cons <cons $x _>
+          <cons <cons $y _>
+           <cons <cons $z _>
+            <nil>>>>
+         [x y z]]))
+
+(test (match-all {{1 2 3 4 5} {4 5 1} {6 1 7 4}} (List (Multiset Integer))
+        [<cons <cons $n _>
+          <cons <cons ,n _>
+           <cons <cons ,n _>
+            <nil>>>>
+         n]))
+
+(test (match-all {1 2 3 4 5} (Multiset Integer)
+        [<cons $m <cons $n _>> [m n]]))
+
+(test (let {[$pat <cons ,1 <nil>>]}
+        (match {1} (Multiset Integer)
+          {[pat <ok>]
+           [_ <not-ok>]})))
+
+(test (match {1} (Multiset Integer)
+        {[(| <nil> <cons ,1 <nil>>) <ok>]
+         [_ <not-ok>]}))
+
+(test (match-all {<x> <y> <z>} (List Something) [<nioj $xs $ys> [xs ys]]))
+
+(test (match-all {1 2 3} (List Integer)
+        [<join $hs $ts> [hs ts]]))
+
+(test (match-all {1 2 3} (List Integer)
+        [<nioj $hs $ts> [hs ts]]))
+
+(test (match-all {1 2 3} (Multiset Integer)
+        [<join $hs $ts> [hs ts]]))
+
+(test (match-all {1 2 3} (Set Integer)
+        [<join $hs $ts> [hs ts]]))
+
+(test (match-all {1 2 3} (List Integer)
+        [<join $hs <cons $x $ts>> [hs x ts]]))
+
+(test ((remove-collection Suit) {<club> <heart> <diamond>} {<club> <diamond>}))
+
+(test (subcollections {<x> <y> <z>}))
+
+(test (poker-hands {<card <club> 4>
+                    <card <club> 2>
+                    <card <club> 5>
+                    <card <club> 1>
+                    <card <club> 3>}))
+
+(test (poker-hands {<card <diamond> 1>
+                    <card <club> 2>
+                    <card <club> 1>
+                    <card <heart> 1>
+                    <card <diamond> 2>}))
+
+(test (poker-hands {<card <diamond> 4>
+                    <card <club> 2>
+                    <card <club> 5>
+                    <card <heart> 1>
+                    <card <diamond> 3>}))
+
+(test (poker-hands {<card <diamond> 4>
+                    <card <club> 10>
+                    <card <club> 5>
+                    <card <heart> 1>
+                    <card <diamond> 3>}))
+
+(test (match {2 7 7 2 7} (Multiset Integer)
+        {[<cons $m
+           <cons ,m
+            <cons ,m
+             <cons $n
+              !<cons ,n
+                !<nil>>>>>>
+          <ok>]
+         [_ <ko>]}))
+
+(test (match-all {0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9} (Multiset Integer)
+        [<cons $x
+          <cons $y
+           <cons $z
+            <nil>>>>
+         [x y z]]))
+
+(test (match-all {0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9} (Multiset Integer)
+        [<cons $x
+          <cons $y
+           <cons $z
+            !<nil>>>>
+         [x y z]]))
+
+(test (match {5 2 1 3 4} (Multiset Integer)
+        {[<cons $n
+           <cons ,(- n 1)
+            <cons ,(- n 2)
+             <cons ,(- n 3)
+              <cons ,(- n 4)
+               <nil>>>>>>
+          <ok>]
+         [_ <ko>]}))
+
+(test (let {[$f (lambda [$x] (+ (g x) 10))]
+            [$g (lambda [$x] (+ x 1))]}
+        (f 0)))
+
+
+(define $Stick
+  (lambda [$a]
+    (type
+      {[$var-match (lambda [$tgt] {tgt})]
+       [$inductive-match
+        (destructor
+          {[nil []
+            {[$tgt (match-all tgt (List a) [<nil> []])]}]
+           [cons [a (List a)]
+            {[$tgt {@(match-all tgt (List a) [<cons $x $xs> [x xs]])
+                    @(match-all (reverse tgt) (List a) [<cons $x $xs> [x xs]])}]}]
+           [join [(List a) (List a)]
+            {[$tgt {@(match-all tgt (List a) [<join $xs $ys> [xs ys]])
+                    @(match-all (reverse tgt) (List a) [<join $xs $ys> [xs ys]])}]}]})]
+       [$equal? (lambda [$val $tgt]
+                  (or ((type-ref (List a) equal?) val tgt)
+                      ((type-ref (List a) equal?) val (reverse tgt))))]})))
+
+(test (match-all {1 2 3} (Stick Integer) [<cons $x $xs> [x xs]]))
+(test (match-all {1 2 3} (Stick Integer) [<join $xs $ys> [xs ys]]))
+(test (match-all {1 2 3 4} (Stick Integer) [<join $xs <cons $w $ys>> [xs w ys]]))
+(test (match-all {1 2 3} (Stick Integer) [,{3 2 1} <ok>]))
+
+(test (match-all {1 2 3 4 5} (List Integer)
+        [<join _ <cons $m <join _ <cons $n _>>>> [m n]]))
+
+(test (match-all {1 2 3 4} (List Integer)
+        [<join _ <join $ns _>> ns]))
+
+(define $combination
+  (lambda [$xs $k]
+    (match k Nat
+      {[<o> {{}}]
+       [<s $k1>
+        (concat (match-all xs (List Something)
+                  [<join _ <cons $x $rs>>
+                   (map (lambda [$ys]
+                          {x @ys})
+                        (combination rs k1))]))]})))
+
+(test (combination {1 2 3 4 5} 3))
+
+<join _ <cons $n_1 ... <join _ <cons $n_k _>> ... >>
+
+(... [$n Integer (squence 1 k (lambda [$i] (+ i 1)))]
+     <join _ <cons $n_i ...>> _)
+
+(define $loop-pat
+  (lambda [$k $i]
+    (match i Integer
+      {[,k <join _ <cons $n_k _>>]
+       [_ <join _ <cons $n_i (loop-pat k (+ i 1))>>]})))
+
+(define $loop-pat
+  (lambda [$k]
+    (| <nil> <cons ,k (loop-pat (- k 1))>)))
+
+(define $isStraight?
+  (lambda [$Ns]
+    (match Ns (Multiset Integer)
+      {[<cons $n
+         (loop-pat (- n 1))>
+        <ok>]
+       [_ <ko>]})))
+
+(define $isStraight?
+  (lambda [$Ns]
+    (match Ns (Multiset Integer)
+      {[<cons (as $n (max Ns))
+         (loop-pat (- n 1))>
+        <ok>]
+       [_ <ko>]})))
+
+(test (isStraight? {1 2}))
