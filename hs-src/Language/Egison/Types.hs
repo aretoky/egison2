@@ -103,9 +103,9 @@ data EgisonExpr = CharExpr Char
               tailExpr :: EgisonExpr
               }
   | ParamsExpr String EgisonExpr EgisonExpr
-  | LetExpr Binds EgisonExpr
-  | LetRecExpr Binds EgisonExpr
-  | TypeExpr Binds
+  | LetExpr Bindings EgisonExpr
+  | LetRecExpr Bindings EgisonExpr
+  | TypeExpr Bindings
   | TypeRefExpr EgisonExpr String
   | DestructorExpr DestructInfoExpr
   | MatchExpr {target :: EgisonExpr,
@@ -138,7 +138,7 @@ data PrimitivePattern = PWirldCard
 data InnerExpr = ElementExpr EgisonExpr
   | SubCollectionExpr EgisonExpr
   
-type Binds = [(ArgsExpr, EgisonExpr)]
+type Bindings = [(ArgsExpr, EgisonExpr)]
   
 type DestructInfoExpr = [(String, [EgisonExpr], [(PrimitivePattern, EgisonExpr)])]
 
@@ -214,11 +214,13 @@ type VarExpr = (String, [EgisonExpr])
 
 type Var = (String, [Integer])
 
-type Frame = (IORef (Data.Map.Map Var ObjectRef))
+type Frame = Data.Map.Map Var ObjectRef
+
+type FrameRef = IORef Frame
 
 data Env = Environment {
         parentEnv :: (Maybe Env), 
-        bindings :: Frame
+        bindings :: FrameRef
     }
 
 nullEnv :: IO Env
@@ -256,9 +258,9 @@ unwordsNums (n:ns) = "_" ++ show n ++ unwordsNums ns
 showVar :: (String, [Integer]) -> String
 showVar (name, nums) = name ++ unwordsNums nums
 
-showBinds :: Binds -> String
-showBinds [] = "{}"
-showBinds bind = "{" ++ unwords (map showBind bind) ++ "}"
+showBindings :: Bindings -> String
+showBindings [] = "{}"
+showBindings bind = "{" ++ unwords (map showBind bind) ++ "}"
  where showBind (_,expr) = "[$" ++ "..." ++ " " ++ show expr ++ "]" 
 
 showExpr :: EgisonExpr -> String
@@ -287,12 +289,12 @@ showExpr (LoopExpr lVar iVar rExpr lExpr tExpr) =
   "(loop $" ++ lVar ++ " $" ++ iVar ++ " " ++ show rExpr ++ " " ++  show lExpr ++ " " ++ show tExpr ++ ")"
 showExpr (ParamsExpr pVar pExpr body) =
   "(loop $" ++ pVar ++ " " ++ show pExpr ++ " " ++ show body ++ ")"
-showExpr (LetExpr binds body) =
-  "(let " ++ showBinds binds ++ " " ++ show body ++ ")"
-showExpr (LetRecExpr binds body) =
-  "(letrec " ++ showBinds binds ++ " " ++ show body ++ ")"
-showExpr (TypeExpr binds) =
-  "(type " ++ showBinds binds ++ ")"
+showExpr (LetExpr bindings body) =
+  "(let " ++ showBindings bindings ++ " " ++ show body ++ ")"
+showExpr (LetRecExpr bindings body) =
+  "(letrec " ++ showBindings bindings ++ " " ++ show body ++ ")"
+showExpr (TypeExpr bindings) =
+  "(type " ++ showBindings bindings ++ ")"
 showExpr (TypeRefExpr typExpr name) =
   "(type-ref " ++ show typExpr ++ " " ++ name ++ ")"
 showExpr (DestructorExpr _) = "(destructor ...)"
@@ -368,7 +370,7 @@ showIVal (ICollection fInnerValRefs) = undefined
 instance Show IntermidiateVal where show = showIVal
 
 showObj :: Object -> String
-showObj (Closure _ expr) = "(Closure " ++  show expr ++ ")"
+showObj (Closure _ expr) = "(Closure env " ++  show expr ++ ")"
 showObj (Value val) = "(Value " ++ show val ++ ")"
 showObj (Intermidiate val) = "(Intermidiate " ++ show val ++ ")"
 

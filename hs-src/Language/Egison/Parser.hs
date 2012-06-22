@@ -257,7 +257,7 @@ parseArgs = do
   <|> try (lexeme (brackets (do args <- sepEndBy parseArgs whiteSpace
                                 return $ ATupleExpr args)))
                     
-parseBinds :: Parser Binds
+parseBinds :: Parser Bindings
 parseBinds = do
   braces (do sepEndBy (brackets (do args <- lexeme parseArgs
                                     expr <- lexeme parseExpr

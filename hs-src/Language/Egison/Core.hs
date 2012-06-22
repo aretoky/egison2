@@ -11,6 +11,7 @@ module Language.Egison.Core
     -- * Utility functions
     , escapeBackslashes
     , showBanner
+    , showByebyeMessage
     , libraries
 --    , substr
     ) where
@@ -30,14 +31,18 @@ import Data.IORef
 version :: String
 version = "2.0.0"
 
--- |A utility function to display the husk console banner
+-- |A utility function to display the egison console banner
 showBanner :: IO ()
 showBanner = do
-  putStrLn " Welecome to Egison Interpreter!                                         "
-  putStrLn " (c) 2011-2012 Satoshi Egi                                               "
-  putStrLn $ " Version " ++ version ++ " "
-  putStrLn " http://hagi.is.s.u-tokyo.ac.jp/~egi/egison/                             "
-  putStrLn "                                                                         "
+  putStrLn $ "Egison Version " ++ version ++ " (c) 2011-2012 Satoshi Egi"
+  putStrLn $ "http://hagi.is.s.u-tokyo.ac.jp/~egi/egison/"
+  putStrLn $ "Welcome to Egison Interpreter!"
+
+-- |A utility function to display the egison console byebye message
+showByebyeMessage :: IO ()
+showByebyeMessage = do
+  putStrLn $ "Leaving Egison."
+  putStrLn $ "Byebye. See you again! (^^)/"
 
 libraries :: [String]
 libraries = ["lib/base.egi", "lib/number.egi", "lib/collection.egi"]
@@ -50,25 +55,65 @@ escapeBackslashes s = foldr step [] s
 
 
 evalString :: Env -> String -> IO String
-evalString env expr = runIOThrowsREPL $ liftM show $ (liftThrows $ readExpr expr) >>= evalTopExpr env
+evalString env expr = runIOThrowsREPL $ (liftThrows $ readExpr expr) >>= evalTopExpr env
 --evalString _ expr = return expr
 
 evalMain :: Env -> [String] -> IOThrowsError EgisonVal
 evalMain env args = do
   let argv = map StringExpr args
-  evalTopExpr env $ Test $ ApplyExpr (VarExpr "main" []) argv
+  eval env $ ApplyExpr (VarExpr "main" []) argv
 
 -- |Evaluate egison top expression that has already been loaded into haskell
-evalTopExpr :: Env -> TopExpr -> IOThrowsError EgisonVal
-evalTopExpr env (Test expr) = eval env expr
-evalTopExpr env (Define name expr) = undefined
-evalTopExpr env (Execute args) = evalMain env args
+evalTopExpr :: Env -> TopExpr -> IOThrowsError String
+evalTopExpr env (Test expr) = liftM show $ eval env expr
+evalTopExpr env (Define name expr) = do clr <- liftIO $ makeClosure env expr
+                                        defineVar env (name, []) clr
+                                        return name
+evalTopExpr env (Execute args) = do evalMain env args
+                                    return ""
 evalTopExpr _ (LoadFile filename) = undefined
 evalTopExpr _ (Load libname) = undefined
 
 -- |Evaluate egison expression that has already been loaded into haskell
 eval :: Env -> EgisonExpr -> IOThrowsError EgisonVal
-eval env expr = undefined
+eval env expr = do
+  obj <- cEval1 (Closure env expr)
+  liftIO $ putStrLn (show obj)
+  case obj of
+    Value val -> return val
+    Intermidiate iVal -> iEval iVal
+    _ -> throwError $ Default "eval: cannot reach here!"
+
+iEval :: IntermidiateVal -> IOThrowsError EgisonVal
+iEval = undefined
+
+cRefEval1 :: ObjectRef -> IOThrowsError Object
+cRefEval1 objRef = do
+  obj <- liftIO $ readIORef objRef
+  obj2 <- cEval1 obj
+  liftIO $ writeIORef objRef obj2
+  return obj2
+
+cEval1 :: Object -> IOThrowsError Object
+cEval1 (Closure _ (NumberExpr contents)) = return $ Value (Number contents)
+cEval1 (Closure _ (FloatExpr contents)) = return $ Value (Float contents)
+cEval1 (Closure env (VarExpr name numExprs)) = do
+  numVals <- mapM (eval env) numExprs
+  nums <- mapM (\nVal -> case nVal of
+                           Number num -> return num
+                           _ -> throwError  $ Default "cEval1: cannot reach here!")
+               numVals
+  objRef <- getVar env (name, nums)
+  obj <- cRefEval1 objRef
+  return obj
+cEval1 (Closure env (ApplyExpr opExpr argExprs)) = do
+  op <- cEval1 (Closure env opExpr)
+  case op of
+    Value (IOFunc fn) -> undefined
+    Value (PrimitiveFunc fn) -> undefined
+    Value (Func args body cEnv) -> undefined
+    _ -> throwError $ Default "not function"
+cEval1 val = return val
 
 primitiveBindings :: IO Env
 primitiveBindings = do
@@ -76,8 +121,8 @@ primitiveBindings = do
   iOFuncs <- mapM (domakeFunc IOFunc) ioPrimitives
   primitiveFuncs <- mapM (domakeFunc PrimitiveFunc) primitives
   extendEnv initEnv (iOFuncs ++ primitiveFuncs)
-  where domakeFunc constructor (name, func) = do objRef <- newIORef $ Value $ constructor func
-                                                 return ((name, []), objRef)
+ where domakeFunc constructor (name, func) = do objRef <- newIORef $ Value $ constructor func
+                                                return ((name, []), objRef)
 
 {- I/O primitives
 Primitive functions that execute within the IO monad -}

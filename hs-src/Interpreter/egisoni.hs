@@ -49,14 +49,14 @@ loadLibraries env = do
 runRepl :: IO ()
 runRepl = do
     env <- primitiveBindings
-    _ <- loadLibraries env
+--    _ <- loadLibraries env
     runInputT defaultSettings (loop env)
     where
         loop :: Env -> InputT IO ()
         loop env = do
             minput <- getInputLine "> "
             case minput of
-                Nothing -> return ()
+                Nothing -> liftIO showByebyeMessage
                 Just "" -> loop env -- FUTURE: integrate with strip to ignore inputs of just whitespace
                 Just input -> do result <- liftIO (evalString env input)
                                  if (length result) > 0
