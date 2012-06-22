@@ -78,7 +78,7 @@ evalTopExpr _ (Load libname) = undefined
 eval :: Env -> EgisonExpr -> IOThrowsError EgisonVal
 eval env expr = do
   obj <- cEval1 (Closure env expr)
-  liftIO $ putStrLn $ show obj -- Debug
+--  liftIO $ putStrLn $ show obj -- Debug
   case obj of
     Value val -> return val
     Intermidiate iVal -> iEval iVal
@@ -88,7 +88,14 @@ iEval :: IntermidiateVal -> IOThrowsError EgisonVal
 iEval (IInductiveData cons argRefs) = do
   args <- mapM cRefEval argRefs
   return $ InductiveData cons args
+iEval (ICollection innerValRefs) = do
+  innerVals <- mapM innerValRefEval innerValRefs
+  return $ Collection innerVals
 iEval _ = undefined
+
+innerValRefEval :: InnerValRef -> IOThrowsError InnerVal
+innerValRefEval (IElement objRef) = liftM Element $ cRefEval objRef
+innerValRefEval (ISubCollection objRef) = liftM SubCollection $ cRefEval objRef
 
 cRefEval :: ObjectRef -> IOThrowsError EgisonVal
 cRefEval objRef = do
@@ -124,6 +131,9 @@ cEval1 (Closure env (VarExpr name numExprs)) = do
 cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
   args <- liftIO $ mapM (makeClosure env) argExprs
   return $ Intermidiate $ IInductiveData cons args
+cEval1 (Closure env (CollectionExpr innerExprs)) = do
+  innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
+  return $ Intermidiate $ ICollection innerRefs
 cEval1 (Closure env (ApplyExpr opExpr argExprs)) = do
   op <- cEval1 (Closure env opExpr)
   case op of

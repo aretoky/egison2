@@ -278,6 +278,12 @@ parseCutPat = do string "!"
                  expr <- parseExpr
                  return $ CutPatExpr expr
 
+parseInnerExpr :: Parser InnerExpr
+parseInnerExpr = do expr <- parseExpr
+                    return $ ElementExpr expr
+             <|> do char '@'
+                    expr <- parseExpr
+                    return $ SubCollectionExpr expr
 
                    
 -- |Parse an expression
@@ -295,10 +301,12 @@ parseExpr =
   <|> lexeme parseVar
   <|> angles (do cons <- lexeme identifier
                  argExprs <- sepEndBy parseExpr whiteSpace
-                 return (InductiveDataExpr cons argExprs))
+                 return $ InductiveDataExpr cons argExprs)
+  <|> braces (do innerExprs <- sepEndBy parseInnerExpr whiteSpace
+                 return $ CollectionExpr innerExprs)
   <|> parens (do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
-                 return (ApplyExpr opExpr argExprs))
+                 return $ ApplyExpr opExpr argExprs)
   <?> "Expression"
 
 parseTopExpr :: Parser TopExpr

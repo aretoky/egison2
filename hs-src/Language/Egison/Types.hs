@@ -229,6 +229,14 @@ nullEnv = do nullBindings <- newIORef $ Data.Map.fromList []
 
 makeClosure :: Env -> EgisonExpr -> IO ObjectRef
 makeClosure env expr = newIORef $ Closure env expr
+
+makeInnerValRef :: Env -> InnerExpr -> IO InnerValRef
+makeInnerValRef env (ElementExpr expr) = do
+  objRef <- makeClosure env expr
+  return $ IElement objRef
+makeInnerValRef env (SubCollectionExpr expr) = do
+  objRef <- makeClosure env expr
+  return $ ISubCollection objRef
              
 data PClosure = PClosure {pcFrame :: Frame,
                           pcBody :: ObjectRef
@@ -343,8 +351,8 @@ showVal (AndPat _) = "#<and-pat>"
 showVal (OrPat _) = "#<or-pat>"
 showVal (PredPat _ _) = "#<pred-pat>"
 showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">"
-showVal (Tuple innerVals) = "{" ++ "..." ++ "}"
-showVal (Collection innerVals) = "[" ++ "..." ++ "]"
+showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
+showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
 showVal (Type _) = "#<type>"
 showVal (Func _ _ _) =
   "(lambda [" ++ "..." ++ "] ...)"
@@ -355,6 +363,16 @@ showVal EOF = "#!EOF"
 
 -- |Allow conversion of egisonval instances to strings
 instance Show EgisonVal where show = showVal
+
+showInnerVals :: [InnerVal] -> String
+showInnerVals [] = ""
+showInnerVals ((Element val):rest) = show val ++ showInnerVals' rest
+showInnerVals ((SubCollection val):rest) = "@" ++ show val ++ showInnerVals' rest
+
+showInnerVals' :: [InnerVal] -> String
+showInnerVals' [] = ""
+showInnerVals' ((Element val):rest) = " " ++ show val ++ showInnerVals' rest
+showInnerVals' ((SubCollection val):rest) = " @" ++ show val ++ showInnerVals' rest
 
 showIVal :: IntermidiateVal -> String
 showIVal (IPredPat _ _) = "#<pred-pat>"
