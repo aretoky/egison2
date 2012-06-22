@@ -110,7 +110,9 @@ cEval1 (Closure env (ApplyExpr opExpr argExprs)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
     Value (IOFunc fn) -> undefined
-    Value (PrimitiveFunc fn) -> undefined
+    Value (PrimitiveFunc fn) -> do args <- mapM (eval env) argExprs
+                                   val <- liftThrows $ fn args
+                                   return $ Value val
     Value (Func args body cEnv) -> undefined
     _ -> throwError $ Default "not function"
 cEval1 val = return val

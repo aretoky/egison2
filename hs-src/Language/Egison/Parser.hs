@@ -293,6 +293,9 @@ parseExpr =
   <|> lexeme parseWildCard
 --  <|> lexeme parsePatVarOmitExpr
   <|> lexeme parseVar
+  <|> parens (do opExpr <- lexeme $ parseExpr
+                 argExprs <- sepEndBy parseExpr whiteSpace
+                 return (ApplyExpr opExpr argExprs))
   <?> "Expression"
 
 parseTopExpr :: Parser TopExpr
