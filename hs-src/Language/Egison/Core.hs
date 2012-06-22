@@ -60,7 +60,7 @@ evalString env expr = runIOThrowsREPL $ (liftThrows $ readExpr expr) >>= evalTop
 
 evalMain :: Env -> [String] -> IOThrowsError EgisonVal
 evalMain env args = do
-  let argv = map StringExpr args
+  let argv = TupleExpr $ map (ElementExpr . StringExpr) args
   eval env $ ApplyExpr (VarExpr "main" []) argv
 
 -- |Evaluate egison top expression that has already been loaded into haskell
@@ -84,6 +84,11 @@ eval env expr = do
     Intermidiate iVal -> iEval iVal
     _ -> throwError $ Default "eval: cannot reach here!"
 
+eval1 :: Env -> EgisonExpr -> IOThrowsError ObjectRef
+eval1 env expr = do
+  objRef <- liftIO $ makeClosure env expr
+  cRefEval1 objRef
+    
 iEval :: IntermidiateVal -> IOThrowsError EgisonVal
 iEval (IInductiveData cons argRefs) = do
   args <- mapM cRefEval argRefs
@@ -107,12 +112,12 @@ cRefEval objRef = do
   liftIO $ writeIORef objRef $ Value val
   return val
 
-cRefEval1 :: ObjectRef -> IOThrowsError Object
+cRefEval1 :: ObjectRef -> IOThrowsError ObjectRef
 cRefEval1 objRef = do
   obj <- liftIO $ readIORef objRef
   obj2 <- cEval1 obj
   liftIO $ writeIORef objRef obj2
-  return obj2
+  return objRef
 
 cEval :: Object -> IOThrowsError EgisonVal
 cEval (Closure env expr) = eval env expr
@@ -129,7 +134,8 @@ cEval1 (Closure env (VarExpr name numExprs)) = do
                            _ -> throwError  $ Default "cEval1: cannot reach here!")
                numVals
   objRef <- getVar env (name, nums)
-  obj <- cRefEval1 objRef
+  objRef2 <- cRefEval1 objRef
+  obj <- liftIO $ readIORef objRef2
   return obj
 cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
   args <- liftIO $ mapM (makeClosure env) argExprs
@@ -140,16 +146,38 @@ cEval1 (Closure env (TupleExpr innerExprs)) = do
 cEval1 (Closure env (CollectionExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   return $ Intermidiate $ ICollection innerRefs
-cEval1 (Closure env (ApplyExpr opExpr argExprs)) = do
+cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
     Value (IOFunc fn) -> undefined
-    Value (PrimitiveFunc fn) -> do args <- mapM (eval env) argExprs
-                                   val <- liftThrows $ fn args
+    Value (PrimitiveFunc fn) -> do arg <- eval env argExpr
+                                   val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
-    Value (Func args body cEnv) -> undefined
+    Value (Func fArgs body cEnv) -> do frame <- liftIO (makeClosure env argExpr) >>= makeFrame fArgs
+                                       newEnv <- liftIO $ extendEnv cEnv frame
+                                       cEval1 (Closure newEnv body)
     _ -> throwError $ Default "not function"
 cEval1 val = return val
+
+makeFrame :: Args -> ObjectRef -> IOThrowsError [(Var, ObjectRef)]
+makeFrame (AVar aVar) objRef = return $ [(aVar, objRef)]
+makeFrame (ATuple []) _ = return $ []
+makeFrame (ATuple fArgs) objRef = do
+  obj <- liftIO $ readIORef objRef
+  case obj of
+    Intermidiate (ITuple innerRefs) -> do
+      objRefs <- innerValRefsToObjRefList innerRefs
+      frames <- mapM (\(fArg,objRef2) -> makeFrame fArg objRef2) $ zip fArgs objRefs
+      return $ concat frames
+    Value (Tuple innerVals) -> do
+      let vals = innerValsToList innerVals
+      objRefs <- liftIO $ valsToObjRefList vals
+      frames <- mapM (\(fArg,objRef2) -> makeFrame fArg objRef2) $ zip fArgs objRefs
+      return $ concat frames
+    _ -> throwError $ Default "makeFrame: not tuple"
+
+innerValRefsToObjRefList :: [InnerValRef] -> IOThrowsError [ObjectRef]
+innerValRefsToObjRefList = undefined
 
 primitiveBindings :: IO Env
 primitiveBindings = do
@@ -157,8 +185,9 @@ primitiveBindings = do
   iOFuncs <- mapM (domakeFunc IOFunc) ioPrimitives
   primitiveFuncs <- mapM (domakeFunc PrimitiveFunc) primitives
   extendEnv initEnv (iOFuncs ++ primitiveFuncs)
- where domakeFunc constructor (name, func) = do objRef <- newIORef $ Value $ constructor func
-                                                return ((name, []), objRef)
+ where domakeFunc constructor (name, func) = do
+         objRef <- newIORef $ Value $ constructor func
+         return ((name, []), objRef)
 
 {- I/O primitives
 Primitive functions that execute within the IO monad -}

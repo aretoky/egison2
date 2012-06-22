@@ -308,7 +308,7 @@ parseExpr =
                    return $ TupleExpr innerExprs)
   <|> parens (do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
-                 return $ ApplyExpr opExpr argExprs)
+                 return $ ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs)))
   <?> "Expression"
 
 parseTopExpr :: Parser TopExpr

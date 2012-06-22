@@ -117,7 +117,7 @@ data EgisonExpr = CharExpr Char
                   clause :: MatchClause
                   }
   | ApplyExpr {operator :: EgisonExpr,
-               operands :: [EgisonExpr]
+               operand :: EgisonExpr
                }
 
 data ArgsExpr = AVarExpr VarExpr
@@ -137,7 +137,7 @@ data PrimitivePattern = PWirldCard
 
 data InnerExpr = ElementExpr EgisonExpr
   | SubCollectionExpr EgisonExpr
-  
+
 type Bindings = [(ArgsExpr, EgisonExpr)]
   
 type DestructInfoExpr = [(String, [EgisonExpr], [(PrimitivePattern, EgisonExpr)])]
@@ -204,7 +204,16 @@ innerValsToList :: [InnerVal] -> [EgisonVal]
 innerValsToList [] = []
 innerValsToList ((Element val):rest) = val:(innerValsToList rest)
 innerValsToList ((SubCollection (Collection iVals)):rest) = (innerValsToList iVals) ++ (innerValsToList rest)
+
+tupleToList :: EgisonVal -> [EgisonVal]
+tupleToList (Tuple innerVals) = innerValsToList innerVals
   
+collectionToList :: EgisonVal -> [EgisonVal]
+collectionToList (Collection innerVals) = innerValsToList innerVals
+
+valsToObjRefList :: [EgisonVal] -> IO [ObjectRef]
+valsToObjRefList vals = mapM newIORef (map Value vals)
+
 data InnerValRef = IElement ObjectRef
   | ISubCollection ObjectRef
 
@@ -313,8 +322,8 @@ showExpr (MatchExpr tgtExpr typExpr cls) =
   "(match " ++ show tgtExpr ++ " " ++ show typExpr ++ " ...)"
 showExpr (MatchAllExpr tgtExpr typExpr clss) =
   "(match-all " ++ show tgtExpr ++ " " ++ show typExpr ++ " ...)"
-showExpr (ApplyExpr opExpr argExprs) =
-  "(" ++ show opExpr ++ " " ++ unwordsList argExprs ++ ")"
+showExpr (ApplyExpr opExpr argExpr) =
+  "(" ++ show opExpr ++ " " ++ show argExpr ++ ")"
   
 -- |Allow conversion of egisonexpr instances to strings
 instance Show EgisonExpr where show = showExpr

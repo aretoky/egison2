@@ -1,19 +1,4 @@
-module Language.Egison.Variables 
-    (
-    -- * Environments
-      printEnv
-    , copyEnv
-    , extendEnv
-    , extendEnvRec
-    , findEnv
-    -- * Getters
-    , getVar
-    -- * Setters
-    , defineVar
-    -- * Predicates
-    , isBound
-    , isRecBound
-    ) where
+module Language.Egison.Variables where
 import Language.Egison.Types
 import Control.Monad.Error
 import Data.IORef
