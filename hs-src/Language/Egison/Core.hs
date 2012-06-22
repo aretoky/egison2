@@ -53,23 +53,24 @@ evalString :: Env -> String -> IO String
 evalString env expr = runIOThrowsREPL $ liftM show $ (liftThrows $ readExpr expr) >>= evalTopExpr env
 --evalString _ expr = return expr
 
-evalMain :: Env -> [EgisonVal] -> IOThrowsError EgisonVal
+evalMain :: Env -> [String] -> IOThrowsError EgisonVal
 evalMain env args = do
-  argv <- undefined
+  let argv = map StringExpr args
   evalTopExpr env $ Test $ ApplyExpr (VarExpr "main" []) argv
 
 -- |Evaluate egison top expression that has already been loaded into haskell
 evalTopExpr :: Env -> TopExpr -> IOThrowsError EgisonVal
-evalTopExpr env expr = undefined
+evalTopExpr env (Test expr) = eval env expr
+evalTopExpr env (Define name expr) = undefined
+evalTopExpr env (Execute args) = evalMain env args
+evalTopExpr _ (LoadFile filename) = undefined
+evalTopExpr _ (Load libname) = undefined
 
 -- |Evaluate egison expression that has already been loaded into haskell
 eval :: Env -> EgisonExpr -> IOThrowsError EgisonVal
 eval env expr = undefined
 
 primitiveBindings :: IO Env
---primitiveBindings = nullEnv >>= (flip extendEnv $ map (domakeFunc IOFunc) ioPrimitives
---                                               ++ map (domakeFunc PrimitiveFunc) primitives)
---  where domakeFunc constructor (name, func) = ((name, []), Value $ constructor func)
 primitiveBindings = do
   initEnv <- nullEnv
   iOFuncs <- mapM (domakeFunc IOFunc) ioPrimitives

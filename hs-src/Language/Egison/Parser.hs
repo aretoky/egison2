@@ -307,7 +307,8 @@ parseTopExpr =
                    expr <- lexeme parseExpr
                    return (Test expr)
             <|> do try $ lexeme $ string "execute"
-                   return Execute
+                   args <- sepEndBy parseString2 whiteSpace
+                   return (Execute args)
             <|> do try $ lexeme $ string "load-file"
                    filename <- lexeme parseString2
                    return (LoadFile filename)

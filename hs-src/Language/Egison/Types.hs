@@ -13,7 +13,6 @@ import Text.ParserCombinators.Parsec hiding (spaces)
 --
 -- Error
 --
-
 data EgisonError = NumArgs Integer [EgisonVal]
   | TypeMismatch String EgisonVal
   | Parser ParseError
@@ -72,10 +71,9 @@ runIOThrows action = do
 --
 -- Expression
 --
-        
 data TopExpr = Define String EgisonExpr
   | Test EgisonExpr
-  | Execute
+  | Execute [String]
   | LoadFile String
   | Load String
         
@@ -174,9 +172,7 @@ data EgisonVal = World [Action]
   | Func Args EgisonExpr Env
   | PrimitiveFunc ([EgisonVal] -> ThrowsError EgisonVal)
   | IOFunc ([EgisonVal] -> IOThrowsError EgisonVal)
-  | Port {filename :: String,
-          handle :: Handle
-          }
+  | Port String Handle
   | EOF
 
 data IntermidiateVal = IPredPat String [ObjectRef]
@@ -353,7 +349,7 @@ showVal (Func _ _ _) =
 showVal (PrimitiveFunc _) = "#<primitive>"
 showVal (IOFunc _) = "#<IO primitive>"
 showVal (Port _ _) = "#<IO port>"
-showVal (EOF) = "#!EOF"
+showVal EOF = "#!EOF"
 
 -- |Allow conversion of egisonval instances to strings
 instance Show EgisonVal where show = showVal

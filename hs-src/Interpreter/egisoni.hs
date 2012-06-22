@@ -32,8 +32,7 @@ runOne args = do
       -- Call into (main) if it exists...
       alreadyDefined <- liftIO $ isBound env ("main", [])
       when alreadyDefined (do
-        argv <- undefined
-        mainResult <- runIOThrows $ liftM show $ evalMain env argv
+        mainResult <- runIOThrows $ liftM show $ evalMain env $ args
         case mainResult of
           Just errMsg -> putStrLn errMsg
           _  -> return ())
