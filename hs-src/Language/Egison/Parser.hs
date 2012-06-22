@@ -293,7 +293,10 @@ parseExpr =
   <|> lexeme parseWildCard
 --  <|> lexeme parsePatVarOmitExpr
   <|> lexeme parseVar
-  <|> parens (do opExpr <- lexeme $ parseExpr
+  <|> angles (do cons <- lexeme identifier
+                 argExprs <- sepEndBy parseExpr whiteSpace
+                 return (InductiveDataExpr cons argExprs))
+  <|> parens (do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return (ApplyExpr opExpr argExprs))
   <?> "Expression"

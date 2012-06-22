@@ -78,14 +78,24 @@ evalTopExpr _ (Load libname) = undefined
 eval :: Env -> EgisonExpr -> IOThrowsError EgisonVal
 eval env expr = do
   obj <- cEval1 (Closure env expr)
-  liftIO $ putStrLn (show obj)
+  liftIO $ putStrLn $ show obj -- Debug
   case obj of
     Value val -> return val
     Intermidiate iVal -> iEval iVal
     _ -> throwError $ Default "eval: cannot reach here!"
 
 iEval :: IntermidiateVal -> IOThrowsError EgisonVal
-iEval = undefined
+iEval (IInductiveData cons argRefs) = do
+  args <- mapM cRefEval argRefs
+  return $ InductiveData cons args
+iEval _ = undefined
+
+cRefEval :: ObjectRef -> IOThrowsError EgisonVal
+cRefEval objRef = do
+  obj <- liftIO $ readIORef objRef
+  val <- cEval obj
+  liftIO $ writeIORef objRef $ Value val
+  return val
 
 cRefEval1 :: ObjectRef -> IOThrowsError Object
 cRefEval1 objRef = do
@@ -93,6 +103,11 @@ cRefEval1 objRef = do
   obj2 <- cEval1 obj
   liftIO $ writeIORef objRef obj2
   return obj2
+
+cEval :: Object -> IOThrowsError EgisonVal
+cEval (Closure env expr) = eval env expr
+cEval (Value val) = return val
+cEval (Intermidiate iVal) = iEval iVal
 
 cEval1 :: Object -> IOThrowsError Object
 cEval1 (Closure _ (NumberExpr contents)) = return $ Value (Number contents)
@@ -106,6 +121,9 @@ cEval1 (Closure env (VarExpr name numExprs)) = do
   objRef <- getVar env (name, nums)
   obj <- cRefEval1 objRef
   return obj
+cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
+  args <- liftIO $ mapM (makeClosure env) argExprs
+  return $ Intermidiate $ IInductiveData cons args
 cEval1 (Closure env (ApplyExpr opExpr argExprs)) = do
   op <- cEval1 (Closure env opExpr)
   case op of

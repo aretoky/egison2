@@ -160,12 +160,12 @@ data EgisonVal = World [Action]
   | Float Double
   | WildCard
   | PatVar String [Integer]
-  | PredPat String [ObjectRef]
-  | CutPat ObjectRef
-  | NotPat ObjectRef
-  | AndPat [ObjectRef]
-  | OrPat [ObjectRef]
-  | InductiveData String [ObjectRef]
+  | PredPat String [EgisonVal]
+  | CutPat EgisonVal
+  | NotPat EgisonVal
+  | AndPat [EgisonVal]
+  | OrPat [EgisonVal]
+  | InductiveData String [EgisonVal]
   | Tuple [InnerVal]
   | Collection [InnerVal]
   | Type Frame
@@ -342,10 +342,10 @@ showVal (NotPat _) = "#<not-pat>"
 showVal (AndPat _) = "#<and-pat>"
 showVal (OrPat _) = "#<or-pat>"
 showVal (PredPat _ _) = "#<pred-pat>"
-showVal (InductiveData cons args) = undefined
-showVal (Tuple innerVals) = undefined
-showVal (Collection innerVals) = undefined
-showVal (Type frame) = undefined
+showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">"
+showVal (Tuple innerVals) = "{" ++ "..." ++ "}"
+showVal (Collection innerVals) = "[" ++ "..." ++ "]"
+showVal (Type _) = "#<type>"
 showVal (Func _ _ _) =
   "(lambda [" ++ "..." ++ "] ...)"
 showVal (PrimitiveFunc _) = "#<primitive>"
@@ -362,9 +362,9 @@ showIVal (ICutPat _) = "#<cut-pat>"
 showIVal (INotPat _) = "#<not-pat>"
 showIVal (IAndPat _) = "#<and-pat>"
 showIVal (IOrPat _) = "#<or-pat>"
-showIVal (IInductiveData cons args) = undefined
-showIVal (ITuple fInnerValRefs) = undefined
-showIVal (ICollection fInnerValRefs) = undefined
+showIVal (IInductiveData cons args) = "<" ++ cons ++ " " ++ "..." ++ ">"
+showIVal (ITuple fInnerValRefs) = "[" ++ "..." ++ "]"
+showIVal (ICollection fInnerValRefs) = "{" ++ "..." ++ "}"
 
 -- |Allow conversion of egisonfixedval instances to strings
 instance Show IntermidiateVal where show = showIVal
