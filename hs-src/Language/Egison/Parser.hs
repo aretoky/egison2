@@ -304,6 +304,8 @@ parseExpr =
                  return $ InductiveDataExpr cons argExprs)
   <|> braces (do innerExprs <- sepEndBy parseInnerExpr whiteSpace
                  return $ CollectionExpr innerExprs)
+  <|> brackets (do innerExprs <- sepEndBy parseInnerExpr whiteSpace
+                   return $ TupleExpr innerExprs)
   <|> parens (do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return $ ApplyExpr opExpr argExprs)

@@ -145,7 +145,6 @@ type DestructInfoExpr = [(String, [EgisonExpr], [(PrimitivePattern, EgisonExpr)]
 --
 -- Value
 --
-
 type ObjectRef = IORef Object
 
 data Object = Closure Env EgisonExpr
@@ -201,6 +200,11 @@ data Args = AVar Var
 data InnerVal = Element EgisonVal
   | SubCollection EgisonVal
 
+innerValsToList :: [InnerVal] -> [EgisonVal]
+innerValsToList [] = []
+innerValsToList ((Element val):rest) = val:(innerValsToList rest)
+innerValsToList ((SubCollection (Collection iVals)):rest) = (innerValsToList iVals) ++ (innerValsToList rest)
+  
 data InnerValRef = IElement ObjectRef
   | ISubCollection ObjectRef
 
@@ -209,7 +213,6 @@ type DestructInfo = [(String, ObjectRef, [(Env, PrimitivePattern, EgisonExpr)])]
 --
 -- Internal Data
 --
-
 type VarExpr = (String, [EgisonExpr])
 
 type Var = (String, [Integer])
@@ -350,6 +353,7 @@ showVal (NotPat _) = "#<not-pat>"
 showVal (AndPat _) = "#<and-pat>"
 showVal (OrPat _) = "#<or-pat>"
 showVal (PredPat _ _) = "#<pred-pat>"
+showVal (InductiveData cons []) = "<" ++ cons ++ ">"
 showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">"
 showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
 showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
@@ -364,15 +368,18 @@ showVal EOF = "#!EOF"
 -- |Allow conversion of egisonval instances to strings
 instance Show EgisonVal where show = showVal
 
-showInnerVals :: [InnerVal] -> String
-showInnerVals [] = ""
-showInnerVals ((Element val):rest) = show val ++ showInnerVals' rest
-showInnerVals ((SubCollection val):rest) = "@" ++ show val ++ showInnerVals' rest
+--showInnerVals :: [InnerVal] -> String
+--showInnerVals [] = ""
+--showInnerVals ((Element val):rest) = show val ++ showInnerVals' rest
+--showInnerVals ((SubCollection val):rest) = "@" ++ show val ++ showInnerVals' rest
 
-showInnerVals' :: [InnerVal] -> String
-showInnerVals' [] = ""
-showInnerVals' ((Element val):rest) = " " ++ show val ++ showInnerVals' rest
-showInnerVals' ((SubCollection val):rest) = " @" ++ show val ++ showInnerVals' rest
+--showInnerVals' :: [InnerVal] -> String
+--showInnerVals' [] = ""
+--showInnerVals' ((Element val):rest) = " " ++ show val ++ showInnerVals' rest
+--showInnerVals' ((SubCollection val):rest) = " @" ++ show val ++ showInnerVals' rest
+
+showInnerVals :: [InnerVal] -> String
+showInnerVals iVals = unwordsList $ innerValsToList iVals
 
 showIVal :: IntermidiateVal -> String
 showIVal (IPredPat _ _) = "#<pred-pat>"
@@ -380,9 +387,10 @@ showIVal (ICutPat _) = "#<cut-pat>"
 showIVal (INotPat _) = "#<not-pat>"
 showIVal (IAndPat _) = "#<and-pat>"
 showIVal (IOrPat _) = "#<or-pat>"
-showIVal (IInductiveData cons args) = "<" ++ cons ++ " " ++ "..." ++ ">"
-showIVal (ITuple fInnerValRefs) = "[" ++ "..." ++ "]"
-showIVal (ICollection fInnerValRefs) = "{" ++ "..." ++ "}"
+showIVal (IInductiveData cons []) = "<" ++ cons ++ ">"
+showIVal (IInductiveData cons _) = "<" ++ cons ++ " " ++ "..." ++ ">"
+showIVal (ITuple _) = "[" ++ "..." ++ "]"
+showIVal (ICollection _) = "{" ++ "..." ++ "}"
 
 -- |Allow conversion of egisonfixedval instances to strings
 instance Show IntermidiateVal where show = showIVal

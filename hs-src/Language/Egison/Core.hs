@@ -91,6 +91,9 @@ iEval (IInductiveData cons argRefs) = do
 iEval (ICollection innerValRefs) = do
   innerVals <- mapM innerValRefEval innerValRefs
   return $ Collection innerVals
+iEval (ITuple innerValRefs) = do
+  innerVals <- mapM innerValRefEval innerValRefs
+  return $ Tuple innerVals
 iEval _ = undefined
 
 innerValRefEval :: InnerValRef -> IOThrowsError InnerVal
@@ -131,6 +134,9 @@ cEval1 (Closure env (VarExpr name numExprs)) = do
 cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
   args <- liftIO $ mapM (makeClosure env) argExprs
   return $ Intermidiate $ IInductiveData cons args
+cEval1 (Closure env (TupleExpr innerExprs)) = do
+  innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
+  return $ Intermidiate $ ITuple innerRefs
 cEval1 (Closure env (CollectionExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   return $ Intermidiate $ ICollection innerRefs
