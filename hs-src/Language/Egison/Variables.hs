@@ -8,7 +8,7 @@ import qualified Data.Map
 printEnv :: Env         -- ^Environment
          -> IO String   -- ^Contents of the env as a string
 printEnv env = do
-  bindings <- liftIO $ readIORef $ frameRef env
+  bindings <- liftIO $ readIORef $ topFrameRef env
   l <- mapM showBind $ Data.Map.toList bindings 
   return $ unlines l
  where 
@@ -20,7 +20,7 @@ printEnv env = do
 copyEnv :: Env      -- ^ Source environment
         -> IO Env   -- ^ A copy of the source environment
 copyEnv env = do
-  bindings <- liftIO $ readIORef $ frameRef env
+  bindings <- liftIO $ readIORef $ topFrameRef env
   bindingListT <- mapM addBinding $ Data.Map.toList bindings
   bindingList <- newIORef $ Data.Map.fromList bindingListT
   return $ Environment (parentEnv env) bindingList
@@ -36,22 +36,30 @@ extendEnv :: Env -- ^ Environment
 extendEnv env abindings = do bindinglist <- newIORef $ Data.Map.fromList abindings
                              return $ Environment (Just env) bindinglist
 
+makeLetRecFrame :: Env
+                -> [(String, EgisonExpr)]
+                -> IO FrameRef
+makeLetRecFrame env abindings = do
+  newEnv <- extendLetRec env abindings
+  return $ topFrameRef newEnv
+                             
 -- |Extend given environment by binding a series of values to a new environment for letrec.
 extendLetRec :: Env -- ^ Environment 
              -> [(String, EgisonExpr)] -- ^ Extensions to the environment
              -> IO Env -- ^ Extended environment
-extendLetRec env abindings = do bindinglistT <- (mapM addDummyBinding abindings) -- >>= newIORef
-                                bindinglist <- newIORef $ Data.Map.fromList $ map (\(name,objRef) -> ((name,[]),objRef)) bindinglistT
-                                let newEnv = Environment (Just env) bindinglist
-                                mapM (replaceWithNewEnv newEnv) bindinglistT
-                                return newEnv
+extendLetRec env abindings = do
+  bindinglistT <- (mapM addDummyBinding abindings) -- >>= newIORef
+  bindinglist <- newIORef $ Data.Map.fromList $ map (\(name,objRef) -> ((name,[]),objRef)) bindinglistT
+  let newEnv = Environment (Just env) bindinglist
+  mapM (replaceWithNewEnv newEnv) bindinglistT
+  return newEnv
  where addDummyBinding (name, expr) = do dummy <- nullEnv
                                          objRef <- makeClosure dummy expr
                                          return (name, objRef)
        replaceWithNewEnv newEnv (_, objRef) = do obj <- readIORef objRef
                                                  case obj of
                                                    Closure _ cExpr -> writeIORef objRef (Closure newEnv cExpr)
-                                               
+
 -- |Recursively search environments to find one that contains the given variable.
 findEnv 
     :: Env      -- ^Environment to begin the search; 
@@ -72,7 +80,7 @@ isBound
     -> Var   -- ^ Variable
     -> IO Bool  -- ^ True if the variable is bound
 isBound envRef var = 
-    (readIORef $ frameRef envRef) >>= return . Data.Map.member var
+    (readIORef $ topFrameRef envRef) >>= return . Data.Map.member var
 
 -- |Determine if a variable is bound
 --  or a parent of the given environment.
@@ -86,12 +94,19 @@ isRecBound envRef var = do
     (Just e) -> isBound e var
     Nothing -> return False
 
+getVarFromFrame :: FrameRef -> Var -> IOThrowsError ObjectRef
+getVarFromFrame frameRef var = do
+  binds <- liftIO $ readIORef frameRef
+  case Data.Map.lookup var binds of
+    (Just a) -> return a
+    Nothing -> throwError $ UnboundVar "Getting an unbound variable" (showVar var)
+    
 -- |Retrieve the value of a variable defined
 getVar :: Env     -- ^ Environment
        -> Var  -- ^ Variable
        -> IOThrowsError ObjectRef -- ^ Contents of the variable
 getVar envRef
-       var = do binds <- liftIO $ readIORef $ frameRef envRef
+       var = do binds <- liftIO $ readIORef $ topFrameRef envRef
                 case Data.Map.lookup var binds of
                   (Just a) -> return a
                   Nothing -> case parentEnv envRef of
@@ -107,6 +122,6 @@ defineVar
 defineVar envRef
           var objRef = do
   liftIO $ do
-    env <- readIORef $ frameRef envRef
-    writeIORef (frameRef envRef) (Data.Map.insert var objRef env)
+    env <- readIORef $ topFrameRef envRef
+    writeIORef (topFrameRef envRef) (Data.Map.insert var objRef env)
     return ()

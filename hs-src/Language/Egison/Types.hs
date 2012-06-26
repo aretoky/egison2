@@ -108,17 +108,9 @@ data EgisonExpr = CharExpr Char
   | TypeExpr RecursiveBindings
   | TypeRefExpr EgisonExpr String
   | DestructorExpr DestructInfoExpr
-  | MatchExpr {target :: EgisonExpr,
-               typ :: EgisonExpr,
-               clauses :: [MatchClause]
-               }
-  | MatchAllExpr {target :: EgisonExpr,
-                  typ :: EgisonExpr,
-                  clause :: MatchClause
-                  }
-  | ApplyExpr {operator :: EgisonExpr,
-               operand :: EgisonExpr
-               }
+  | MatchExpr EgisonExpr EgisonExpr [MatchClause]
+  | MatchAllExpr EgisonExpr EgisonExpr MatchClause
+  | ApplyExpr EgisonExpr EgisonExpr
 
 type ArgsExpr = Args
                
@@ -168,7 +160,7 @@ data EgisonVal = World [Action]
   | InductiveData String [EgisonVal]
   | Tuple [InnerVal]
   | Collection [InnerVal]
-  | Type Frame
+  | Type FrameRef
   | Func Args EgisonExpr Env
   | PrimitiveFunc ([EgisonVal] -> ThrowsError EgisonVal)
   | IOFunc ([EgisonVal] -> IOThrowsError EgisonVal)
@@ -233,7 +225,7 @@ type FrameRef = IORef Frame
 
 data Env = Environment {
         parentEnv :: (Maybe Env), 
-        frameRef :: FrameRef
+        topFrameRef :: FrameRef
     }
 
 nullEnv :: IO Env

@@ -84,10 +84,10 @@ eval env expr = do
     Intermidiate iVal -> iEval iVal
     _ -> throwError $ Default "eval: cannot reach here!"
 
-eval1 :: Env -> EgisonExpr -> IOThrowsError ObjectRef
-eval1 env expr = do
-  objRef <- liftIO $ makeClosure env expr
-  cRefEval1 objRef
+--eval1 :: Env -> EgisonExpr -> IOThrowsError ObjectRef
+--eval1 env expr = do
+--  objRef <- liftIO $ makeClosure env expr
+--  cRefEval1 objRef
     
 iEval :: IntermidiateVal -> IOThrowsError EgisonVal
 iEval (IInductiveData cons argRefs) = do
@@ -154,6 +154,16 @@ cEval1 (Closure env (LetExpr bindings body)) = do
 cEval1 (Closure env (LetRecExpr bindings body)) = do
   newEnv <- liftIO $ extendLetRec env bindings
   cEval1 (Closure newEnv body)
+cEval1 (Closure env (TypeExpr bindings)) = do
+  frameRef <- liftIO $ makeLetRecFrame env bindings
+  return $ Value $ Type frameRef
+cEval1 (Closure env (TypeRefExpr typExpr name)) = do
+  obj <- cEval1 (Closure env typExpr)
+  case obj of
+    Value (Type frameRef) -> do
+      objRef <- getVarFromFrame frameRef (name,[]) >>= cRefEval1
+      liftIO $ readIORef objRef
+    _ -> throwError $ Default "type-ref: not type"
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of

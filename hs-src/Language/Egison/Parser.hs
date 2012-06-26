@@ -307,6 +307,10 @@ parseExpr =
                  bindings <- lexeme parseBindings
                  body <- lexeme parseExpr
                  return (LetExpr bindings body)
+          <|> do try (lexeme $ string "type-ref")
+                 typExpr <- lexeme parseExpr
+                 name <- lexeme identifier
+                 return (TypeRefExpr typExpr name)
           <|> do try (lexeme $ string "type")
                  bindings <- lexeme parseRecursiveBindings
                  return (TypeExpr bindings)

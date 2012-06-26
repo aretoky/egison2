@@ -9,3 +9,10 @@
 
 
 (test (letrec {[$f (lambda [$x] (+ g x))] [$g 10]} (f 1)))
+
+
+(define $t (type {[$x 2] [$f (lambda [$x] (g x))] [$g (lambda [$y] (+ x y))]}))
+
+(test (type-ref t x))
+
+(test ((type-ref t f) 10))
