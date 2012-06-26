@@ -151,6 +151,9 @@ cEval1 (Closure env (FuncExpr args body)) = do
 cEval1 (Closure env (LetExpr bindings body)) = do
   newEnv <- extendLet env bindings
   cEval1 (Closure newEnv body)
+cEval1 (Closure env (LetRecExpr bindings body)) = do
+  newEnv <- liftIO $ extendLetRec env bindings
+  cEval1 (Closure newEnv body)
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of

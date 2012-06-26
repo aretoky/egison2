@@ -241,6 +241,14 @@ parseBindings = do
                                     return (args, expr)))
                       whiteSpace)
 
+parseRecursiveBindings :: Parser RecursiveBindings
+parseRecursiveBindings = do
+  braces (do sepEndBy (brackets (do char '$'
+                                    name <- lexeme identifier
+                                    expr <- lexeme parseExpr
+                                    return (name, expr)))
+                      whiteSpace)
+
 parseVar :: Parser EgisonExpr
 parseVar = do name <- identifier
               nums <- lexeme parseIndexNums
@@ -291,16 +299,16 @@ parseExpr =
                  args <- lexeme parseArgs
                  body <- lexeme parseExpr
                  return $ FuncExpr args body
+          <|> do try (lexeme $ string "letrec")
+                 bindings <- lexeme parseRecursiveBindings
+                 body <- lexeme parseExpr
+                 return (LetRecExpr bindings body)
           <|> do try (lexeme $ string "let")
                  bindings <- lexeme parseBindings
                  body <- lexeme parseExpr
                  return (LetExpr bindings body)
-          <|> do try (lexeme $ string "letrec")
-                 bindings <- lexeme parseBindings
-                 body <- lexeme parseExpr
-                 return (LetExpr bindings body)
           <|> do try (lexeme $ string "type")
-                 bindings <- lexeme parseBindings
+                 bindings <- lexeme parseRecursiveBindings
                  return (TypeExpr bindings)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace

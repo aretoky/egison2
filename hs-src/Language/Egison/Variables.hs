@@ -38,16 +38,16 @@ extendEnv env abindings = do bindinglist <- newIORef $ Data.Map.fromList abindin
 
 -- |Extend given environment by binding a series of values to a new environment for letrec.
 extendLetRec :: Env -- ^ Environment 
-             -> [(Var, EgisonExpr)] -- ^ Extensions to the environment
+             -> [(String, EgisonExpr)] -- ^ Extensions to the environment
              -> IO Env -- ^ Extended environment
 extendLetRec env abindings = do bindinglistT <- (mapM addDummyBinding abindings) -- >>= newIORef
-                                bindinglist <- newIORef $ Data.Map.fromList bindinglistT
+                                bindinglist <- newIORef $ Data.Map.fromList $ map (\(name,objRef) -> ((name,[]),objRef)) bindinglistT
                                 let newEnv = Environment (Just env) bindinglist
                                 mapM (replaceWithNewEnv newEnv) bindinglistT
                                 return newEnv
- where addDummyBinding (var, expr) = do dummy <- nullEnv
-                                        objRef <- makeClosure dummy expr
-                                        return (var, objRef)
+ where addDummyBinding (name, expr) = do dummy <- nullEnv
+                                         objRef <- makeClosure dummy expr
+                                         return (name, objRef)
        replaceWithNewEnv newEnv (_, objRef) = do obj <- readIORef objRef
                                                  case obj of
                                                    Closure _ cExpr -> writeIORef objRef (Closure newEnv cExpr)

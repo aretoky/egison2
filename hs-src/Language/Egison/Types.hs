@@ -104,8 +104,8 @@ data EgisonExpr = CharExpr Char
               }
   | ParamsExpr String EgisonExpr EgisonExpr
   | LetExpr Bindings EgisonExpr
-  | LetRecExpr Bindings EgisonExpr
-  | TypeExpr Bindings
+  | LetRecExpr RecursiveBindings EgisonExpr
+  | TypeExpr RecursiveBindings
   | TypeRefExpr EgisonExpr String
   | DestructorExpr DestructInfoExpr
   | MatchExpr {target :: EgisonExpr,
@@ -138,6 +138,8 @@ data InnerExpr = ElementExpr EgisonExpr
   | SubCollectionExpr EgisonExpr
 
 type Bindings = [(Args, EgisonExpr)]
+
+type RecursiveBindings = [(String, EgisonExpr)]
   
 type DestructInfoExpr = [(String, [EgisonExpr], [(PrimitivePattern, EgisonExpr)])]
 
@@ -279,8 +281,13 @@ showVar (name, nums) = name ++ unwordsNums nums
 
 showBindings :: Bindings -> String
 showBindings [] = "{}"
-showBindings bind = "{" ++ unwords (map showBind bind) ++ "}"
- where showBind (_,expr) = "[$" ++ "..." ++ " " ++ show expr ++ "]" 
+showBindings bindings = "{" ++ unwords (map showBinding bindings) ++ "}"
+ where showBinding (_,expr) = "[$" ++ "..." ++ " " ++ show expr ++ "]" 
+
+showRecursiveBindings :: RecursiveBindings -> String
+showRecursiveBindings [] = "{}"
+showRecursiveBindings bind = "{" ++ unwords (map showBinding bind) ++ "}"
+ where showBinding (_,expr) = "[$" ++ "..." ++ " " ++ show expr ++ "]" 
 
 showExpr :: EgisonExpr -> String
 showExpr (CharExpr chr) = [chr]
@@ -311,9 +318,9 @@ showExpr (ParamsExpr pVar pExpr body) =
 showExpr (LetExpr bindings body) =
   "(let " ++ showBindings bindings ++ " " ++ show body ++ ")"
 showExpr (LetRecExpr bindings body) =
-  "(letrec " ++ showBindings bindings ++ " " ++ show body ++ ")"
+  "(letrec " ++ showRecursiveBindings bindings ++ " " ++ show body ++ ")"
 showExpr (TypeExpr bindings) =
-  "(type " ++ showBindings bindings ++ ")"
+  "(type " ++ showRecursiveBindings bindings ++ ")"
 showExpr (TypeRefExpr typExpr name) =
   "(type-ref " ++ show typExpr ++ " " ++ name ++ ")"
 showExpr (DestructorExpr _) = "(destructor ...)"

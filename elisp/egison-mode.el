@@ -11,6 +11,7 @@
      "\\<macro\\>"
      "\\<do\\>"
      "\\<let\\>"
+     "\\<letrec\\>"
      "\\<type\\>"
      "\\<type-ref\\>"
      "\\<destructor\\>"
@@ -96,6 +97,7 @@
         ((equal "lambda" name) 2)
         ((equal "macro" name) 2)
         ((equal "let" name) 2)
+        ((equal "letrec" name) 2)
         ((equal "match" name) 2)
         ((equal "match-all" name) 2)
         ((equal "type" name) 2)

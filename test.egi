@@ -6,3 +6,6 @@
 (define $t [1 2])
 
 (test (let {[[$x $y] t]} (+ x y)))
+
+
+(test (letrec {[$f (lambda [$x] (+ g x))] [$g 10]} (f 1)))
