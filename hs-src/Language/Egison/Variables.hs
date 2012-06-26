@@ -8,8 +8,8 @@ import qualified Data.Map
 printEnv :: Env         -- ^Environment
          -> IO String   -- ^Contents of the env as a string
 printEnv env = do
-  binds <- liftIO $ readIORef $ bindings env
-  l <- mapM showBind $ Data.Map.toList binds 
+  bindings <- liftIO $ readIORef $ frameRef env
+  l <- mapM showBind $ Data.Map.toList bindings 
   return $ unlines l
  where 
   showBind ((name, nums), objRef) = do
@@ -20,8 +20,8 @@ printEnv env = do
 copyEnv :: Env      -- ^ Source environment
         -> IO Env   -- ^ A copy of the source environment
 copyEnv env = do
-  binds <- liftIO $ readIORef $ bindings env
-  bindingListT <- mapM addBinding $ Data.Map.toList binds
+  bindings <- liftIO $ readIORef $ frameRef env
+  bindingListT <- mapM addBinding $ Data.Map.toList bindings
   bindingList <- newIORef $ Data.Map.fromList bindingListT
   return $ Environment (parentEnv env) bindingList
  where addBinding (var, val) = do --ref <- newIORef $ liftIO $ readIORef val
@@ -30,17 +30,17 @@ copyEnv env = do
                                   return (var, ref)
 
 -- |Extend given environment by binding a series of values to a new environment.
-extendEnv :: Env -- ^ Environment 
+extendEnv :: Env -- ^ Environment
           -> [(Var, ObjectRef)] -- ^ Extensions to the environment
           -> IO Env -- ^ Extended environment
 extendEnv env abindings = do bindinglist <- newIORef $ Data.Map.fromList abindings
                              return $ Environment (Just env) bindinglist
 
--- |Extend given environment by binding a series of values to a new environment.
-extendEnvRec :: Env -- ^ Environment 
+-- |Extend given environment by binding a series of values to a new environment for letrec.
+extendLetRec :: Env -- ^ Environment 
              -> [(Var, EgisonExpr)] -- ^ Extensions to the environment
              -> IO Env -- ^ Extended environment
-extendEnvRec env abindings = do bindinglistT <- (mapM addDummyBinding abindings) -- >>= newIORef
+extendLetRec env abindings = do bindinglistT <- (mapM addDummyBinding abindings) -- >>= newIORef
                                 bindinglist <- newIORef $ Data.Map.fromList bindinglistT
                                 let newEnv = Environment (Just env) bindinglist
                                 mapM (replaceWithNewEnv newEnv) bindinglistT
@@ -72,7 +72,7 @@ isBound
     -> Var   -- ^ Variable
     -> IO Bool  -- ^ True if the variable is bound
 isBound envRef var = 
-    (readIORef $ bindings envRef) >>= return . Data.Map.member var
+    (readIORef $ frameRef envRef) >>= return . Data.Map.member var
 
 -- |Determine if a variable is bound
 --  or a parent of the given environment.
@@ -91,7 +91,7 @@ getVar :: Env     -- ^ Environment
        -> Var  -- ^ Variable
        -> IOThrowsError ObjectRef -- ^ Contents of the variable
 getVar envRef
-       var = do binds <- liftIO $ readIORef $ bindings envRef
+       var = do binds <- liftIO $ readIORef $ frameRef envRef
                 case Data.Map.lookup var binds of
                   (Just a) -> return a
                   Nothing -> case parentEnv envRef of
@@ -107,6 +107,6 @@ defineVar
 defineVar envRef
           var objRef = do
   liftIO $ do
-    env <- readIORef $ bindings envRef
-    writeIORef (bindings envRef) (Data.Map.insert var objRef env)
+    env <- readIORef $ frameRef envRef
+    writeIORef (frameRef envRef) (Data.Map.insert var objRef env)
     return ()

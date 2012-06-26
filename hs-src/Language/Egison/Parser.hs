@@ -230,12 +230,12 @@ parseSymbol = do (name, nums) <- parseSymbol2
 parseArgs :: Parser ArgsExpr
 parseArgs = do
       try (do (name, _) <- lexeme parsePatVar2
-              return $ AVar (name, []))
+              return $ AVar name)
   <|> try (lexeme (brackets (do args <- sepEndBy parseArgs whiteSpace
                                 return $ ATuple args)))
                     
-parseBinds :: Parser Bindings
-parseBinds = do
+parseBindings :: Parser Bindings
+parseBindings = do
   braces (do sepEndBy (brackets (do args <- lexeme parseArgs
                                     expr <- lexeme parseExpr
                                     return (args, expr)))
@@ -262,7 +262,12 @@ parseInnerExpr = do expr <- parseExpr
                     expr <- parseExpr
                     return $ SubCollectionExpr expr
 
-                   
+parsePattern :: Parser EgisonExpr
+parsePattern =
+      parseWildCard
+  <|> parsePatVar
+  <|> parseCutPat
+
 -- |Parse an expression
 parseExpr :: Parser EgisonExpr
 parseExpr =
@@ -272,8 +277,7 @@ parseExpr =
   <|> lexeme parseString
   <|> try (lexeme parseBool)
   <|> try (lexeme parseSymbol)
-  <|> try (lexeme parsePatVar)
-  <|> lexeme parseWildCard
+  <|> try (lexeme parsePattern)
 --  <|> lexeme parsePatVarOmitExpr
   <|> lexeme parseVar
   <|> angles (do cons <- lexeme identifier
@@ -283,10 +287,21 @@ parseExpr =
                  return $ CollectionExpr innerExprs)
   <|> brackets (do innerExprs <- sepEndBy parseInnerExpr whiteSpace
                    return $ TupleExpr innerExprs)
-  <|> parens (do try $ lexeme $ string "lambda"
-                 args <- lexeme $ parseArgs
-                 body <- lexeme $ parseExpr
+  <|> parens (do try (lexeme $ string "lambda")
+                 args <- lexeme parseArgs
+                 body <- lexeme parseExpr
                  return $ FuncExpr args body
+          <|> do try (lexeme $ string "let")
+                 bindings <- lexeme parseBindings
+                 body <- lexeme parseExpr
+                 return (LetExpr bindings body)
+          <|> do try (lexeme $ string "letrec")
+                 bindings <- lexeme parseBindings
+                 body <- lexeme parseExpr
+                 return (LetExpr bindings body)
+          <|> do try (lexeme $ string "type")
+                 bindings <- lexeme parseBindings
+                 return (TypeExpr bindings)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return $ ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs)))

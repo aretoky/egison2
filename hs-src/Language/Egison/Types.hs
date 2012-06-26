@@ -95,7 +95,7 @@ data EgisonExpr = CharExpr Char
   | InductiveDataExpr String [EgisonExpr]
   | TupleExpr [InnerExpr]
   | CollectionExpr [InnerExpr]
-  | FuncExpr ArgsExpr EgisonExpr
+  | FuncExpr Args EgisonExpr
   | LoopExpr {loopVar :: String,
               indexVar :: String,
               rangeExpr :: EgisonExpr,
@@ -137,7 +137,7 @@ data PrimitivePattern = PWirldCard
 data InnerExpr = ElementExpr EgisonExpr
   | SubCollectionExpr EgisonExpr
 
-type Bindings = [(ArgsExpr, EgisonExpr)]
+type Bindings = [(Args, EgisonExpr)]
   
 type DestructInfoExpr = [(String, [EgisonExpr], [(PrimitivePattern, EgisonExpr)])]
 
@@ -193,7 +193,7 @@ data Action = Read EgisonVal
   | WriteToPort String EgisonVal
   | PrintToPort String String
 
-data Args = AVar Var
+data Args = AVar String
   | ATuple [Args]
   
 data InnerVal = Element EgisonVal
@@ -231,7 +231,7 @@ type FrameRef = IORef Frame
 
 data Env = Environment {
         parentEnv :: (Maybe Env), 
-        bindings :: FrameRef
+        frameRef :: FrameRef
     }
 
 nullEnv :: IO Env

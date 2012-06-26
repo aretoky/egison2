@@ -148,6 +148,9 @@ cEval1 (Closure env (CollectionExpr innerExprs)) = do
   return $ Intermidiate $ ICollection innerRefs
 cEval1 (Closure env (FuncExpr args body)) = do
   return $ Value $ Func args body env
+cEval1 (Closure env (LetExpr bindings body)) = do
+  newEnv <- extendLet env bindings
+  cEval1 (Closure newEnv body)
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
@@ -161,8 +164,31 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
     _ -> throwError $ Default "not function"
 cEval1 val = return val
 
+-- |Extend given environment by binding a series of values to a new environment for let.
+extendLet :: Env -- ^ Environment 
+          -> [(Args, EgisonExpr)] -- ^ Extensions to the environment
+          -> IOThrowsError Env -- ^ Extended environment
+extendLet env abindings = do
+  bingingList <- liftM concat $ mapM (\(args, expr) -> do
+                                         objRef <- liftIO $ makeClosure env expr
+                                         helper args objRef)
+                      abindings
+  liftIO $ extendEnv env bingingList
+ where helper (AVar name) objRef = return [((name, []), objRef)]
+       helper (ATuple argss) objRef = do
+         objRef2 <- cRefEval1 objRef
+         obj <- liftIO $ readIORef objRef2
+         case obj of
+           Intermidiate (ITuple innerRefs) -> do
+             objRefs <- innerValRefsToObjRefList innerRefs
+             liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
+           Value (Tuple innerVals) -> do
+             objRefs <- liftIO $ mapM (newIORef . Value) $ innerValsToList innerVals
+             liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
+           _ -> throwError $ Default "extendLet: not tuple"
+                             
 makeFrame :: Args -> ObjectRef -> IOThrowsError [(Var, ObjectRef)]
-makeFrame (AVar aVar) objRef = return $ [(aVar, objRef)]
+makeFrame (AVar name) objRef = return $ [((name,[]), objRef)]
 makeFrame (ATuple []) _ = return $ []
 makeFrame (ATuple fArgs) objRef = do
   objRef2 <- cRefEval1 objRef
