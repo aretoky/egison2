@@ -66,15 +66,19 @@ parseBool = do _ <- string "#"
                           _ -> BoolExpr False
 
 parseChar :: Parser EgisonExpr
-parseChar = do
+parseChar = do c <- parseChar2
+               return $ CharExpr c
+
+parseChar2 :: Parser Char
+parseChar2 = do
   _ <- try (string "#\\")
   c <- anyChar
   r <- many (letter)
   let pchr = c : r
   return $ case pchr of
-    "space" -> CharExpr ' '
-    "newline" -> CharExpr '\n'
-    _ -> CharExpr c
+    "space" -> ' '
+    "newline" -> '\n'
+    _ -> c
 
 parseOctalNumber :: Parser EgisonExpr
 parseOctalNumber = do
@@ -135,6 +139,11 @@ parseNumber = parseDecimalNumberMaybeExponent <|>
               parseOctalNumber <?>
               "Unable to parse number"
 
+parseNumber2 :: Parser Integer
+parseNumber2 = do numExpr <- parseNumber
+                  case numExpr of
+                    NumberExpr n -> return n
+              
 -- |Parse a floating point number
 parseRealNumber :: Parser EgisonExpr
 parseRealNumber = do
@@ -153,6 +162,11 @@ parseRealNumber = do
   result <- parseNumberExponent f
   return result
 
+parseRealNumber2 :: Parser Double
+parseRealNumber2 = do floatExpr <- parseRealNumber
+                      case floatExpr of
+                        FloatExpr d -> return d
+  
 -- | Parse the exponent section of a floating point number
 --   in scientific notation. Eg "e10" from "1.0e10"
 parseNumberExponent :: EgisonExpr -> Parser EgisonExpr
@@ -276,6 +290,52 @@ parsePattern =
   <|> parsePatVar
   <|> parseCutPat
 
+
+parseDestructInfoExpr :: Parser DestructInfoExpr
+parseDestructInfoExpr = braces (sepEndBy parseDestructClause whiteSpace)
+
+parseDestructClause :: Parser (String, EgisonExpr, [(PrimitivePattern, EgisonExpr)])
+parseDestructClause = brackets (do patCons <- lexeme identifier
+                                   typExpr <- lexeme parseExpr
+                                   dc2s <- lexeme (braces (sepEndBy parseDestructClause2 whiteSpace))
+                                   return (patCons, typExpr, dc2s))
+
+parseDestructClause2 :: Parser (PrimitivePattern, EgisonExpr)
+parseDestructClause2 = brackets (do datPat <- lexeme parsePrimitivePattern
+                                    expr <- lexeme parseExpr
+                                    return (datPat, expr))
+
+parsePrimitivePattern :: Parser PrimitivePattern
+parsePrimitivePattern =
+      do char '_'
+         return PWildCard
+  <|> do c <- try parseChar2
+         return (PPatChar c)
+  <|> do d <- try parseRealNumber2
+         return (PPatDouble d)
+  <|> do n <- try parseNumber2
+         return (PPatInteger n)
+  <|> do char '$'
+         name <- identifier
+         return (PPatVar name)
+  <|> angles (do c <- lexeme identifier
+                 ps <- sepEndBy parsePrimitivePattern whiteSpace
+                 return (PInducivePat c ps))
+  <|> try (do string "{}"
+              return PEmptyPat)
+  <|> try (do lexeme $ char '{'
+              a <- lexeme parsePrimitivePattern
+              char '.'
+              b <- lexeme parsePrimitivePattern
+              char '}'
+              return (PConsPat a b))
+  <|> try (do lexeme $ char '{'
+              char '.'
+              a <- lexeme parsePrimitivePattern
+              b <- lexeme parsePrimitivePattern
+              char '}'
+              return (PSnocPat a b))
+  
 -- |Parse an expression
 parseExpr :: Parser EgisonExpr
 parseExpr =
@@ -314,6 +374,9 @@ parseExpr =
           <|> do try (lexeme $ string "type")
                  bindings <- lexeme parseRecursiveBindings
                  return (TypeExpr bindings)
+          <|> do try (lexeme $ string "destructor")
+                 deconsInfo <- lexeme parseDestructInfoExpr
+                 return (DestructorExpr deconsInfo)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return $ ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs)))

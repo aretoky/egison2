@@ -116,7 +116,7 @@ type ArgsExpr = Args
                
 type MatchClause = (EgisonExpr, EgisonExpr)
 
-data PrimitivePattern = PWirldCard
+data PrimitivePattern = PWildCard
   | PPatChar Char
   | PPatInteger Integer
   | PPatDouble Double
@@ -133,7 +133,7 @@ type Bindings = [(Args, EgisonExpr)]
 
 type RecursiveBindings = [(String, EgisonExpr)]
   
-type DestructInfoExpr = [(String, [EgisonExpr], [(PrimitivePattern, EgisonExpr)])]
+type DestructInfoExpr = [(String, EgisonExpr, [(PrimitivePattern, EgisonExpr)])]
 
 --
 -- Value
