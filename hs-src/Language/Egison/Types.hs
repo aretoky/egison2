@@ -161,6 +161,7 @@ data EgisonVal = World [Action]
   | Tuple [InnerVal]
   | Collection [InnerVal]
   | Type FrameRef
+  | Destructor DestructInfo
   | Func Args EgisonExpr Env
   | PrimitiveFunc ([EgisonVal] -> ThrowsError EgisonVal)
   | IOFunc ([EgisonVal] -> IOThrowsError EgisonVal)

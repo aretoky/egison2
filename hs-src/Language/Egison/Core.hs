@@ -164,6 +164,39 @@ cEval1 (Closure env (TypeRefExpr typExpr name)) = do
       objRef <- getVarFromFrame frameRef (name,[]) >>= cRefEval1
       liftIO $ readIORef objRef
     _ -> throwError $ Default "type-ref: not type"
+cEval1 (Closure env (DestructorExpr destructInfoExpr)) = do
+  destructInfo <- liftIO $ makeDestructInfo destructInfoExpr
+  return $ Value $ Destructor destructInfo
+ where makeDestructInfo [] = return []
+       makeDestructInfo ((cons, typExpr, pmcs):rest) = do
+         typObjRef <- liftIO $ makeClosure env typExpr
+         let epmcs = map (\(ppat, body) -> (env, ppat, body)) pmcs
+         retRest <- makeDestructInfo rest
+         return ((cons, typObjRef, epmcs):retRest)
+cEval1 (Closure env (MatchAllExpr tgtExpr typExpr (patExpr, body))) = do
+  patObjRef <- liftIO $ makeClosure env patExpr
+  tgtObjRef <- liftIO $ makeClosure env tgtExpr
+  typObjRef <- liftIO $ makeClosure env typExpr
+  matchs <- patternMatchAll [(MState (Data.Map.fromList []) [(MAtom (PClosure (Data.Map.fromList []) patObjRef) tgtObjRef typObjRef)])]
+  rets <- mapM (\match -> do newEnv <- liftIO $ extendEnv env (Data.Map.toList match)
+                             objRef <- liftIO $ newIORef (Closure newEnv body)
+                             return objRef)
+               matchs
+  return $ Intermidiate $ ICollection $ map IElement rets
+cEval1 (Closure env (MatchExpr tgtExpr typExpr mcs)) = do
+  tgtObjRef <- liftIO $ makeClosure env tgtExpr
+  typObjRef <- liftIO $ makeClosure env typExpr
+  retRef <- mcLoop tgtObjRef typObjRef mcs
+  liftIO $ readIORef retRef
+ where mcLoop _ _ [] = throwError $ Default "end of match clauses"
+       mcLoop tgtObjRef typObjRef ((patExpr, body):rest) = do
+         patObjRef <- liftIO $ makeClosure env patExpr
+         matchs <- patternMatch [(MState (Data.Map.fromList []) [(MAtom (PClosure (Data.Map.fromList []) patObjRef) tgtObjRef typObjRef)])]
+         case matchs of
+           [match] -> do newEnv <- liftIO $ extendEnv env (Data.Map.toList match)
+                         objRef <- liftIO $ newIORef (Closure newEnv body)
+                         return objRef
+           [] -> mcLoop tgtObjRef typObjRef rest
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
@@ -236,6 +269,12 @@ innerValRefsToObjRefList (innerRef:rest) = do
           return $ objRefs ++ restRet
         _ -> throwError $ Default "innerValRefsToObjRefList: not collection"
 
+patternMatchAll :: [MState] -> IOThrowsError [Frame]
+patternMatchAll = undefined
+        
+patternMatch :: [MState] -> IOThrowsError [Frame]
+patternMatch = undefined
+        
 primitiveBindings :: IO Env
 primitiveBindings = do
   initEnv <- nullEnv
