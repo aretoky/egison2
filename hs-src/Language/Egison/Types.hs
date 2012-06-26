@@ -365,8 +365,7 @@ showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">
 showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
 showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
 showVal (Type _) = "#<type>"
-showVal (Func _ _ _) =
-  "(lambda [" ++ "..." ++ "] ...)"
+showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"
 showVal (PrimitiveFunc _) = "#<primitive>"
 showVal (IOFunc _) = "#<IO primitive>"
 showVal (Port _ _) = "#<IO port>"

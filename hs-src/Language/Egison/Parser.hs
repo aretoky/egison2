@@ -335,7 +335,12 @@ parsePrimitivePattern =
               b <- lexeme parsePrimitivePattern
               char '}'
               return (PSnocPat a b))
-  
+
+parseMatchClause :: Parser MatchClause
+parseMatchClause = brackets (do pat <- lexeme parseExpr
+                                body <- lexeme parseExpr
+                                return (pat, body))
+              
 -- |Parse an expression
 parseExpr :: Parser EgisonExpr
 parseExpr =
@@ -377,6 +382,16 @@ parseExpr =
           <|> do try (lexeme $ string "destructor")
                  deconsInfo <- lexeme parseDestructInfoExpr
                  return (DestructorExpr deconsInfo)
+          <|> do try (lexeme $ string "match-all")
+                 tgtExpr <- lexeme parseExpr
+                 typExpr <- lexeme parseExpr
+                 mc <- lexeme parseMatchClause
+                 return (MatchAllExpr tgtExpr typExpr mc)
+          <|> do try (lexeme $ string "match")
+                 tgtExpr <- lexeme parseExpr
+                 typExpr <- lexeme parseExpr
+                 mcs <- braces (sepEndBy parseMatchClause whiteSpace)
+                 return (MatchExpr tgtExpr typExpr mcs)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return $ ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs)))
