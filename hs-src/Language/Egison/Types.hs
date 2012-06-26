@@ -95,7 +95,7 @@ data EgisonExpr = CharExpr Char
   | InductiveDataExpr String [EgisonExpr]
   | TupleExpr [InnerExpr]
   | CollectionExpr [InnerExpr]
-  | FuncExpr ArgsExpr EgisonExpr Env
+  | FuncExpr ArgsExpr EgisonExpr
   | LoopExpr {loopVar :: String,
               indexVar :: String,
               rangeExpr :: EgisonExpr,
@@ -120,8 +120,7 @@ data EgisonExpr = CharExpr Char
                operand :: EgisonExpr
                }
 
-data ArgsExpr = AVarExpr VarExpr
-  | ATupleExpr [ArgsExpr]
+type ArgsExpr = Args
                
 type MatchClause = (EgisonExpr, EgisonExpr)
 
@@ -303,7 +302,7 @@ showExpr (PredPatExpr _ _) = "#<pred-pat>"
 showExpr (InductiveDataExpr cons args) = "<" ++ cons ++ "...>"
 showExpr (TupleExpr innerExprs) = "[...]"
 showExpr (CollectionExpr innerExprs) = "{...}"
-showExpr (FuncExpr _ _ _) =
+showExpr (FuncExpr _ _) =
   "(lambda [" ++ "..." ++ "] ...)"
 showExpr (LoopExpr lVar iVar rExpr lExpr tExpr) =
   "(loop $" ++ lVar ++ " $" ++ iVar ++ " " ++ show rExpr ++ " " ++  show lExpr ++ " " ++ show tExpr ++ ")"

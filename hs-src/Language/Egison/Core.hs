@@ -146,6 +146,8 @@ cEval1 (Closure env (TupleExpr innerExprs)) = do
 cEval1 (Closure env (CollectionExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   return $ Intermidiate $ ICollection innerRefs
+cEval1 (Closure env (FuncExpr args body)) = do
+  return $ Value $ Func args body env
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
@@ -163,21 +165,37 @@ makeFrame :: Args -> ObjectRef -> IOThrowsError [(Var, ObjectRef)]
 makeFrame (AVar aVar) objRef = return $ [(aVar, objRef)]
 makeFrame (ATuple []) _ = return $ []
 makeFrame (ATuple fArgs) objRef = do
-  obj <- liftIO $ readIORef objRef
+  objRef2 <- cRefEval1 objRef
+  obj<- liftIO $ readIORef objRef2
   case obj of
     Intermidiate (ITuple innerRefs) -> do
       objRefs <- innerValRefsToObjRefList innerRefs
-      frames <- mapM (\(fArg,objRef2) -> makeFrame fArg objRef2) $ zip fArgs objRefs
+      frames <- mapM (\(fArg,objRef3) -> makeFrame fArg objRef3) $ zip fArgs objRefs
       return $ concat frames
     Value (Tuple innerVals) -> do
       let vals = innerValsToList innerVals
       objRefs <- liftIO $ valsToObjRefList vals
-      frames <- mapM (\(fArg,objRef2) -> makeFrame fArg objRef2) $ zip fArgs objRefs
+      frames <- mapM (\(fArg,objRef3) -> makeFrame fArg objRef3) $ zip fArgs objRefs
       return $ concat frames
     _ -> throwError $ Default "makeFrame: not tuple"
 
 innerValRefsToObjRefList :: [InnerValRef] -> IOThrowsError [ObjectRef]
-innerValRefsToObjRefList = undefined
+innerValRefsToObjRefList [] = return []
+innerValRefsToObjRefList (innerRef:rest) = do
+  restRet <- innerValRefsToObjRefList rest
+  case innerRef of
+    IElement objRef -> return $ objRef:restRet
+    ISubCollection objRef -> do
+      objRef2 <- cRefEval1 objRef
+      obj2 <- liftIO $ readIORef objRef2
+      case obj2 of
+        Intermidiate (ICollection innerRefs) -> do
+          objRefs <- innerValRefsToObjRefList innerRefs
+          return $ objRefs ++ restRet
+        Value (Collection innerVals) -> do
+          objRefs <- liftIO $ mapM newIORef $ map Value $ innerValsToList innerVals
+          return $ objRefs ++ restRet
+        _ -> throwError $ Default "innerValRefsToObjRefList: not collection"
 
 primitiveBindings :: IO Env
 primitiveBindings = do

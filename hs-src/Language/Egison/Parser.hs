@@ -1,27 +1,4 @@
-module Language.Egison.Parser 
-    (
-      egisonDef
-    -- *Higher level parsing
-    , mainParser
-    , readOrThrow
-    , readExpr
-    , readExprList 
-    -- *Low level parsing
-    , symbol
-    , parseExpr 
-    , parseVar
-    , parseSymbol
-    , parseBool
-    , parseChar
-    , parseOctalNumber 
-    , parseBinaryNumber
-    , parseHexNumber
-    , parseDecimalNumber
-    , parseNumber 
-    , parseRealNumber
-    , parseEscapedChar 
-    , parseString 
-    ) where
+module Language.Egison.Parser where
 import Language.Egison.Types
 import Control.Monad.Error
 import qualified Data.Char as Char
@@ -252,10 +229,10 @@ parseSymbol = do (name, nums) <- parseSymbol2
                
 parseArgs :: Parser ArgsExpr
 parseArgs = do
-      try (do (name, nums) <- lexeme parsePatVar2
-              return $ AVarExpr (name, nums))
+      try (do (name, _) <- lexeme parsePatVar2
+              return $ AVar (name, []))
   <|> try (lexeme (brackets (do args <- sepEndBy parseArgs whiteSpace
-                                return $ ATupleExpr args)))
+                                return $ ATuple args)))
                     
 parseBinds :: Parser Bindings
 parseBinds = do
@@ -306,7 +283,11 @@ parseExpr =
                  return $ CollectionExpr innerExprs)
   <|> brackets (do innerExprs <- sepEndBy parseInnerExpr whiteSpace
                    return $ TupleExpr innerExprs)
-  <|> parens (do opExpr <- lexeme parseExpr
+  <|> parens (do try $ lexeme $ string "lambda"
+                 args <- lexeme $ parseArgs
+                 body <- lexeme $ parseExpr
+                 return $ FuncExpr args body
+          <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return $ ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs)))
   <?> "Expression"
