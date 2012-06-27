@@ -50,19 +50,28 @@ runRepl :: IO ()
 runRepl = do
     env <- primitiveBindings
 --    _ <- loadLibraries env
-    runInputT defaultSettings (loop env)
+    runInputT defaultSettings (loop env "> " "")
     where
-        loop :: Env -> InputT IO ()
-        loop env = do
-            minput <- getInputLine "> "
+        loop :: Env -> String -> String -> InputT IO ()
+        loop env prompt input0 = do
+            minput <- getInputLine prompt
             case minput of
                 Nothing -> liftIO showByebyeMessage
-                Just "" -> loop env -- FUTURE: integrate with strip to ignore inputs of just whitespace
-                Just input -> do result <- liftIO (evalString env input)
-                                 if (length result) > 0
-                                    then do outputStrLn result
-                                            loop env
-                                    else loop env
+                Just "" -> loop env "  " (input0 ++ "\n") -- FUTURE: integrate with strip to ignore inputs of just whitespace
+                Just input ->
+                  let newInput = input0 ++ input in
+                    if (countParens newInput)
+                      then do result <- liftIO (evalString env newInput)
+                              if (length result) > 0
+                                then do outputStrLn result
+                                        loop env "> " ""
+                                else loop env "> " ""
+                      else loop env "  " newInput
+
+countParens :: String -> Bool
+countParens str = let countOpen = length $ filter ((==) '(') str in
+                  let countClose = length $ filter  ((==) ')') str in
+                    (countOpen > 0) && (countOpen == countClose)
 -- End REPL Section
 
 -- Begin Util section, of generic functions

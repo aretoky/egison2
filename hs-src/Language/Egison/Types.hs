@@ -121,7 +121,7 @@ data PrimitivePattern = PWildCard
   | PPatInteger Integer
   | PPatDouble Double
   | PPatVar String
-  | PInducivePat String [PrimitivePattern]
+  | PInductivePat String [PrimitivePattern]
   | PEmptyPat
   | PConsPat PrimitivePattern PrimitivePattern
   | PSnocPat PrimitivePattern PrimitivePattern

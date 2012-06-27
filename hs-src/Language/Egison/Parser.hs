@@ -320,7 +320,7 @@ parsePrimitivePattern =
          return (PPatVar name)
   <|> angles (do c <- lexeme identifier
                  ps <- sepEndBy parsePrimitivePattern whiteSpace
-                 return (PInducivePat c ps))
+                 return (PInductivePat c ps))
   <|> try (do string "{}"
               return PEmptyPat)
   <|> try (do lexeme $ char '{'

@@ -112,12 +112,12 @@ cRefEval objRef = do
   liftIO $ writeIORef objRef $ Value val
   return val
 
-cRefEval1 :: ObjectRef -> IOThrowsError ObjectRef
+cRefEval1 :: ObjectRef -> IOThrowsError Object
 cRefEval1 objRef = do
   obj <- liftIO $ readIORef objRef
   obj2 <- cEval1 obj
   liftIO $ writeIORef objRef obj2
-  return objRef
+  return obj2
 
 cEval :: Object -> IOThrowsError EgisonVal
 cEval (Closure env expr) = eval env expr
@@ -134,9 +134,7 @@ cEval1 (Closure env (VarExpr name numExprs)) = do
                            _ -> throwError  $ Default "cEval1: cannot reach here!")
                numVals
   objRef <- getVar env (name, nums)
-  objRef2 <- cRefEval1 objRef
-  obj <- liftIO $ readIORef objRef2
-  return obj
+  cRefEval1 objRef
 cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
   args <- liftIO $ mapM (makeClosure env) argExprs
   return $ Intermidiate $ IInductiveData cons args
@@ -168,9 +166,7 @@ cEval1 (Closure env (TypeExpr bindings)) = do
 cEval1 (Closure env (TypeRefExpr typExpr name)) = do
   obj <- cEval1 (Closure env typExpr)
   case obj of
-    Value (Type frame) -> do
-      objRef <- getVarFromFrame frame (name,[]) >>= cRefEval1
-      liftIO $ readIORef objRef
+    Value (Type frame) -> getVarFromFrame frame (name,[]) >>= cRefEval1
     _ -> throwError $ Default "type-ref: not type"
 cEval1 (Closure env (DestructorExpr destructInfoExpr)) = do
   destructInfo <- liftIO $ makeDestructInfo destructInfoExpr
@@ -222,9 +218,8 @@ cEval1 val = return val
 
 cApply1 :: ObjectRef -> ObjectRef -> IOThrowsError Object
 cApply1 fnObjRef argObjRef = do
-  fnObjRef2 <- cRefEval1 fnObjRef
-  fnVal <- liftIO $ readIORef fnObjRef2
-  case fnVal of
+  fnObj <- cRefEval1 fnObjRef
+  case fnObj of
     Value (IOFunc fn) -> undefined
     Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
                                    val <- liftThrows $ fn (tupleToList arg)
@@ -246,8 +241,7 @@ extendLet env abindings = do
   liftIO $ extendEnv env bingingList
  where helper (AVar name) objRef = return [((name, []), objRef)]
        helper (ATuple argss) objRef = do
-         objRef2 <- cRefEval1 objRef
-         obj <- liftIO $ readIORef objRef2
+         obj <- cRefEval1 objRef
          case obj of
            Intermidiate (ITuple innerRefs) -> do
              objRefs <- innerValRefsToObjRefList innerRefs
@@ -262,8 +256,7 @@ makeFrame (AVar name) objRef = return $ [((name,[]), objRef)]
 makeFrame (ATuple []) _ = return $ []
 makeFrame (ATuple [fArg]) objRef = makeFrame fArg objRef
 makeFrame (ATuple fArgs) objRef = do
-  objRef2 <- cRefEval1 objRef
-  obj<- liftIO $ readIORef objRef2
+  obj <- cRefEval1 objRef
   case obj of
     Intermidiate (ITuple innerRefs) -> do
       objRefs <- innerValRefsToObjRefList innerRefs
@@ -283,8 +276,7 @@ innerValRefsToObjRefList (innerRef:rest) = do
   case innerRef of
     IElement objRef -> return $ objRef:restRet
     ISubCollection objRef -> do
-      objRef2 <- cRefEval1 objRef
-      obj2 <- liftIO $ readIORef objRef2
+      obj2 <- cRefEval1 objRef
       case obj2 of
         Intermidiate (ICollection innerRefs) -> do
           objRefs <- innerValRefsToObjRefList innerRefs
@@ -314,10 +306,9 @@ patternMatchAll ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typObjR
     Value WildCard -> patternMatchAll ((MState frame atoms):states)
     Value (PatVar name nums) -> do
 --      liftIO $ putStrLn $ "egiTest: " ++ name -- debug
-      typObjRef2 <- cRefEval1 typObjRef
-      typ <- liftIO $ readIORef typObjRef2
+      typ <- cRefEval1 typObjRef
       case typ of
-        Value (Type tf) -> do
+        Value (Type tf) ->
           let mObjRef = Data.Map.lookup ("var-match",[]) tf in
             case mObjRef of
               Nothing -> throwError (Default "no method in type: var-match")
@@ -331,12 +322,190 @@ patternMatchAll ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typObjR
                                                                           (MAtom (PClosure (((name,nums),objRef):bf2) pat2) tgt2 typ2))
                                                                        atoms)))
                                                 objRefs) ++ states
-        _ -> throwError (Default "patternMatch: patVar not type")
+        _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
+    Intermidiate (IInductiveData con patObjRefs) -> do
+      typObj <- cRefEval1 typObjRef
+      case typObj of
+        Value (Type tf) ->
+          let mObjRef = Data.Map.lookup ("inductive-match",[]) tf in
+            case mObjRef of
+              Nothing -> throwError (Default "no method in type: inductiver-match")
+              Just fnObjRef ->
+                do fnObj <- cRefEval1 fnObjRef
+                   case fnObj of
+                     Value (Destructor deconInfo) -> do
+                       indRet <- inductiveMatch deconInfo con tgtObjRef
+                       case indRet of
+                         (nTypObjRef, nTgtsObjRef) -> do
+                           inTypObjRefs <- tupleToObjRefList nTypObjRef
+                           inTgtsRefs <- collectionToObjRefList nTgtsObjRef
+                           inTgtObjRefss <- mapM tupleToObjRefList inTgtsRefs
+                           patternMatch ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
+                                                                                    (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
+                                              inTgtObjRefss) ++ states)
+    Value (InductiveData con pats) -> do
+      patObjRefs <- liftIO $ mapM (newIORef . Value) pats
+      typObj <- cRefEval1 typObjRef
+      case typObj of
+        Value (Type tf) ->
+          let mObjRef = Data.Map.lookup ("inductive-match",[]) tf in
+            case mObjRef of
+              Nothing -> throwError (Default "no method in type: inductiver-match")
+              Just fnObjRef ->
+                do fnObj <- cRefEval1 fnObjRef
+                   case fnObj of
+                     Value (Destructor deconInfo) -> do
+                       indRet <- inductiveMatch deconInfo con tgtObjRef
+                       case indRet of
+                         (nTypObjRef, nTgtsObjRef) -> do
+                           inTypObjRefs <- tupleToObjRefList nTypObjRef
+                           inTgtsRefs <- collectionToObjRefList nTgtsObjRef
+                           inTgtObjRefss <- mapM tupleToObjRefList inTgtsRefs
+                           patternMatch ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
+                                                                                    (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
+                                              inTgtObjRefss) ++ states)
+        _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
     _ -> throwError $ Default "pattern must not be value"
         
 patternMatch :: [MState] -> IOThrowsError [FrameList]
 patternMatch = undefined
-        
+
+inductiveMatch :: DestructInfo -> String -> ObjectRef -> IOThrowsError (ObjectRef,ObjectRef)
+inductiveMatch [] _ _ = throwError (Default "inductiveMatch: not matched any clauses")
+inductiveMatch ((con,_,[]):rest) pcon tgtObjRefRef =
+  if (con == pcon)
+    then throwError (Default "inductiveMatch: not matched any clauses")
+    else inductiveMatch rest pcon tgtObjRefRef
+inductiveMatch ((con,typObjRef,((env,ppat,expr):cls)):rest) pcon tgtObjRefRef =
+  if (con == pcon)
+    then do mPpmRet <- primitivePatternMatch ppat tgtObjRefRef
+            case mPpmRet of
+              Nothing -> inductiveMatch ((con,typObjRef,cls):rest) pcon tgtObjRefRef
+              Just ppmRet -> do newEnv <- liftIO $ extendEnv env ppmRet
+                                ret <- liftIO $ makeClosure newEnv expr
+                                return (typObjRef,ret)
+    else inductiveMatch rest pcon tgtObjRefRef
+
+
+primitivePatternMatch :: PrimitivePattern -> ObjectRef -> IOThrowsError (Maybe FrameList)
+primitivePatternMatch PWildCard _ = return (Just [])
+primitivePatternMatch (PPatVar name) objRef = return (Just [((name,[]), objRef)])
+primitivePatternMatch (PInductivePat pCons pPats) objRef =  do
+  obj <- cRefEval1 objRef
+  case obj of
+    Intermidiate (IInductiveData cons objRefs) ->
+      if pCons == cons
+        then primitivePatternMatchList pPats objRefs
+        else return Nothing
+    _ -> do throwError $ Default $ "primitivePatternMatch : not inductive value to primitive inductive pattern"
+primitivePatternMatch PEmptyPat objRef = do
+  b <- isEmptyCollection objRef
+  if b
+    then return (Just [])
+    else return Nothing
+primitivePatternMatch (PConsPat carPat cdrPat) objRef = do
+  b <- isEmptyCollection objRef
+  if b
+    then return Nothing
+    else do (carObjRef, cdrObjRef) <- consDestruct objRef
+            mCarFrame <- primitivePatternMatch carPat carObjRef
+            case mCarFrame of
+              Nothing -> return Nothing
+              Just carFrame -> do mCdrFrame <- primitivePatternMatch cdrPat cdrObjRef
+                                  case mCdrFrame of
+                                    Nothing -> return Nothing
+                                    Just cdrFrame -> return (Just (carFrame ++ cdrFrame))
+primitivePatternMatch (PSnocPat rdcPat racPat) objRef = do
+  b <- isEmptyCollection objRef
+  if b
+    then return Nothing
+    else do (racObjRef, rdcObjRef) <- snocDestruct objRef
+            mRacFrame <- primitivePatternMatch racPat racObjRef
+            case mRacFrame of
+              Nothing -> return Nothing
+              Just racFrame -> do mRdcFrame <- primitivePatternMatch rdcPat rdcObjRef
+                                  case mRdcFrame of
+                                    Just rdcFrame -> return (Just (racFrame ++ rdcFrame))
+                                    Nothing -> return Nothing
+            
+primitivePatternMatchList :: [PrimitivePattern] -> [ObjectRef] -> IOThrowsError (Maybe FrameList)
+primitivePatternMatchList [] [] = return (Just [])
+primitivePatternMatchList (pat:pats) (objRef:objRefs) = do
+  mFrame <- primitivePatternMatch pat objRef
+  case mFrame of
+    Nothing -> return Nothing
+    Just frame -> do mRestFrame <- primitivePatternMatchList pats objRefs
+                     case mRestFrame of
+                       Nothing -> return Nothing
+                       Just restFrame -> return (Just (frame ++ restFrame))
+primitivePatternMatchList _ _ = throwError (Default "primitivePatternMatchList : number of patterns and targets are different")
+
+
+isEmptyCollection :: ObjectRef -> IOThrowsError Bool
+isEmptyCollection = undefined
+
+consDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
+consDestruct = undefined
+
+snocDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
+snocDestruct = undefined
+
+
+collectionToObjRefList :: ObjectRef -> IOThrowsError [ObjectRef]
+collectionToObjRefList objRef = do
+  obj <- cRefEval1 objRef
+  case obj of
+    Intermidiate (ICollection innerRefs) -> innerRefsToObjRefList innerRefs
+    Value (Collection innerVals) -> innerValsToObjRefList innerVals
+    _ -> throwError $ Default "collectionToObjRefList: not collection"
+
+tupleToObjRefList :: ObjectRef -> IOThrowsError [ObjectRef]
+tupleToObjRefList objRef = do
+  obj <- cRefEval1 objRef
+  case obj of
+    Intermidiate (ITuple innerRefs) -> innerRefsToObjRefList innerRefs
+    Value (Tuple innerVals) -> innerValsToObjRefList innerVals
+    _ -> throwError $ Default "tupleToObjRefList: not tuple"
+
+iTupleToObjRefList :: IntermidiateVal -> IOThrowsError [ObjectRef]
+iTupleToObjRefList (ITuple innerRefs) = innerRefsToObjRefList innerRefs
+iTupleToObjRefList _ = throwError $ Default "iTupleToObjRefList: not tuple"
+
+iCollectionToObjRefList :: IntermidiateVal -> IOThrowsError [ObjectRef]
+iCollectionToObjRefList (ICollection innerRefs) = innerRefsToObjRefList innerRefs
+iCollectionToObjRefList _ = throwError $ Default "iCollectionToObjRefList: not collection"
+
+innerRefsToObjRefList :: [InnerValRef] -> IOThrowsError [ObjectRef]
+innerRefsToObjRefList [] = return []
+innerRefsToObjRefList ((IElement objRef):rest) = do
+  retRest <- innerRefsToObjRefList rest
+  return $ objRef:retRest
+innerRefsToObjRefList ((ISubCollection objRef):rest) = do
+  retObj <- collectionToObjRefList objRef
+  retRest <- innerRefsToObjRefList rest
+  return $ retObj ++ retRest
+
+tupleValToObjRefList :: EgisonVal -> IOThrowsError [ObjectRef]
+tupleValToObjRefList (Tuple innerVals) = innerValsToObjRefList innerVals
+tupleValToObjRefList _ = throwError $ Default "tupleToObjRefList: not tuple"
+    
+collectionValToObjRefList :: EgisonVal -> IOThrowsError [ObjectRef]
+collectionValToObjRefList (Collection innerVals) = innerValsToObjRefList innerVals
+colectionValToObjRefList _ = throwError $ Default "collectionToObjRefList: not tuple"
+
+innerValsToObjRefList :: [InnerVal] -> IOThrowsError [ObjectRef]
+innerValsToObjRefList [] = return []
+innerValsToObjRefList ((Element val):rest) = do
+  valRef <- liftIO $ newIORef $ Value val
+  retRest <- innerValsToObjRefList rest
+  return $ valRef:retRest
+innerValsToObjRefList ((SubCollection val):rest) = do
+  valRef <- liftIO $ newIORef $ Value val
+  retVal <- collectionToObjRefList valRef
+  retRest <- innerValsToObjRefList rest
+  return $ retVal ++ retRest
+
+  
 primitiveBindings :: IO Env
 primitiveBindings = do
   initEnv <- nullEnv
