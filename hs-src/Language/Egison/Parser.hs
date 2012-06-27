@@ -364,6 +364,11 @@ parseExpr =
                  args <- lexeme parseArgs
                  body <- lexeme parseExpr
                  return $ FuncExpr args body
+          <|> do try (lexeme $ string "if")
+                 condExpr <- lexeme parseExpr
+                 expr1 <- lexeme parseExpr
+                 expr2 <- lexeme parseExpr
+                 return (IfExpr condExpr expr1 expr2)
           <|> do try (lexeme $ string "letrec")
                  bindings <- lexeme parseRecursiveBindings
                  body <- lexeme parseExpr

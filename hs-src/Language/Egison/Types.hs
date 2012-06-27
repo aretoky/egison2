@@ -103,6 +103,7 @@ data EgisonExpr = CharExpr Char
               tailExpr :: EgisonExpr
               }
   | ParamsExpr String EgisonExpr EgisonExpr
+  | IfExpr EgisonExpr EgisonExpr EgisonExpr
   | LetExpr Bindings EgisonExpr
   | LetRecExpr RecursiveBindings EgisonExpr
   | TypeExpr RecursiveBindings
@@ -312,6 +313,8 @@ showExpr (LoopExpr lVar iVar rExpr lExpr tExpr) =
   "(loop $" ++ lVar ++ " $" ++ iVar ++ " " ++ show rExpr ++ " " ++  show lExpr ++ " " ++ show tExpr ++ ")"
 showExpr (ParamsExpr pVar pExpr body) =
   "(loop $" ++ pVar ++ " " ++ show pExpr ++ " " ++ show body ++ ")"
+showExpr (IfExpr condExpr expr1 expr2) =
+  "(if " ++ show condExpr ++ " " ++ show expr1 ++ " " ++ show expr2 ++ ")"
 showExpr (LetExpr bindings body) =
   "(let " ++ showBindings bindings ++ " " ++ show body ++ ")"
 showExpr (LetRecExpr bindings body) =

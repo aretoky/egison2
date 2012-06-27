@@ -3,6 +3,11 @@
 (test (f 2 3))
 
 
+(test (if #t 1 2))
+
+(test (if #f 1 2))
+
+
 (define $t [1 2])
 
 (test (let {[[$x $y] t]} (+ x y)))

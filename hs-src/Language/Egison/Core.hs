@@ -125,6 +125,7 @@ cEval (Value val) = return val
 cEval (Intermidiate iVal) = iEval iVal
 
 cEval1 :: Object -> IOThrowsError Object
+cEval1 (Closure _ (BoolExpr contents)) = return $ Value (Bool contents)
 cEval1 (Closure _ (NumberExpr contents)) = return $ Value (Number contents)
 cEval1 (Closure _ (FloatExpr contents)) = return $ Value (Float contents)
 cEval1 (Closure env (VarExpr name numExprs)) = do
@@ -148,11 +149,17 @@ cEval1 (Closure env (PatVarExpr name numExprs)) = do
   numVals <- mapM (eval env) numExprs
   nums <- mapM (\nVal -> case nVal of
                            Number num -> return num
-                           _ -> throwError  $ Default "cEval1: cannot reach here!")
+                           _ -> throwError $ Default "cEval1: cannot reach here!")
                numVals
   return $ Value $ PatVar name nums
 cEval1 (Closure env (FuncExpr args body)) = do
   return $ Value $ Func args body env
+cEval1 (Closure env (IfExpr condExpr expr1 expr2)) = do
+  obj <- cEval1 $ Closure env condExpr
+  case obj of
+    Value (Bool True) -> cEval1 $ Closure env expr1
+    Value (Bool False) -> cEval1 $ Closure env expr2
+    _ -> throwError $ Default "if: condition is not bool value"
 cEval1 (Closure env (LetExpr bindings body)) = do
   newEnv <- extendLet env bindings
   cEval1 (Closure newEnv body)
