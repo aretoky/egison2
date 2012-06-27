@@ -71,8 +71,8 @@ evalTopExpr env (Define name expr) = do clr <- liftIO $ makeClosure env expr
                                         return name
 evalTopExpr env (Execute args) = do evalMain env args
                                     return ""
-evalTopExpr _ (LoadFile filename) = undefined
-evalTopExpr _ (Load libname) = undefined
+evalTopExpr _ (LoadFile filename) = throwError $ Default "undefined loadfile"
+evalTopExpr _ (Load libname) = throwError $ Default "undefined load"
 
 -- |Evaluate egison expression that has already been loaded into haskell
 eval :: Env -> EgisonExpr -> IOThrowsError EgisonVal
@@ -99,7 +99,7 @@ iEval (ICollection innerValRefs) = do
 iEval (ITuple innerValRefs) = do
   innerVals <- mapM innerValRefEval innerValRefs
   return $ Tuple innerVals
-iEval _ = undefined
+iEval _ = throwError $ Default "undefined iEval"
 
 innerValRefEval :: InnerValRef -> IOThrowsError InnerVal
 innerValRefEval (IElement objRef) = liftM Element $ cRefEval objRef
@@ -206,7 +206,7 @@ cEval1 (Closure env (MatchExpr tgtExpr typExpr mcs)) = do
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
-    Value (IOFunc fn) -> undefined
+    Value (IOFunc fn) -> throwError $ Default "undefined ioFunc"
     Value (PrimitiveFunc fn) -> do arg <- eval env argExpr
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
@@ -220,7 +220,7 @@ cApply1 :: ObjectRef -> ObjectRef -> IOThrowsError Object
 cApply1 fnObjRef argObjRef = do
   fnObj <- cRefEval1 fnObjRef
   case fnObj of
-    Value (IOFunc fn) -> undefined
+    Value (IOFunc fn) -> throwError $ Default "undefined ioFunc"
     Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
@@ -322,7 +322,7 @@ patternMatchAll ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typObjR
                                                                           (MAtom (PClosure (((name,nums),objRef):bf2) pat2) tgt2 typ2))
                                                                        atoms)))
                                                 objRefs) ++ states
-        _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
+        _ -> throwError $ Default "patternMatchAll: second argument of match expressions must be type"
     Intermidiate (IInductiveData con patObjRefs) -> do
       typObj <- cRefEval1 typObjRef
       case typObj of
@@ -340,9 +340,10 @@ patternMatchAll ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typObjR
                            inTypObjRefs <- tupleToObjRefList nTypObjRef
                            inTgtsRefs <- collectionToObjRefList nTgtsObjRef
                            inTgtObjRefss <- mapM tupleToObjRefList inTgtsRefs
-                           patternMatch ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
-                                                                                    (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
-                                              inTgtObjRefss) ++ states)
+                           patternMatchAll ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
+                                                                                       (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
+                                                 inTgtObjRefss) ++ states)
+        _ -> throwError $ Default "patternMatchAll: second argument of match expressions must be type"
     Value (InductiveData con pats) -> do
       patObjRefs <- liftIO $ mapM (newIORef . Value) pats
       typObj <- cRefEval1 typObjRef
@@ -361,14 +362,14 @@ patternMatchAll ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typObjR
                            inTypObjRefs <- tupleToObjRefList nTypObjRef
                            inTgtsRefs <- collectionToObjRefList nTgtsObjRef
                            inTgtObjRefss <- mapM tupleToObjRefList inTgtsRefs
-                           patternMatch ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
-                                                                                    (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
-                                              inTgtObjRefss) ++ states)
-        _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
+                           patternMatchAll ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
+                                                                                       (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
+                                                 inTgtObjRefss) ++ states)
+        _ -> throwError $ Default "patternMatchAll: second argument of match expressions must be type"
     _ -> throwError $ Default "pattern must not be value"
         
 patternMatch :: [MState] -> IOThrowsError [FrameList]
-patternMatch = undefined
+patternMatch _ = throwError $ Default "undefined patternMatch"
 
 inductiveMatch :: DestructInfo -> String -> ObjectRef -> IOThrowsError (ObjectRef,ObjectRef)
 inductiveMatch [] _ _ = throwError (Default "inductiveMatch: not matched any clauses")
@@ -442,13 +443,13 @@ primitivePatternMatchList _ _ = throwError (Default "primitivePatternMatchList :
 
 
 isEmptyCollection :: ObjectRef -> IOThrowsError Bool
-isEmptyCollection = undefined
+isEmptyCollection _ = throwError $ Default "undefined isEmptyCollection"
 
 consDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
-consDestruct = undefined
+consDestruct _ = throwError $ Default "undefined consDestruct"
 
 snocDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
-snocDestruct = undefined
+snocDestruct _ = throwError $ Default "undefined snocDestruct"
 
 
 collectionToObjRefList :: ObjectRef -> IOThrowsError [ObjectRef]

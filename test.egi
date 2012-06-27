@@ -21,3 +21,28 @@
 (define $Something (type {[$var-match (lambda [$tgt] {tgt})]}))
 
 (test (match-all 1 Something [$x x]))
+
+
+(define $Order
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[less []
+          {[<less> {[]}]
+           [_ {}]}]
+         [equal []
+          {[<equal> {[]}]
+           [_ {}]}]
+         [greater []
+          {[<greater> {[]}]
+           [_ {}]}]})]
+     [$equal?
+      (lambda [$val $tgt]
+        (match [val tgt] [Order Order]
+          {[[<less> <less>] <true>]
+           [[<equal> <equal>] <true>]
+           [[<greater> <greater>] <true>]
+           [[_ _] <false>]}))]}))
+
+(test (match-all <less> Order [<less> <ok>]))
