@@ -229,7 +229,7 @@ parsePatVar2 = do char '$'
 
 parsePatVar :: Parser EgisonExpr
 parsePatVar = do (name, nums) <- parsePatVar2
-                 return $ VarExpr name nums
+                 return $ PatVarExpr name nums
                     
 parseSymbol2 :: Parser VarExpr
 parseSymbol2 = do char '#'

@@ -94,10 +94,9 @@ isRecBound envRef var = do
     (Just e) -> isBound e var
     Nothing -> return False
 
-getVarFromFrame :: FrameRef -> Var -> IOThrowsError ObjectRef
-getVarFromFrame frameRef var = do
-  binds <- liftIO $ readIORef frameRef
-  case Data.Map.lookup var binds of
+getVarFromFrame :: Frame -> Var -> IOThrowsError ObjectRef
+getVarFromFrame frame var = do
+  case Data.Map.lookup var frame of
     (Just a) -> return a
     Nothing -> throwError $ UnboundVar "Getting an unbound variable" (showVar var)
     

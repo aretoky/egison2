@@ -160,7 +160,7 @@ data EgisonVal = World [Action]
   | InductiveData String [EgisonVal]
   | Tuple [InnerVal]
   | Collection [InnerVal]
-  | Type FrameRef
+  | Type Frame
   | Destructor DestructInfo
   | Func Args EgisonExpr Env
   | PrimitiveFunc ([EgisonVal] -> ThrowsError EgisonVal)
@@ -220,6 +220,8 @@ type VarExpr = (String, [EgisonExpr])
 
 type Var = (String, [Integer])
 
+type FrameList = [(Var, ObjectRef)]
+
 type Frame = Data.Map.Map Var ObjectRef
 
 type FrameRef = IORef Frame
@@ -244,7 +246,7 @@ makeInnerValRef env (SubCollectionExpr expr) = do
   objRef <- makeClosure env expr
   return $ ISubCollection objRef
              
-data PClosure = PClosure {pcFrame :: Frame,
+data PClosure = PClosure {pcFrame :: FrameList,
                           pcBody :: ObjectRef
                           }
 
@@ -253,7 +255,7 @@ data MAtom = MAtom {pClosure :: PClosure,
                     maTarget :: ObjectRef
                     }
 
-data MState = MState {msFrame :: Frame,
+data MState = MState {msFrame :: FrameList,
                       mAtoms :: [MAtom]
                       }
 
@@ -407,8 +409,14 @@ showObj (Closure _ expr) = "(Closure env " ++  show expr ++ ")"
 showObj (Value val) = "(Value " ++ show val ++ ")"
 showObj (Intermidiate val) = "(Intermidiate " ++ show val ++ ")"
 
--- |Allow conversion of egisonval instances to strings
+-- |Allow conversion of egison object instances to strings
 instance Show Object where show = showObj
+
+showFrameList :: FrameList -> String
+showFrameList [] = "{}"
+showFrameList (((name,nums),_):rest) = "{[" ++ name ++ unwordsNums nums ++ ": _]" ++ loop rest
+ where loop [] = "}"
+       loop (((name2,nums2),_):rest2) = " [" ++ name2 ++ unwordsNums nums2 ++ ": _]" ++ loop rest2
 
 -- - utility
 stringToCharCollection :: String -> IO EgisonVal

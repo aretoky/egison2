@@ -16,3 +16,8 @@
 (test (type-ref t x))
 
 (test ((type-ref t f) 10))
+
+
+(define $Something (type {[$var-match (lambda [$tgt] {tgt})]}))
+
+(test (match-all 1 Something [$x x]))

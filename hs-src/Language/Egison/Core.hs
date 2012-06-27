@@ -146,6 +146,13 @@ cEval1 (Closure env (TupleExpr innerExprs)) = do
 cEval1 (Closure env (CollectionExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   return $ Intermidiate $ ICollection innerRefs
+cEval1 (Closure env (PatVarExpr name numExprs)) = do
+  numVals <- mapM (eval env) numExprs
+  nums <- mapM (\nVal -> case nVal of
+                           Number num -> return num
+                           _ -> throwError  $ Default "cEval1: cannot reach here!")
+               numVals
+  return $ Value $ PatVar name nums
 cEval1 (Closure env (FuncExpr args body)) = do
   return $ Value $ Func args body env
 cEval1 (Closure env (LetExpr bindings body)) = do
@@ -156,12 +163,13 @@ cEval1 (Closure env (LetRecExpr bindings body)) = do
   cEval1 (Closure newEnv body)
 cEval1 (Closure env (TypeExpr bindings)) = do
   frameRef <- liftIO $ makeLetRecFrame env bindings
-  return $ Value $ Type frameRef
+  frame <- liftIO $ readIORef frameRef
+  return $ Value $ Type frame
 cEval1 (Closure env (TypeRefExpr typExpr name)) = do
   obj <- cEval1 (Closure env typExpr)
   case obj of
-    Value (Type frameRef) -> do
-      objRef <- getVarFromFrame frameRef (name,[]) >>= cRefEval1
+    Value (Type frame) -> do
+      objRef <- getVarFromFrame frame (name,[]) >>= cRefEval1
       liftIO $ readIORef objRef
     _ -> throwError $ Default "type-ref: not type"
 cEval1 (Closure env (DestructorExpr destructInfoExpr)) = do
@@ -177,8 +185,10 @@ cEval1 (Closure env (MatchAllExpr tgtExpr typExpr (patExpr, body))) = do
   patObjRef <- liftIO $ makeClosure env patExpr
   tgtObjRef <- liftIO $ makeClosure env tgtExpr
   typObjRef <- liftIO $ makeClosure env typExpr
-  matchs <- patternMatchAll [(MState (Data.Map.fromList []) [(MAtom (PClosure (Data.Map.fromList []) patObjRef) tgtObjRef typObjRef)])]
-  rets <- mapM (\match -> do newEnv <- liftIO $ extendEnv env (Data.Map.toList match)
+  matchs <- patternMatchAll [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]
+  liftIO $ putStrLn ("egiTest2: " ++ show (length matchs))  -- debug
+  rets <- mapM (\match -> do liftIO $ putStrLn $ showFrameList match -- debug
+                             newEnv <- liftIO $ extendEnv env match
                              objRef <- liftIO $ newIORef (Closure newEnv body)
                              return objRef)
                matchs
@@ -191,9 +201,9 @@ cEval1 (Closure env (MatchExpr tgtExpr typExpr mcs)) = do
  where mcLoop _ _ [] = throwError $ Default "end of match clauses"
        mcLoop tgtObjRef typObjRef ((patExpr, body):rest) = do
          patObjRef <- liftIO $ makeClosure env patExpr
-         matchs <- patternMatch [(MState (Data.Map.fromList []) [(MAtom (PClosure (Data.Map.fromList []) patObjRef) tgtObjRef typObjRef)])]
+         matchs <- patternMatch [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]
          case matchs of
-           [match] -> do newEnv <- liftIO $ extendEnv env (Data.Map.toList match)
+           [match] -> do newEnv <- liftIO $ extendEnv env match
                          objRef <- liftIO $ newIORef (Closure newEnv body)
                          return objRef
            [] -> mcLoop tgtObjRef typObjRef rest
@@ -209,6 +219,20 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
                                        cEval1 (Closure newEnv body)
     _ -> throwError $ Default "not function"
 cEval1 val = return val
+
+cApply1 :: ObjectRef -> ObjectRef -> IOThrowsError Object
+cApply1 fnObjRef argObjRef = do
+  fnObjRef2 <- cRefEval1 fnObjRef
+  fnVal <- liftIO $ readIORef fnObjRef2
+  case fnVal of
+    Value (IOFunc fn) -> undefined
+    Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
+                                   val <- liftThrows $ fn (tupleToList arg)
+                                   return $ Value val
+    Value (Func fArgs body cEnv) -> do frame <- makeFrame fArgs argObjRef
+                                       newEnv <- liftIO $ extendEnv cEnv frame
+                                       cEval1 (Closure newEnv body)
+    _ -> throwError $ Default "cApply1: not function"
 
 -- |Extend given environment by binding a series of values to a new environment for let.
 extendLet :: Env -- ^ Environment 
@@ -236,6 +260,7 @@ extendLet env abindings = do
 makeFrame :: Args -> ObjectRef -> IOThrowsError [(Var, ObjectRef)]
 makeFrame (AVar name) objRef = return $ [((name,[]), objRef)]
 makeFrame (ATuple []) _ = return $ []
+makeFrame (ATuple [fArg]) objRef = makeFrame fArg objRef
 makeFrame (ATuple fArgs) objRef = do
   objRef2 <- cRefEval1 objRef
   obj<- liftIO $ readIORef objRef2
@@ -269,10 +294,47 @@ innerValRefsToObjRefList (innerRef:rest) = do
           return $ objRefs ++ restRet
         _ -> throwError $ Default "innerValRefsToObjRefList: not collection"
 
-patternMatchAll :: [MState] -> IOThrowsError [Frame]
-patternMatchAll = undefined
+patternMatchAll :: [MState] -> IOThrowsError [FrameList]
+patternMatchAll [] = return []
+patternMatchAll ((MState frame []):rest) = do
+  frames <- patternMatchAll rest
+  return (frame:frames)
+patternMatchAll ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typObjRef)
+                                :atoms))
+                 :states) = do
+  patObj <- liftIO $ readIORef patObjRef
+  case patObj of
+    Closure env expr ->
+      do newEnv <- liftIO $ extendEnv env bf
+         patObj2 <- cEval1 $ Closure newEnv expr
+         patObjRef2 <- liftIO $ newIORef patObj2
+         patternMatchAll ((MState frame ((MAtom (PClosure [] patObjRef2) tgtObjRef typObjRef)
+                                         :atoms))
+                          :states)
+    Value WildCard -> patternMatchAll ((MState frame atoms):states)
+    Value (PatVar name nums) -> do
+--      liftIO $ putStrLn $ "egiTest: " ++ name -- debug
+      typObjRef2 <- cRefEval1 typObjRef
+      typ <- liftIO $ readIORef typObjRef2
+      case typ of
+        Value (Type tf) -> do
+          let mObjRef = Data.Map.lookup ("var-match",[]) tf in
+            case mObjRef of
+              Nothing -> throwError (Default "no method in type: var-match")
+              Just fnObjRef ->
+                do ret <- cApply1 fnObjRef tgtObjRef
+                   case ret of
+                     Intermidiate (ICollection innerObjRefs) -> do
+                       objRefs <- innerValRefsToObjRefList innerObjRefs
+                       patternMatchAll $ (map (\objRef -> (MState (((name,nums),objRef):frame)
+                                                                  (map (\(MAtom (PClosure bf2 pat2) tgt2 typ2) ->
+                                                                          (MAtom (PClosure (((name,nums),objRef):bf2) pat2) tgt2 typ2))
+                                                                       atoms)))
+                                                objRefs) ++ states
+        _ -> throwError (Default "patternMatch: patVar not type")
+    _ -> throwError $ Default "pattern must not be value"
         
-patternMatch :: [MState] -> IOThrowsError [Frame]
+patternMatch :: [MState] -> IOThrowsError [FrameList]
 patternMatch = undefined
         
 primitiveBindings :: IO Env
