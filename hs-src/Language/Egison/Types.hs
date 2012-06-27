@@ -290,8 +290,8 @@ showRecursiveBindings bind = "{" ++ unwords (map showBinding bind) ++ "}"
 showExpr :: EgisonExpr -> String
 showExpr (CharExpr chr) = [chr]
 showExpr (StringExpr contents) = contents
-showExpr (BoolExpr True) = "#t"
-showExpr (BoolExpr False) = "#f"
+showExpr (BoolExpr True) = "#t-expr"
+showExpr (BoolExpr False) = "#f-expr"
 showExpr (NumberExpr contents) = show contents
 showExpr (FloatExpr contents) = show contents
 showExpr (VarExpr name nums) = name ++ unwordsNums nums

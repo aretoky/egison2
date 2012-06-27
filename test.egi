@@ -45,9 +45,17 @@
      [$equal?
       (lambda [$val $tgt]
         (match [val tgt] [Order Order]
-          {[[<less> <less>] <true>]
-           [[<equal> <equal>] <true>]
-           [[<greater> <greater>] <true>]
-           [[_ _] <false>]}))]}))
+          {[[<less> <less>] #t]
+           [[<equal> <equal>] #t]
+           [[<greater> <greater>] #t]
+           [[_ _] #f]}))]}))
 
 (test (match-all <less> Order [<less> <ok>]))
+
+(test ((type-ref Order equal?) <less> <less>))
+
+(test ((type-ref Order equal?) <less> <greater>))
+
+(test (match-all <less> Order [,<less> <ok>]))
+
+

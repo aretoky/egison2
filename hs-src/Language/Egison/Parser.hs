@@ -269,13 +269,23 @@ parseVar = do name <- identifier
               return $ VarExpr name nums
 
 parseWildCard :: Parser EgisonExpr
-parseWildCard = do string "_"
+parseWildCard = do char '_'
                    return WildCardExpr
 
 parseCutPat :: Parser EgisonExpr
-parseCutPat = do string "!"
+parseCutPat = do char '!'
                  expr <- parseExpr
                  return $ CutPatExpr expr
+
+parseNotPat :: Parser EgisonExpr
+parseNotPat = do char '^'
+                 expr <- parseExpr
+                 return $ CutPatExpr expr
+
+parseValuePat :: Parser EgisonExpr
+parseValuePat = do char ','
+                   expr <- parseExpr
+                   return $ PredPatExpr "equal?" [expr]
 
 parseInnerExpr :: Parser InnerExpr
 parseInnerExpr = do expr <- parseExpr
@@ -289,6 +299,18 @@ parsePattern =
       parseWildCard
   <|> parsePatVar
   <|> parseCutPat
+  <|> parseNotPat
+  <|> parseValuePat
+  <|> parens (do try (lexeme $ char '?')
+                 predName <- lexeme identifier
+                 argExprs <- sepEndBy parseExpr whiteSpace
+                 return (PredPatExpr predName argExprs)
+          <|> do try (lexeme $ char '|')
+                 pats <- sepEndBy parseExpr whiteSpace
+                 return (OrPatExpr pats)
+          <|> do try (lexeme $ char '&')
+                 pats <- sepEndBy parseExpr whiteSpace
+                 return (AndPatExpr pats))
 
 
 parseDestructInfoExpr :: Parser DestructInfoExpr
@@ -363,7 +385,7 @@ parseExpr =
   <|> parens (do try (lexeme $ string "lambda")
                  args <- lexeme parseArgs
                  body <- lexeme parseExpr
-                 return $ FuncExpr args body
+                 return (FuncExpr args body)
           <|> do try (lexeme $ string "if")
                  condExpr <- lexeme parseExpr
                  expr1 <- lexeme parseExpr
@@ -399,7 +421,7 @@ parseExpr =
                  return (MatchExpr tgtExpr typExpr mcs)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
-                 return $ ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs)))
+                 return (ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs))))
   <?> "Expression"
 
 parseTopExpr :: Parser TopExpr
