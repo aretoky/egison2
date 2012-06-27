@@ -364,10 +364,20 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                            inTypObjRefs <- tupleToObjRefList nTypObjRef
                            inTgtsRefs <- collectionToObjRefList nTgtsObjRef
                            inTgtObjRefss <- mapM tupleToObjRefList inTgtsRefs
-                           patternMatch flag ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
-                                                                                         (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
-                                                   inTgtObjRefss) ++ states)
+                           patternMatch flag $ (map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> MAtom (PClosure bf pat) inTgtObjRef inTypObjRef)
+                                                                                          (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
+                                                    inTgtObjRefss) ++ states
         _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
+    Intermidiate (ITuple pats) -> do
+      patObjRefs <- innerRefsToObjRefList pats
+      tgtObjRefs <- tupleToObjRefList tgtObjRef
+      typObjRefs <- tupleToObjRefList typObjRef
+      patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+    Value (Tuple pats) -> do
+      patObjRefs <- innerValsToObjRefList pats
+      tgtObjRefs <- tupleToObjRefList tgtObjRef
+      typObjRefs <- tupleToObjRefList typObjRef
+      patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
     _ -> throwError $ Default "pattern must not be value"
         
 inductiveMatch :: DestructInfo -> String -> ObjectRef -> IOThrowsError (ObjectRef,ObjectRef)
