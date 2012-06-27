@@ -245,7 +245,9 @@ makeInnerValRef env (ElementExpr expr) = do
 makeInnerValRef env (SubCollectionExpr expr) = do
   objRef <- makeClosure env expr
   return $ ISubCollection objRef
-             
+
+data MatchFlag = MAll | MOne
+  
 data PClosure = PClosure {pcFrame :: FrameList,
                           pcBody :: ObjectRef
                           }
