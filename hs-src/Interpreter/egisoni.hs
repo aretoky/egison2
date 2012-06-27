@@ -71,7 +71,7 @@ runRepl = do
 countParens :: String -> Bool
 countParens str = let countOpen = length $ filter ((==) '(') str in
                   let countClose = length $ filter  ((==) ')') str in
-                    (countOpen > 0) && (countOpen == countClose)
+                    (countOpen > 0) && (countOpen <= countClose)
 -- End REPL Section
 
 -- Begin Util section, of generic functions
