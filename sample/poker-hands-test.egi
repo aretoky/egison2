@@ -1,6 +1,6 @@
 (test (poker-hands {<card <club> 4>
                     <card <club> 2>
-                    <card <club> 5>
+                    <card <club> 13>
                     <card <club> 1>
                     <card <club> 3>}))
 

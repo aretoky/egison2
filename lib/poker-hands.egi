@@ -15,20 +15,20 @@
          [diamond []
           {[<diamond> {[]}]
            [_ {}]}]})]
-     [$equal?
+     [$=
       (lambda [$val $tgt]
         (match [val tgt] [Suit Suit]
-          {[[<spade> <spade>] <true>]
-           [[<heart> <heart>] <true>]
-           [[<club> <club>] <true>]
-           [[<diamond> <diamond>] <true>]
-           [[_ _] <false>]}))]}))
+          {[[<spade> <spade>] #t]
+           [[<heart> <heart>] #t]
+           [[<club> <club>] #t]
+           [[<diamond> <diamond>] #t]
+           [[_ _] #f]}))]}))
 
 (define $Mod
   (lambda [$m]
     (type
       {[$var-match (lambda [$tgt] {(mod tgt m)})]
-       [$equal? (lambda [$val $tgt] (= (mod val m) (mod tgt m)))]})))
+       [$= (lambda [$val $tgt] (eq? (mod val m) (mod tgt m)))]})))
 
 (define $Card
   (type
@@ -37,10 +37,10 @@
       (destructor
         {[card [Suit (Mod 13)]
           {[<card $s $n> {[s n]}]}]})]
-     [$equal? (lambda [$val $tgt]
-                (match [val tgt] [Card Card]
-                  {[[<card $s $n> <card ,s ,n>] <true>]
-                   [[_ _] <false>]}))]}))
+     [$= (lambda [$val $tgt]
+           (match [val tgt] [Card Card]
+             {[[<card $s $n> <card ,s ,n>] #t]
+              [[_ _] #f]}))]}))
 
 (define $poker-hands
   (lambda [$Cs]

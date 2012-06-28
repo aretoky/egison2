@@ -96,12 +96,7 @@ data EgisonExpr = CharExpr Char
   | TupleExpr [InnerExpr]
   | CollectionExpr [InnerExpr]
   | FuncExpr Args EgisonExpr
-  | LoopExpr {loopVar :: String,
-              indexVar :: String,
-              rangeExpr :: EgisonExpr,
-              loopExpr :: EgisonExpr,
-              tailExpr :: EgisonExpr
-              }
+  | LoopExpr String String EgisonExpr EgisonExpr EgisonExpr
   | ParamsExpr String EgisonExpr EgisonExpr
   | IfExpr EgisonExpr EgisonExpr EgisonExpr
   | LetExpr Bindings EgisonExpr
@@ -145,6 +140,7 @@ type ObjectRef = IORef Object
 data Object = Closure Env EgisonExpr
             | Value EgisonVal
             | Intermidiate IntermidiateVal
+            | Loop Env String String ObjectRef EgisonExpr EgisonExpr
   
 data EgisonVal = World [Action]
   | Char Char
@@ -402,6 +398,7 @@ showObj :: Object -> String
 showObj (Closure _ expr) = "(Closure env " ++  show expr ++ ")"
 showObj (Value val) = "(Value " ++ show val ++ ")"
 showObj (Intermidiate val) = "(Intermidiate " ++ show val ++ ")"
+showObj (Loop _ _ _ _ _ _) = "#<loop>"
 
 -- |Allow conversion of egison object instances to strings
 instance Show Object where show = showObj

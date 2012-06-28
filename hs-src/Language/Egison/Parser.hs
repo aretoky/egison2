@@ -309,14 +309,14 @@ parsePattern =
   <|> parseCutPat
   <|> parseNotPat
   <|> parseValuePat
-  <|> parens (do try (lexeme $ char '?')
+  <|> parens (do try (char '?' >> many1 space)
                  predName <- lexeme identifier
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return (PredPatExpr predName argExprs)
-          <|> do try (lexeme $ char '|')
+          <|> do try (char '|' >> many1 space)
                  pats <- sepEndBy parseExpr whiteSpace
                  return (OrPatExpr pats)
-          <|> do try (lexeme $ char '&')
+          <|> do try (char '&' >> many1 space)
                  pats <- sepEndBy parseExpr whiteSpace
                  return (AndPatExpr pats))
 
@@ -392,43 +392,50 @@ parseExpr =
                  return $ CollectionExpr innerExprs)
   <|> brackets (do innerExprs <- sepEndBy parseInnerExpr whiteSpace
                    return $ TupleExpr innerExprs)
-  <|> parens (do try (lexeme $ string "lambda")
+  <|> parens (do try (string "lambda" >> many1 space)
                  args <- lexeme parseArgs
                  body <- lexeme parseExpr
                  return (FuncExpr args body)
-          <|> do try (lexeme $ string "if")
+          <|> do try (string "if" >> many1 space)
                  condExpr <- lexeme parseExpr
                  expr1 <- lexeme parseExpr
                  expr2 <- lexeme parseExpr
                  return (IfExpr condExpr expr1 expr2)
-          <|> do try (lexeme $ string "letrec")
+          <|> do try (string "letrec" >> many1 space)
                  bindings <- lexeme parseRecursiveBindings
                  body <- lexeme parseExpr
                  return (LetRecExpr bindings body)
-          <|> do try (lexeme $ string "let")
+          <|> do try (string "let" >> many1 space)
                  bindings <- lexeme parseBindings
                  body <- lexeme parseExpr
                  return (LetExpr bindings body)
-          <|> do try (lexeme $ string "type-ref")
+          <|> do try (string "type-ref" >> many1 space)
                  typExpr <- lexeme parseExpr
                  name <- lexeme identifier
                  return (TypeRefExpr typExpr name)
-          <|> do try (lexeme $ string "type")
+          <|> do try (string "type" >> many1 space)
                  bindings <- lexeme parseRecursiveBindings
                  return (TypeExpr bindings)
-          <|> do try (lexeme $ string "destructor")
+          <|> do try (string "destructor" >> many1 space)
                  deconsInfo <- lexeme parseDestructInfoExpr
                  return (DestructorExpr deconsInfo)
-          <|> do try (lexeme $ string "match-all")
+          <|> do try (string "match-all" >> many1 space)
                  tgtExpr <- lexeme parseExpr
                  typExpr <- lexeme parseExpr
                  mc <- lexeme parseMatchClause
                  return (MatchAllExpr tgtExpr typExpr mc)
-          <|> do try (lexeme $ string "match")
+          <|> do try (string "match" >> many1 space)
                  tgtExpr <- lexeme parseExpr
                  typExpr <- lexeme parseExpr
                  mcs <- braces (sepEndBy parseMatchClause whiteSpace)
                  return (MatchExpr tgtExpr typExpr mcs)
+          <|> do try (string "loop" >> many1 space)
+                 (loopVar, _) <- lexeme parsePatVar2
+                 (indexVar, _) <- lexeme parsePatVar2
+                 rangeExpr <- lexeme parseExpr
+                 loopExpr <- lexeme parseExpr
+                 tailExpr <- lexeme parseExpr
+                 return (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return (ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs))))
@@ -442,16 +449,16 @@ parseTopExpr =
                    name <- lexeme identifier
                    expr <- lexeme parseExpr
                    return (Define name expr)
-            <|> do try $ lexeme $ string "test"
+            <|> do try $ string "test" >> many1 space
                    expr <- lexeme parseExpr
                    return (Test expr)
-            <|> do try $ lexeme $ string "execute"
+            <|> do try $ string "execute" >> many1 space
                    args <- sepEndBy parseString2 whiteSpace
                    return (Execute args)
-            <|> do try $ lexeme $ string "load-file"
+            <|> do try $ string "load-file" >> many1 space
                    filename <- lexeme parseString2
                    return (LoadFile filename)
-            <|> do try $ lexeme $ string "load"
+            <|> do try $ string "load" >> many1 space
                    filename <- lexeme parseString2
                    return (Load filename)
                 ) <?> "top expression"

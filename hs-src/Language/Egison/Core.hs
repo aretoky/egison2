@@ -241,6 +241,18 @@ cEval1 (Closure env (MatchExpr tgtExpr typExpr mcs)) = do
                          objRef <- liftIO $ newIORef (Closure newEnv body)
                          return objRef
            [] -> mcLoop tgtObjRef typObjRef rest
+cEval1 (Closure env (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)) = do
+  rangeObjRef <- liftIO $ makeClosure env rangeExpr
+  loopObjRef <- liftIO $ newIORef $ Loop env loopVar indexVar rangeObjRef loopExpr tailExpr
+  cRefEval1 loopObjRef
+cEval1 (Loop env loopVar indexVar rangeObjRef loopExpr tailExpr) = do
+  b <- isEmptyCollection rangeObjRef
+  if b
+    then cEval1 $ Closure env tailExpr
+    else do (carObjRef,cdrObjRef) <- consDestruct rangeObjRef
+            loopObjRef <- liftIO $ newIORef $ Loop env loopVar indexVar cdrObjRef loopExpr tailExpr
+            newEnv <- liftIO $ extendEnv env [((loopVar,[]),loopObjRef),((indexVar,[]),carObjRef)]
+            cEval1 $ Closure newEnv loopExpr
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of

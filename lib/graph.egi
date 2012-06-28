@@ -7,13 +7,12 @@
       (destructor
         {[node [Node (Multiset Node) (Multiset Node)]
           {[<node $n $in $out> {[n in out]}]}]})]
-     [$equal? (lambda [$val $tgt]
-                (match [val tgt] [NodeInfo NodeInfo]
-                  {[[<node $n $in $out> <node ,n ,in ,out>] <true>]
-                   [[_ _] <false>]}))]}))
+     [$= (lambda [$val $tgt]
+           (match [val tgt] [NodeInfo NodeInfo]
+             {[[<node $n $in $out> <node ,n ,in ,out>] #t]
+              [[_ _] #f]}))]}))
 
 (define $Graph (Multiset NodeInfo))
-
 
 (define $hamilton-cycle
   (lambda [$g]
