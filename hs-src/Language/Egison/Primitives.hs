@@ -49,6 +49,13 @@ writeString [World actions, Port filename port, String str] = do
   return newWorld
 writeString _ = throwError $ Default $ "writeString: invalid arguments"
 
+writeStringLine :: [EgisonVal] -> IOThrowsError EgisonVal
+writeStringLine [World actions, Port filename port, String str] = do
+  liftIO $ hPutStrLn port str
+  let newWorld = World $ (WriteToPort filename str):actions
+  return newWorld
+writeStringLine _ = throwError $ Default $ "writeString: invalid arguments"
+
 write :: [EgisonVal] -> IOThrowsError EgisonVal
 write [World actions, Port filename port, val] = do
   let str = show val

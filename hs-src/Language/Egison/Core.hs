@@ -45,8 +45,16 @@ evalString env str = runIOThrowsREPL $ (liftThrows $ readExpr str) >>= evalTopEx
 
 evalMain :: Env -> [String] -> IOThrowsError EgisonVal
 evalMain env args = do
-  let argv = TupleExpr $ map (ElementExpr . StringExpr) args
-  eval env $ ApplyExpr (VarExpr "main" []) argv
+  let mainExpr = VarExpr "main" []
+  main <- cEval1 $ Closure env mainExpr
+  mainRef <- liftIO $ newIORef main
+  let argvExpr = CollectionExpr $ map (ElementExpr . StringExpr) args
+  argv <- cEval1 $ Closure env argvExpr
+  argvRef <- liftIO $ newIORef argv
+  worldRef <- liftIO $ newIORef $ Value $ World []
+  argsRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ [IElement worldRef, IElement argvRef]
+  ret <- cApply1 mainRef argsRef
+  cEval ret
 
 -- |Evaluate egison top expression that has already been loaded into haskell
 evalTopExpr :: Env -> TopExpr -> IOThrowsError String
@@ -185,7 +193,12 @@ cEval1 (Closure env (LetExpr bindings body)) = do
   cEval1 (Closure newEnv body)
 cEval1 (Closure env (LetRecExpr bindings body)) = do
   newEnv <- liftIO $ extendLetRec env bindings
-  cEval1 (Closure newEnv body)
+  cEval1 $ Closure newEnv body
+cEval1 (Closure env (DoExpr [] body)) = do
+  cEval1 $ Closure env body
+cEval1 (Closure env (DoExpr (binding:bindings) body)) = do
+  newEnv <- extendLet env [binding]
+  cEval1 $ Closure newEnv $ DoExpr bindings body
 cEval1 (Closure env (TypeExpr bindings)) = do
   frameRef <- liftIO $ makeLetRecFrame env bindings
   frame <- liftIO $ readIORef frameRef
@@ -730,10 +743,11 @@ ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("open-output-file", makePort WriteMode),
                 ("close-input-port", closePort),
                 ("close-output-port", closePort),
-                ("get-char", readChar),
-                ("get-line", readLine),
+                ("read-char", readChar),
+                ("read-line", readLine),
                 ("write-char", writeChar),
                 ("write-string", writeString),
+                ("print", writeStringLine),
                 ("write", write)
                 ]
 

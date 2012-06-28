@@ -101,6 +101,7 @@ data EgisonExpr = CharExpr Char
   | IfExpr EgisonExpr EgisonExpr EgisonExpr
   | LetExpr Bindings EgisonExpr
   | LetRecExpr RecursiveBindings EgisonExpr
+  | DoExpr Bindings EgisonExpr
   | TypeExpr RecursiveBindings
   | TypeRefExpr EgisonExpr String
   | DestructorExpr DestructInfoExpr
@@ -309,6 +310,8 @@ showExpr (LetExpr bindings body) =
   "(let " ++ showBindings bindings ++ " " ++ show body ++ ")"
 showExpr (LetRecExpr bindings body) =
   "(letrec " ++ showRecursiveBindings bindings ++ " " ++ show body ++ ")"
+showExpr (DoExpr bindings body) =
+  "(do " ++ showBindings bindings ++ " " ++ show body ++ ")"
 showExpr (TypeExpr bindings) =
   "(type " ++ showRecursiveBindings bindings ++ ")"
 showExpr (TypeRefExpr typExpr name) =

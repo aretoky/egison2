@@ -74,15 +74,11 @@ parseBool2 = do
                           
 parseChar :: Parser EgisonExpr
 parseChar = do
-  _ <- try (string "#\\")
-  c <- anyChar
-  r <- many (letter)
-  let pchr = c : r
-  return $ case pchr of
-    "space" -> CharExpr ' '
-    "newline" -> CharExpr '\n'
-    _ -> CharExpr c
-
+  _ <- char '\''
+  x <- parseEscapedChar <|> noneOf ("'")
+  _ <- char '\''
+  return $ CharExpr x
+    
 parseChar2 :: Parser Char
 parseChar2 = do chrExpr <- parseChar
                 case chrExpr of
@@ -209,7 +205,7 @@ parseString2 = do
   x <- many (parseEscapedChar <|> noneOf ("\""))
   _ <- char '"'
   return $ x
-    
+
 parseString :: Parser EgisonExpr
 parseString = do
   x <- parseString2
@@ -409,6 +405,10 @@ parseExpr =
                  bindings <- lexeme parseBindings
                  body <- lexeme parseExpr
                  return (LetExpr bindings body)
+          <|> do try (string "do" >> many1 space)
+                 bindings <- lexeme parseBindings
+                 body <- lexeme parseExpr
+                 return (DoExpr bindings body)
           <|> do try (string "type-ref" >> many1 space)
                  typExpr <- lexeme parseExpr
                  name <- lexeme identifier
@@ -449,16 +449,16 @@ parseTopExpr =
                    name <- lexeme identifier
                    expr <- lexeme parseExpr
                    return (Define name expr)
-            <|> do try $ string "test" >> many1 space
+            <|> do try $ lexeme $ string "test"
                    expr <- lexeme parseExpr
                    return (Test expr)
-            <|> do try $ string "execute" >> many1 space
+            <|> do try $ lexeme $ string "execute"
                    args <- sepEndBy parseString2 whiteSpace
                    return (Execute args)
             <|> do try $ string "load-file" >> many1 space
                    filename <- lexeme parseString2
                    return (LoadFile filename)
-            <|> do try $ string "load" >> many1 space
+            <|> do try $ lexeme $ string "load"
                    filename <- lexeme parseString2
                    return (Load filename)
                 ) <?> "top expression"

@@ -1,18 +1,23 @@
 (define $main
-  (lambda [$:]
+  (lambda [$: $argv]
     (do {[$: (print : "input char : ")]
          [[$: $c] (read-char :)]
-         [$: (print : "output : ")]
+         [$: (write-string : "output : ")]
          [$: (write-char : c)]
          [$: (write-char : '\n')]
          [$: (print : "input number :")]
-         [[$: $e] (read :)]
-         [$: (print : "output : ")]
-         [$: (write : e)]
-         [$: (write-char : '\n')]}
-      :)))
+         [[$: $e] (read-line :)]
+         [$: (write-string : "output : ")]
+         [$: (print : e)]}
+        :)))
 
 (execute)
+
+
+(define $main
+  (lambda [$: $argv]
+    (do {[$: (print : "test")]}
+        :)))
 
 
 (define $main
