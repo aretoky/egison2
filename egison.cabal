@@ -16,7 +16,8 @@ Category:            Compilers/Interpreters
 Build-type:          Simple
 Cabal-version:       >=1.8
 
-Data-files:          lib/base.egi lib/number.egi lib/collection.egi lib/graph.egi lib/poker-hands.egi sample/number-test.egi sample/collection-test.egi sample/graph-test.egi sample/io-test.egi sample/poker-hands-test.egi elisp/egison-mode.el
+Data-Dir:            ./
+Data-files:          lib/core/base.egi lib/core/number.egi lib/core/collection.egi lib/graph.egi lib/poker-hands.egi sample/number-test.egi sample/collection-test.egi sample/graph-test.egi sample/io-test.egi sample/poker-hands-test.egi elisp/egison-mode.el
 
 
 Library

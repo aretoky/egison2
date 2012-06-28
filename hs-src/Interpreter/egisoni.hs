@@ -40,16 +40,17 @@ runOne args = do
 -- |Load standard libraries into the given environment
 loadLibraries :: Env -> IO ()
 loadLibraries env = do
-  baselib <- getDataFileName "lib/base.egi"
   -- Load standard library
-  _ <- evalString env $ "(load \"" ++ (escapeBackslashes baselib) ++ "\")"
+  _ <- evalString env $ "(load \"lib/core/base.egi\")"
+  _ <- evalString env $ "(load \"lib/core/number.egi\")"
+  _ <- evalString env $ "(load \"lib/core/collection.egi\")"
   return ()
 
 -- |Start the REPL (interactive interpreter)
 runRepl :: IO ()
 runRepl = do
     env <- primitiveBindings
---    _ <- loadLibraries env
+    _ <- loadLibraries env
     runInputT defaultSettings (loop env "> " "")
     where
         loop :: Env -> String -> String -> InputT IO ()
