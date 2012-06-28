@@ -57,7 +57,9 @@ runRepl = do
             minput <- getInputLine prompt
             case minput of
                 Nothing -> liftIO showByebyeMessage
-                Just "" -> loop env "  " (input0 ++ "\n") -- FUTURE: integrate with strip to ignore inputs of just whitespace
+                Just "" -> if input0 == ""
+                             then loop env "> " ""
+                             else loop env "  " (input0 ++ "\n")
                 Just input ->
                   let newInput = input0 ++ input in
                     if (countParens newInput)

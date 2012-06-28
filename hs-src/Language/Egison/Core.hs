@@ -24,8 +24,10 @@ import Control.Monad.Error
 import Data.Array
 import qualified Data.Map
 import qualified System.Exit
+import System.Directory (doesFileExist, removeFile)
 import System.IO
 import Data.IORef
+import Paths_egison
 
 -- |egison version number
 version :: String
@@ -55,8 +57,7 @@ escapeBackslashes s = foldr step [] s
 
 
 evalString :: Env -> String -> IO String
-evalString env expr = runIOThrowsREPL $ (liftThrows $ readExpr expr) >>= evalTopExpr env
---evalString _ expr = return expr
+evalString env str = runIOThrowsREPL $ (liftThrows $ readExpr str) >>= evalTopExpr env
 
 evalMain :: Env -> [String] -> IOThrowsError EgisonVal
 evalMain env args = do
@@ -71,8 +72,26 @@ evalTopExpr env (Define name expr) = do clr <- liftIO $ makeClosure env expr
                                         return name
 evalTopExpr env (Execute args) = do evalMain env args
                                     return ""
-evalTopExpr _ (LoadFile filename) = throwError $ Default "undefined loadfile"
-evalTopExpr _ (Load libname) = throwError $ Default "undefined load"
+evalTopExpr env (LoadFile filename) = do
+  result <- liftIO $ doesFileExist filename
+  if result
+    then do (liftIO $ readFile filename) >>= load env
+            return $ filename ++ " loaded."
+    else throwError $ Default $ "File does not exist: " ++ filename
+evalTopExpr env (Load libname) = do
+  filename <- liftIO (getDataFileName libname)
+  result <- liftIO $ doesFileExist filename
+  if result
+    then do (liftIO $ readFile filename) >>= load env
+            return $ filename ++ " loaded."
+    else throwError $ Default $ "Library does not exist: " ++ libname
+
+  
+load :: Env -> String -> IOThrowsError ()
+load env str = do
+  exprs <- liftThrows $ readExprList str
+  mapM (evalTopExpr env) exprs
+  return ()
 
 -- |Evaluate egison expression that has already been loaded into haskell
 eval :: Env -> EgisonExpr -> IOThrowsError EgisonVal
@@ -83,11 +102,6 @@ eval env expr = do
     Intermidiate iVal -> iEval iVal
     _ -> throwError $ Default $ "eval: cannot reach here!: " ++ show obj
 
---eval1 :: Env -> EgisonExpr -> IOThrowsError ObjectRef
---eval1 env expr = do
---  objRef <- liftIO $ makeClosure env expr
---  cRefEval1 objRef
-    
 iEval :: IntermidiateVal -> IOThrowsError EgisonVal
 iEval (IInductiveData cons argRefs) = do
   args <- mapM cRefEval argRefs
@@ -98,7 +112,6 @@ iEval (ICollection innerValRefs) = do
 iEval (ITuple innerValRefs) = do
   innerVals <- mapM innerValRefEval innerValRefs
   return $ Tuple innerVals
-iEval _ = throwError $ Default "undefined iEval"
 
 innerValRefEval :: InnerValRef -> IOThrowsError InnerVal
 innerValRefEval (IElement objRef) = liftM Element $ cRefEval objRef
@@ -628,16 +641,16 @@ primitives = [("+", numericBinop (+)),
               ("expt", numExpt),
 
               ("=", numBoolBinop (==)),
-              ("gt", numBoolBinop (<)),
-              ("gte", numBoolBinop (<=)),
-              ("lt", numBoolBinop (>)),
-              ("lte", numBoolBinop (>=)),
+              ("lt", numBoolBinop (<)),
+              ("lte", numBoolBinop (<=)),
+              ("gt", numBoolBinop (>)),
+              ("gte", numBoolBinop (>=)),
 
               ("=f", floatBoolBinop (==)),
-              ("gt-f", floatBoolBinop (<)),
-              ("gte-f", floatBoolBinop (<=)),
-              ("lt-f", floatBoolBinop (>)),
-              ("lte-f", floatBoolBinop (>=)),
+              ("lt-f", floatBoolBinop (<)),
+              ("lte-f", floatBoolBinop (<=)),
+              ("gt-f", floatBoolBinop (>)),
+              ("gte-f", floatBoolBinop (>=)),
 
               ("&&", boolBinop (&&)),
               ("||", boolBinop (||))]
