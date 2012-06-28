@@ -22,6 +22,8 @@ makePort _ [] = throwError $ NumArgs 1 []
 makePort _ args@(_ : _) = throwError $ NumArgs 1 args
 
 closePort :: [EgisonVal] -> IOThrowsError EgisonVal
-closePort [Port filename port] = liftIO $ hClose port >> (return $ Bool True)
+closePort [Port _ port] = liftIO $ hClose port >> (return $ Bool True)
 closePort _ = return $ Bool False
 
+--writeChar :: [EgisonVal] -> IOThrowsError EgisonVal
+--writeChar 

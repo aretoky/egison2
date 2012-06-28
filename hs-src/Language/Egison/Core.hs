@@ -155,7 +155,10 @@ cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
   return $ Intermidiate $ IInductiveData cons args
 cEval1 (Closure env (TupleExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
-  return $ Intermidiate $ ITuple innerRefs
+  objRefs <- innerRefsToObjRefList innerRefs
+  case objRefs of
+    [objRef] -> cRefEval1 objRef
+    _ -> return $ Intermidiate $ ITuple innerRefs
 cEval1 (Closure env (CollectionExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   return $ Intermidiate $ ICollection innerRefs
@@ -219,9 +222,7 @@ cEval1 (Closure env (MatchAllExpr tgtExpr typExpr (patExpr, body))) = do
   tgtObjRef <- liftIO $ makeClosure env tgtExpr
   typObjRef <- liftIO $ makeClosure env typExpr
   matchs <- patternMatch MAll [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]
---  liftIO $ putStrLn ("egiTest2: " ++ show (length matchs))  -- debug
-  rets <- mapM (\match -> do --liftIO $ putStrLn $ showFrameList match -- debug
-                             newEnv <- liftIO $ extendEnv env match
+  rets <- mapM (\match -> do newEnv <- liftIO $ extendEnv env match
                              objRef <- liftIO $ newIORef (Closure newEnv body)
                              return objRef)
                matchs
@@ -243,7 +244,9 @@ cEval1 (Closure env (MatchExpr tgtExpr typExpr mcs)) = do
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
-    Value (IOFunc fn) -> throwError $ Default "undefined ioFunc"
+    Value (IOFunc fn) -> do arg <- eval env argExpr
+                            val <- fn (tupleToList arg)
+                            return $ Value val
     Value (PrimitiveFunc fn) -> do arg <- eval env argExpr
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
@@ -554,7 +557,7 @@ isEmptyCollection objRef = do
   case obj of
     Intermidiate (ICollection innerRefs) -> isEmptyInnerRefs innerRefs
     Value (Collection innerVals) -> isEmptyInnerVals innerVals
-    _ -> throwError $ Default "isEmptyCollection: not collection"
+    _ -> throwError $ Default $ "isEmptyCollection: not collection:" ++ show obj
 
 isEmptyInnerRefs :: [InnerValRef] -> IOThrowsError Bool
 isEmptyInnerRefs [] = return True

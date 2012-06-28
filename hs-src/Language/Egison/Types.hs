@@ -174,16 +174,12 @@ data IntermidiateVal = IInductiveData String [ObjectRef]
   | ITuple [InnerValRef]
   | ICollection [InnerValRef]
   
-data Action = Read EgisonVal
-  | Write EgisonVal
-  | Print String
-  | OpenInputFile String
+data Action = OpenInputFile String
   | OpenOutputFile String
   | CloseInputFile String
   | CloseOutputFile String
-  | ReadFromPort String EgisonVal
-  | WriteToPort String EgisonVal
-  | PrintToPort String String
+  | ReadFromPort String String
+  | WriteToPort String String
 
 data Args = AVar String
   | ATuple [Args]
