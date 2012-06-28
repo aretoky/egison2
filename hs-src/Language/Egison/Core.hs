@@ -154,19 +154,19 @@ cEval1 (Closure env (PatVarExpr name numExprs)) = do
   return $ Value $ PatVar name nums
 cEval1 (Closure env (PredPatExpr predName argExprs)) = do
   argObjRefs <- liftIO $ mapM (makeClosure env) argExprs
-  return $ Intermidiate $ IPredPat predName argObjRefs
+  return $ Value $ PredPat predName argObjRefs
 cEval1 (Closure env (CutPatExpr patExpr)) = do
   patObjRef <- liftIO $ makeClosure env patExpr
-  return $ Intermidiate $ ICutPat patObjRef
+  return $ Value $ CutPat patObjRef
 cEval1 (Closure env (NotPatExpr patExpr)) = do
   patObjRef <- liftIO $ makeClosure env patExpr
-  return $ Intermidiate $ INotPat patObjRef
+  return $ Value $ NotPat patObjRef
 cEval1 (Closure env (OrPatExpr patExprs)) = do
   patObjRefs <- liftIO $ mapM (makeClosure env) patExprs
-  return $ Intermidiate $ IOrPat patObjRefs
+  return $ Value $ OrPat patObjRefs
 cEval1 (Closure env (AndPatExpr patExprs)) = do
   patObjRefs <- liftIO $ mapM (makeClosure env) patExprs
-  return $ Intermidiate $ IAndPat patObjRefs
+  return $ Value $ AndPat patObjRefs
 cEval1 (Closure env (FuncExpr args body)) = do
   return $ Value $ Func args body env
 cEval1 (Closure env (IfExpr condExpr expr1 expr2)) = do
@@ -329,7 +329,6 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                             :states)
     Value WildCard -> patternMatch flag ((MState frame atoms):states)
     Value (PatVar name nums) -> do
---      liftIO $ putStrLn $ "egiTest: " ++ name -- debug
       typ <- cRefEval1 typObjRef
       case typ of
         Value (Type tf) ->
@@ -400,7 +399,7 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
       tgtObjRefs <- tupleToObjRefList tgtObjRef
       typObjRefs <- tupleToObjRefList typObjRef
       patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
-    Intermidiate (IPredPat predName patObjRefs) -> do
+    Value (PredPat predName patObjRefs) -> do
       typObj <- cRefEval1 typObjRef
       case typObj of
         Value (Type tf) ->
@@ -415,22 +414,24 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                   Value (Bool False) -> patternMatch flag states
                   _ -> throwError (Default "patternMatch: return value of pred-pattern is not boolean value")
         _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
-    Value (PredPat predName pats) -> do
-      patObjRefs <- liftIO $ mapM (newIORef . Value) pats
-      typObj <- cRefEval1 typObjRef
-      case typObj of
-        Value (Type tf) ->
-          let mObjRef = Data.Map.lookup (predName,[]) tf in
-            case mObjRef of
-              Nothing -> throwError $ Default $ "no method in type: " ++ predName
-              Just fnObjRef -> do
-                argsObjRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ map IElement $ patObjRefs ++ [tgtObjRef]
-                ret <- cApply1 fnObjRef argsObjRef
-                case ret of
-                  Value (Bool True) -> patternMatch flag ((MState frame atoms):states)
-                  Value (Bool False) -> patternMatch flag states
-                  _ -> throwError (Default "patternMatch: return value of pred-pattern is not boolean value")
-        _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
+    Value (NotPat patObjRef2) -> do
+      retFrames <- patternMatch MOne [(MState frame [(MAtom (PClosure bf patObjRef2) tgtObjRef typObjRef)])]
+      case retFrames of
+        [] -> patternMatch flag ((MState frame atoms):states)
+        _ -> patternMatch flag states
+    Value (AndPat patObjRefs) ->
+      patternMatch flag ((MState frame ((map (\patObjRef2 -> (MAtom (PClosure bf patObjRef2) tgtObjRef typObjRef)) patObjRefs) ++ atoms)):states)
+    Value (OrPat patObjRefs) ->
+      patternMatch flag ((map (\patObjRef2 -> (MState frame ((MAtom (PClosure bf patObjRef2) tgtObjRef typObjRef):atoms)))
+                              patObjRefs) ++ states)
+    Value (CutPat patObjRef2) -> do
+      retFrames <- patternMatch flag [(MState frame ((MAtom (PClosure bf patObjRef2) tgtObjRef typObjRef):atoms))]
+      case retFrames of
+        [] -> return []
+        _ -> case flag of
+               MAll -> do restFrames <- patternMatch flag states
+                          return (retFrames ++ restFrames)
+               MOne -> return retFrames
     _ -> throwError $ Default "pattern must not be value"
         
 inductiveMatch :: DestructInfo -> String -> ObjectRef -> IOThrowsError (ObjectRef,ObjectRef)

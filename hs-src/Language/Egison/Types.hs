@@ -153,11 +153,11 @@ data EgisonVal = World [Action]
   | Float Double
   | WildCard
   | PatVar String [Integer]
-  | PredPat String [EgisonVal]
-  | CutPat EgisonVal
-  | NotPat EgisonVal
-  | AndPat [EgisonVal]
-  | OrPat [EgisonVal]
+  | PredPat String [ObjectRef]
+  | CutPat ObjectRef
+  | NotPat ObjectRef
+  | AndPat [ObjectRef]
+  | OrPat [ObjectRef]
   | InductiveData String [EgisonVal]
   | Tuple [InnerVal]
   | Collection [InnerVal]
@@ -169,12 +169,7 @@ data EgisonVal = World [Action]
   | Port String Handle
   | EOF
 
-data IntermidiateVal = IPredPat String [ObjectRef]
-  | ICutPat ObjectRef
-  | INotPat ObjectRef
-  | IAndPat [ObjectRef]
-  | IOrPat [ObjectRef]
-  | IInductiveData String [ObjectRef]
+data IntermidiateVal = IInductiveData String [ObjectRef]
   | ITuple [InnerValRef]
   | ICollection [InnerValRef]
   
@@ -396,11 +391,6 @@ showInnerVals :: [InnerVal] -> String
 showInnerVals iVals = unwordsList $ innerValsToList iVals
 
 showIVal :: IntermidiateVal -> String
-showIVal (IPredPat _ _) = "#<pred-pat>"
-showIVal (ICutPat _) = "#<cut-pat>"
-showIVal (INotPat _) = "#<not-pat>"
-showIVal (IAndPat _) = "#<and-pat>"
-showIVal (IOrPat _) = "#<or-pat>"
 showIVal (IInductiveData cons []) = "<" ++ cons ++ ">"
 showIVal (IInductiveData cons _) = "<" ++ cons ++ " " ++ "..." ++ ">"
 showIVal (ITuple _) = "[" ++ "..." ++ "]"
