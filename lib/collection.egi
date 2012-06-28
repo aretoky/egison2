@@ -39,15 +39,24 @@
                      (loop-fn tgt))]}]})]
        [$equal? (lambda [$val $tgt]
                   (match [val tgt] [(List a) (List a)]
-                    {[[<nil> <nil>] <true>]
-                     [[<cons $x $xs> <cons ,x ,xs>] <true>]
-                     [[_ _] <false>]}))]})))
+                    {[[<nil> <nil>] #t]
+                     [[<cons $x $xs> <cons ,x ,xs>] #t]
+                     [[_ _] #f]}))]})))
 
 (define $map
   (lambda [$fn $ls]
     (match ls (List Something)
       {[<nil> {}]
        [<cons $x $xs> {(fn x) @(map fn xs)}]})))
+
+(define $filter
+  (lambda [$pred $ls]
+    (match ls (List Something)
+      {[<nil> {}]
+       [<cons $x $xs>
+        (if (pred x)
+            {x @(filter pred xs)}
+            (filter pred xs))]})))
 
 (define $remove
   (lambda [$a]
@@ -76,8 +85,8 @@
   (lambda [$a]
     (lambda [$xs $x]
       (match ((member? Integer) x xs) Bool
-        {[<true> xs]
-         [<false> {@xs x}]}))))
+        {[#t xs]
+         [#f {@xs x}]}))))
 
 (define $union
   (lambda [$a]
@@ -106,6 +115,11 @@
     (match xs (List Something)
       {[<cons $x _> x]})))
 
+(define $cdr
+  (lambda [$xs]
+    (match xs (List Something)
+      {[<cons _ $ys> ys]})))
+
 (define $reverse
   (lambda [$xs]
     (match xs (List Something)
@@ -117,8 +131,8 @@
   (lambda [$a]
     (lambda [$x $ys]
       (match ys (List a)
-        {[<nil> <false>]
-         [<cons ,x $ys> <true>]
+        {[<nil> #f]
+         [<cons ,x $ys> #t]
          [<cons $y $ys> ((member? a) x ys)]}))))
 
 (define $unique
@@ -129,8 +143,8 @@
                           {[<nil> ys]
                            [<cons $x $rs>
                             (match ((member? a) x ys) Bool
-                              {[<true> (loop-fn rs ys)]
-                               [<false> (loop-fn rs {@ys x})]
+                              {[#t (loop-fn rs ys)]
+                               [#f (loop-fn rs {@ys x})]
                                [_ {}]})]}))]}
         (loop-fn xs {})))))
 
@@ -138,11 +152,11 @@
   (lambda [$a]
     (lambda [$xs $ys]
       (match xs (List a)
-        {[<nil> <true>]
+        {[<nil> #t]
          [<cons $x $rest>
           (match ((member? a) x ys) Bool
-            {[<false> <false>]
-             [<true> ((subcollection? a) rest ys)]})]}))))
+            {[#f #f]
+             [#t ((subcollection? a) rest ys)]})]}))))
 
 (define $concat
   (lambda [$xs]
@@ -167,9 +181,9 @@
                         (subcollections tgt))]}]})]
        [$equal? (lambda [$val $tgt]
                   (match [val tgt] [(Multiset a) (Multiset a)]
-                    {[[<nil> <nil>] <true>]
-                     [[<cons $x $xs> <cons ,x ,xs>] <true>]
-                     [[_ _] <false>]}))]})))
+                    {[[<nil> <nil>] #t]
+                     [[<cons $x $xs> <cons ,x ,xs>] #t]
+                     [[_ _] #f]}))]})))
 
 (define $Set
   (lambda [$a]
