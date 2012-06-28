@@ -35,6 +35,26 @@
         :)))
 
 (define $main
+  (lambda [$: $argv]
+    (do {[$: (write-string : "input : ")]
+         [$: (flush :)]
+         [[$: $val] (read :)]
+         [$: (write-string : "output : ")]
+         [$: (write : val)]
+         [$: (write-char : '\n')]}
+        :)))
+
+(define $main
+  (lambda [$: $argv]
+    (do {[$: (write-string : "input number : ")]
+         [$: (flush :)]
+         [[$: $num] (read :)]
+         [$: (write-string : "output : ")]
+         [$: (write : (+ num 1))]
+         [$: (write-char : '\n')]}
+        :)))
+
+(define $main
   (lambda [$:]
     (do {[$: (print : "Return world? (y/n) : ")]
          [[$: $c] (read-char :)]}

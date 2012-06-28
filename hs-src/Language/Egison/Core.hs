@@ -41,7 +41,7 @@ escapeBackslashes s = foldr step [] s
 
 
 evalString :: Env -> String -> IO String
-evalString env str = runIOThrowsREPL $ (liftThrows $ readExpr str) >>= evalTopExpr env
+evalString env str = runIOThrowsREPL $ (liftThrows $ readTopExpr str) >>= evalTopExpr env
 
 evalMain :: Env -> [String] -> IOThrowsError EgisonVal
 evalMain env args = do
@@ -81,7 +81,7 @@ evalTopExpr env (Load libname) = do
   
 load :: Env -> String -> IOThrowsError ()
 load env str = do
-  exprs <- liftThrows $ readExprList str
+  exprs <- liftThrows $ readTopExprList str
   mapM (evalTopExpr env) exprs
   return ()
 
@@ -744,6 +744,7 @@ ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("close-output-port", closePort),
                 ("read-char", readChar),
                 ("read-line", readLine),
+                ("read", readFromStdin),
                 ("write-char", writeChar),
                 ("write-string", writeString),
                 ("print", writeStringLine),
@@ -751,6 +752,7 @@ ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("flush", flushStdout),
                 ("read-char-from-port", readCharFromPort),
                 ("read-line-from-port", readLineFromPort),
+                ("read-from-port", readFromPort),
                 ("write-char-to-port", writeCharToPort),
                 ("write-string-to-port", writeStringToPort),
                 ("print-to-port", writeStringLineToPort),

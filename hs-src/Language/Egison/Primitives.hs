@@ -85,12 +85,14 @@ readLine [World actions] = do
   return $ makeTupleFromValList [newWorld, String str]
 readLine _ = throwError $ Default $ "readLine: invalid arguments"
 
-read :: [EgisonVal] -> IOThrowsError EgisonVal
-read [World actions] = do
-  str <- undefined
+readFromStdin :: [EgisonVal] -> IOThrowsError EgisonVal
+readFromStdin [World actions] = do
+  str <- liftIO $ hGetExpr stdin
   let newWorld = World $ (ReadFromPort "stdin" str):actions
-  return $ makeTupleFromValList [newWorld, String str]
-reade _ = throwError $ Default $ "read: invalid arguments"
+  expr <- liftThrows $ readExpr str
+  val <- liftThrows $ exprToVal expr
+  return $ makeTupleFromValList [newWorld, val]
+readFromStdin _ = throwError $ Default $ "read: invalid arguments"
 
 
 writeCharToPort :: [EgisonVal] -> IOThrowsError EgisonVal
@@ -143,3 +145,59 @@ readLineFromPort [World actions, Port filename port] = do
   return $ makeTupleFromValList [newWorld, String str]
 readLineFromPort _ = throwError $ Default $ "readLineFromPort: invalid arguments"
 
+readFromPort :: [EgisonVal] -> IOThrowsError EgisonVal
+readFromPort [World actions, Port filename port] = do
+  str <- liftIO $ hGetExpr port
+  let newWorld = World $ (ReadFromPort filename str):actions
+  expr <- liftThrows $ readExpr str
+  val <- liftThrows $ exprToVal expr
+  return $ makeTupleFromValList [newWorld, val]
+readFromPort _ = throwError $ Default $ "read: invalid arguments"
+
+
+hGetExpr :: Handle -> IO String
+hGetExpr h = do
+  str <- loop ""
+  return str
+ where
+    loop :: String -> IO String
+    loop input0 = do
+      input <- hGetLine h
+      let newInput = input0 ++ input
+      if countParens newInput
+        then return newInput
+        else loop newInput
+
+countParens :: String -> Bool
+countParens str = let countOpen = length $ filter (\c -> ('(' == c)
+                                                      || ('{' == c)
+                                                      || ('[' == c)
+                                                      || ('<' == c))
+                                                  str in
+                  let countClose = length $ filter (\c -> (')' == c)
+                                                       || ('}' == c)
+                                                       || (']' == c)
+                                                       || ('>' == c))
+                                                  str in
+                    (countOpen == countClose)
+
+exprToVal :: EgisonExpr -> ThrowsError EgisonVal
+exprToVal (BoolExpr contents) = return $ Bool contents
+exprToVal (CharExpr contents) = return $ Char contents
+exprToVal (StringExpr contents) = return $ String contents
+exprToVal (NumberExpr contents) = return $ Number contents
+exprToVal (FloatExpr contents) = return $ Float contents
+exprToVal (InductiveDataExpr cons argExprs) = do
+  args <- mapM exprToVal argExprs
+  return $ InductiveData cons args
+exprToVal (CollectionExpr innerExprs) = do
+  innerVals <- mapM innerExprToInnerVal innerExprs
+  return $ Collection innerVals
+exprToVal (TupleExpr innerExprs) = do
+  innerVals <- mapM innerExprToInnerVal innerExprs
+  return $ Tuple innerVals
+exprToVal _ = throwError $ Default "read: invalid value"
+
+innerExprToInnerVal :: InnerExpr -> ThrowsError InnerVal
+innerExprToInnerVal (ElementExpr expr) = exprToVal expr >>= return . Element
+innerExprToInnerVal (SubCollectionExpr expr) = exprToVal expr >>= return . SubCollection

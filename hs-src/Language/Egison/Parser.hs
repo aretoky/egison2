@@ -476,11 +476,15 @@ readOrThrow parser input = case parse parser "egison" input of
   Left err -> throwError $ Parser err
   Right val -> return val
 
--- |Parse an expression from a string of text
-readExpr :: String -> ThrowsError TopExpr
-readExpr = readOrThrow mainParser
+-- |Parse an top expression from a string of text
+readTopExpr :: String -> ThrowsError TopExpr
+readTopExpr = readOrThrow mainParser
 
--- |Parse many expressions from a string of text
-readExprList :: String -> ThrowsError [TopExpr]
-readExprList = readOrThrow (endBy mainParser whiteSpace)
+-- |Parse an expression from a string of text
+readExpr :: String -> ThrowsError EgisonExpr
+readExpr = readOrThrow parseExpr
+
+-- |Parse many top expressions from a string of text
+readTopExprList :: String -> ThrowsError [TopExpr]
+readTopExprList = readOrThrow (endBy mainParser whiteSpace)
 
