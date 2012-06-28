@@ -69,7 +69,7 @@ flushStdout [World actions] = do
   liftIO $ hFlush stdout
   let newWorld = World $ (FlushPort "stdout"):actions
   return newWorld
-flushStdout _ = throwError $ Default $ "write: invalid arguments"
+flushStdout _ = throwError $ Default $ "flush: invalid arguments"
 
 readChar :: [EgisonVal] -> IOThrowsError EgisonVal
 readChar [World actions] = do
@@ -84,6 +84,13 @@ readLine [World actions] = do
   let newWorld = World $ (ReadFromPort "stdin" str):actions
   return $ makeTupleFromValList [newWorld, String str]
 readLine _ = throwError $ Default $ "readLine: invalid arguments"
+
+read :: [EgisonVal] -> IOThrowsError EgisonVal
+read [World actions] = do
+  str <- undefined
+  let newWorld = World $ (ReadFromPort "stdin" str):actions
+  return $ makeTupleFromValList [newWorld, String str]
+reade _ = throwError $ Default $ "read: invalid arguments"
 
 
 writeCharToPort :: [EgisonVal] -> IOThrowsError EgisonVal

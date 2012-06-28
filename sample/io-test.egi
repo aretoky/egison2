@@ -1,5 +1,11 @@
 (define $main
   (lambda [$: $argv]
+    (do {[$: (write : {1 2 3})]
+         [$: (write-char : '\n')]}
+        :)))
+
+(define $main
+  (lambda [$: $argv]
     (do {[$: (print : "Hello world!")]}
         :)))
 
@@ -12,6 +18,7 @@
 (define $main
   (lambda [$: $argv]
     (do {[$: (write-string : "input char : ")]
+         [$: (flush :)]
          [[$: $c] (read-char :)]
          [$: (write-string : "output : ")]
          [$: (write-char : c)]
