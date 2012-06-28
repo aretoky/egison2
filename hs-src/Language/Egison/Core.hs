@@ -450,7 +450,7 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                MAll -> do restFrames <- patternMatch flag states
                           return (retFrames ++ restFrames)
                MOne -> return retFrames
-    _ -> throwError $ Default "pattern must not be value"
+    _ -> throwError $ Default $ "invalid pattern: " ++ show patObj
         
 inductiveMatch :: DestructInfo -> String -> ObjectRef -> IOThrowsError (ObjectRef,ObjectRef)
 inductiveMatch [] _ _ = throwError (Default "inductiveMatch: not matched any clauses")

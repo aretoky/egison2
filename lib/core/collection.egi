@@ -18,24 +18,24 @@
             {[{.$xs $x} {[x xs]}]
              [_ {}]}]
            [join [(List a) (List a)]
-            {[$tgt (let {[$loop-fn
-                          (lambda [$ts]
-                            (match ts (List a)
-                              {[<nil> {[{} {}]}]
-                               [<cons $x $xs>
-                                {[{} ts]
-                                 @(map (lambda [$as $bs] [{x @as} bs])
-                                       (loop-fn xs))}]}))]}
+            {[$tgt (letrec {[$loop-fn
+                             (lambda [$ts]
+                               (match ts (List a)
+                                 {[<nil> {[{} {}]}]
+                                  [<cons $x $xs>
+                                   {[{} ts]
+                                    @(map (lambda [$as $bs] [{x @as} bs])
+                                          (loop-fn xs))}]}))]}
                      (loop-fn tgt))]}]
            [nioj [(List a) (List a)]
-            {[$tgt (let {[$loop-fn
-                          (lambda [$ts]
-                            (match ts (List a)
-                              {[<nil> {[{} {}]}]
-                               [<snoc $x $xs>
-                                {[{} ts]
-                                 @(map (lambda [$as $bs] [{@as x} bs])
-                                       (loop-fn xs))}]}))]}
+            {[$tgt (letrec {[$loop-fn
+                             (lambda [$ts]
+                               (match ts (List a)
+                                 {[<nil> {[{} {}]}]
+                                  [<snoc $x $xs>
+                                   {[{} ts]
+                                    @(map (lambda [$as $bs] [{@as x} bs])
+                                          (loop-fn xs))}]}))]}
                      (loop-fn tgt))]}]})]
        [$= (lambda [$val $tgt]
              (match [val tgt] [(List a) (List a)]
@@ -138,14 +138,13 @@
 (define $unique
   (lambda [$a]
     (lambda [$xs]
-      (let {[$loop-fn (lambda [$xs $ys]
-                        (match xs (List a)
-                          {[<nil> ys]
-                           [<cons $x $rs>
-                            (match ((member? a) x ys) Bool
-                              {[#t (loop-fn rs ys)]
-                               [#f (loop-fn rs {@ys x})]
-                               [_ {}]})]}))]}
+      (letrec {[$loop-fn (lambda [$xs $ys]
+                           (match xs (List a)
+                             {[<nil> ys]
+                              [<cons $x $rs>
+                               (if ((member? a) x ys)
+                                   (loop-fn rs ys)
+                                   (loop-fn rs {@ys x}))]}))]}
         (loop-fn xs {})))))
 
 (define $subcollection?
@@ -154,9 +153,10 @@
       (match xs (List a)
         {[<nil> #t]
          [<cons $x $rest>
-          (match ((member? a) x ys) Bool
-            {[#f #f]
-             [#t ((subcollection? a) rest ys)]})]}))))
+          (if ((member? a) x ys)
+              ((subcollection? a) rest ys)
+              #f)]}))))
+             
 
 (define $concat
   (lambda [$xs]

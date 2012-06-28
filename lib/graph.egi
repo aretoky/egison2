@@ -25,8 +25,7 @@
                            l>
                      <cons <node ,a_n <cons ,a_1 _> _>
                            _>)>
-         [@(loop $l $i (between 1 n) {a_i @l} {})]
-         ]))))
+         [@(loop $l $i (between 1 n) {a_i @l} {})]]))))
 
 (define $hamilton-path
   (lambda [$g]
@@ -38,6 +37,5 @@
                            l>
                      <cons <node ,a_n _ _>
                            <nil>>)>
-         [@(loop $l $i (between 1 n) {a_i @l} {})]
-         ]))))
+         [@(loop $l $i (between 1 n) {a_i @l} {})]]))))
 
