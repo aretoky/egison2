@@ -1,12 +1,20 @@
 (define $Integer
   (type
     {[$var-match (lambda [$tgt] {tgt})]
-     [$equal? (lambda [$val $tgt] (= val tgt))]}))
+     [$= (lambda [$val $tgt] (eq? val tgt))]}))
+
+(define $compare-integer
+  (lambda [$m $n]
+    (if (lt? m n)
+        <less>
+        (if (eq? m n)
+            <equal>
+            <greater>))))
 
 (define $Double
   (type
     {[$var-match (lambda [$tgt] {tgt})]
-     [$equal? (lambda [$val $tgt] (=f val tgt))]}))
+     [$= (lambda [$val $tgt] (eq-f? val tgt))]}))
 
 (define $Nat
   (type
@@ -20,15 +28,14 @@
           {[$tgt (match (compare-integer tgt 0) Order
                    {[<greater> {(- tgt 1)}]
                     [_ {}]})]}]})]
-     [$equal? (lambda [$val $tgt] (= val tgt))]}))
+     [$= (lambda [$val $tgt] (eq? val tgt))]}))
 
 (define $between
   (lambda [$m $n]
     (match (compare-integer m n) Order
       {[<less> {m @(between (+ m 1) n)}]
        [<equal> {n}]
-       [<greater> {}]
-       })))
+       [<greater> {}]})))
 
 (define $min
   (lambda [$ns]

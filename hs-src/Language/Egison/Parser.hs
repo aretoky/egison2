@@ -285,7 +285,7 @@ parseNotPat = do char '^'
 parseValuePat :: Parser EgisonExpr
 parseValuePat = do char ','
                    expr <- parseExpr
-                   return $ PredPatExpr "equal?" [expr]
+                   return $ PredPatExpr "=" [expr]
 
 parseInnerExpr :: Parser InnerExpr
 parseInnerExpr = do expr <- parseExpr

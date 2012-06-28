@@ -37,11 +37,11 @@
                                  @(map (lambda [$as $bs] [{@as x} bs])
                                        (loop-fn xs))}]}))]}
                      (loop-fn tgt))]}]})]
-       [$equal? (lambda [$val $tgt]
-                  (match [val tgt] [(List a) (List a)]
-                    {[[<nil> <nil>] #t]
-                     [[<cons $x $xs> <cons ,x ,xs>] #t]
-                     [[_ _] #f]}))]})))
+       [$= (lambda [$val $tgt]
+             (match [val tgt] [(List a) (List a)]
+               {[[<nil> <nil>] #t]
+                [[<cons $x $xs> <cons ,x ,xs>] #t]
+                [[_ _] #f]}))]})))
 
 (define $map
   (lambda [$fn $ls]
@@ -179,11 +179,11 @@
            [join [(Multiset a) (Multiset a)]
             {[$tgt (map (lambda [$ts] [ts ((remove-collection a) tgt ts)])
                         (subcollections tgt))]}]})]
-       [$equal? (lambda [$val $tgt]
-                  (match [val tgt] [(Multiset a) (Multiset a)]
-                    {[[<nil> <nil>] #t]
-                     [[<cons $x $xs> <cons ,x ,xs>] #t]
-                     [[_ _] #f]}))]})))
+       [$= (lambda [$val $tgt]
+             (match [val tgt] [(Multiset a) (Multiset a)]
+               {[[<nil> <nil>] #t]
+                [[<cons $x $xs> <cons ,x ,xs>] #t]
+                [[_ _] #f]}))]})))
 
 (define $Set
   (lambda [$a]
@@ -203,5 +203,5 @@
                      (concat (map (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
                                                          (subcollections xs)))
                                   (match-all tgt2 (Multiset a) [<join $xs $ys> [xs ys]]))))]}]})]
-       [$equal? (lambda [$val $tgt]
-                  (and ((subcollection? a) val tgt) ((subcollection? a) tgt val)))]})))
+       [$= (lambda [$val $tgt]
+             (and ((subcollection? a) val tgt) ((subcollection? a) tgt val)))]})))
