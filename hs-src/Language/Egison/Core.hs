@@ -149,7 +149,10 @@ cEval1 (Closure env (VarExpr name numExprs)) = do
                            _ -> throwError  $ Default "cEval1: cannot reach here!")
                numVals
   objRef <- getVar env (name, nums)
-  cRefEval1 objRef
+  obj <- cRefEval1 objRef
+  case obj of -- for Macro expansion
+    Loop _ _ _ _ _ -> expandLoop env obj
+    _ -> return obj
 cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
   args <- liftIO $ mapM (makeClosure env) argExprs
   return $ Intermidiate $ IInductiveData cons args
@@ -243,16 +246,8 @@ cEval1 (Closure env (MatchExpr tgtExpr typExpr mcs)) = do
            [] -> mcLoop tgtObjRef typObjRef rest
 cEval1 (Closure env (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)) = do
   rangeObjRef <- liftIO $ makeClosure env rangeExpr
-  loopObjRef <- liftIO $ newIORef $ Loop env loopVar indexVar rangeObjRef loopExpr tailExpr
-  cRefEval1 loopObjRef
-cEval1 (Loop env loopVar indexVar rangeObjRef loopExpr tailExpr) = do
-  b <- isEmptyCollection rangeObjRef
-  if b
-    then cEval1 $ Closure env tailExpr
-    else do (carObjRef,cdrObjRef) <- consDestruct rangeObjRef
-            loopObjRef <- liftIO $ newIORef $ Loop env loopVar indexVar cdrObjRef loopExpr tailExpr
-            newEnv <- liftIO $ extendEnv env [((loopVar,[]),loopObjRef),((indexVar,[]),carObjRef)]
-            cEval1 $ Closure newEnv loopExpr
+  let loopObj = Loop loopVar indexVar rangeObjRef loopExpr tailExpr
+  expandLoop env loopObj
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
@@ -281,6 +276,18 @@ cApply1 fnObjRef argObjRef = do
                                        cEval1 (Closure newEnv body)
     _ -> throwError $ Default "cApply1: not function"
 
+
+expandLoop :: Env -> Object -> IOThrowsError Object
+expandLoop env (Loop loopVar indexVar rangeObjRef loopExpr tailExpr) = do
+  b <- isEmptyCollection rangeObjRef
+  if b
+    then cEval1 $ Closure env tailExpr
+    else do (carObjRef,cdrObjRef) <- consDestruct rangeObjRef
+            loopObjRef <- liftIO $ newIORef $ Loop loopVar indexVar cdrObjRef loopExpr tailExpr
+            newEnv <- liftIO $ extendEnv env [((loopVar,[]),loopObjRef),((indexVar,[]),carObjRef)]
+            cEval1 $ Closure newEnv loopExpr
+expandLoop _ obj = throwError $ Default $ "expandLoop: cannot reach here: " ++ show obj
+           
 -- |Extend given environment by binding a series of values to a new environment for let.
 extendLet :: Env -- ^ Environment 
           -> [(Args, EgisonExpr)] -- ^ Extensions to the environment
@@ -302,7 +309,7 @@ extendLet env abindings = do
              objRefs <- liftIO $ mapM (newIORef . Value) $ innerValsToList innerVals
              liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
            _ -> throwError $ Default "extendLet: not tuple"
-                             
+
 makeFrame :: Args -> ObjectRef -> IOThrowsError [(Var, ObjectRef)]
 makeFrame (AVar name) objRef = return $ [((name,[]), objRef)]
 makeFrame (ATuple []) _ = return $ []
