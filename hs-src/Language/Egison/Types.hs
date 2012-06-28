@@ -170,10 +170,9 @@ data IntermidiateVal = IInductiveData String [ObjectRef]
   | ITuple [InnerValRef]
   | ICollection [InnerValRef]
   
-data Action = OpenInputFile String
-  | OpenOutputFile String
-  | CloseInputFile String
-  | CloseOutputFile String
+data Action = OpenInputPort String
+  | OpenOutputPort String
+  | ClosePort String
   | ReadFromPort String String
   | WriteToPort String String
 
@@ -196,6 +195,9 @@ collectionToList (Collection innerVals) = innerValsToList innerVals
 
 valsToObjRefList :: [EgisonVal] -> IO [ObjectRef]
 valsToObjRefList vals = mapM newIORef (map Value vals)
+
+makeTupleFromValList :: [EgisonVal] -> EgisonVal
+makeTupleFromValList vals = Tuple $ map Element vals
 
 data InnerValRef = IElement ObjectRef
   | ISubCollection ObjectRef

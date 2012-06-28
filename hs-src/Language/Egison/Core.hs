@@ -1,20 +1,4 @@
-module Language.Egison.Core
-    (
-    -- * Egison code evaluation
-      eval
-    , evalString
-    , evalMain
-    , evalTopExpr
-    -- * Core data
-    , primitiveBindings
-    , version
-    -- * Utility functions
-    , escapeBackslashes
-    , showBanner
-    , showByebyeMessage
-    , libraries
---    , substr
-    ) where
+module Language.Egison.Core where
 import Language.Egison.Numerical
 import Language.Egison.Parser
 import Language.Egison.Primitives
@@ -46,8 +30,8 @@ showByebyeMessage = do
   putStrLn $ "Leaving Egison."
   putStrLn $ "Byebye. See you again! (^^)/"
 
-libraries :: [String]
-libraries = ["lib/base.egi", "lib/number.egi", "lib/collection.egi"]
+--libraries :: [String]
+--libraries = ["lib/core/base.egi", "lib/core/number.egi", "lib/core/collection.egi"]
   
 -- |A utility function to escape backslashes in the given string
 escapeBackslashes :: String -> String
@@ -722,20 +706,35 @@ innerValsToObjRefList ((SubCollection val):rest) = do
 primitiveBindings :: IO Env
 primitiveBindings = do
   initEnv <- nullEnv
+  constantsFrameList <- mapM domakeObjRef constants
   iOFuncs <- mapM (domakeFunc IOFunc) ioPrimitives
   primitiveFuncs <- mapM (domakeFunc PrimitiveFunc) primitives
-  extendEnv initEnv (iOFuncs ++ primitiveFuncs)
+  extendEnv initEnv (constantsFrameList ++ iOFuncs ++ primitiveFuncs)
  where domakeFunc constructor (name, func) = do
          objRef <- newIORef $ Value $ constructor func
          return ((name, []), objRef)
+       domakeObjRef (name, val) = do
+         objRef <- newIORef $ Value val
+         return ((name, []), objRef)
 
+
+constants :: [(String, EgisonVal)]
+constants = [("stdin", Port "stdin" stdin),
+             ("stdout", Port "stdout" stdout)
+             ]
+         
 {- I/O primitives
 Primitive functions that execute within the IO monad -}
 ioPrimitives :: [(String, [EgisonVal] -> IOThrowsError EgisonVal)]
 ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("open-output-file", makePort WriteMode),
                 ("close-input-port", closePort),
-                ("close-output-port", closePort)
+                ("close-output-port", closePort),
+                ("get-char", readChar),
+                ("get-line", readLine),
+                ("write-char", writeChar),
+                ("write-string", writeString),
+                ("write", write)
                 ]
 
 {- "Pure" primitive functions -}
