@@ -502,7 +502,7 @@ primitivePatternMatch (PInductivePat pCons pPats) objRef =  do
       if pCons == cons
         then primitivePatternMatchList pPats objRefs
         else return Nothing
-    _ -> do throwError $ Default $ "primitivePatternMatch : not inductive value to primitive inductive pattern"
+    _ -> return Nothing
 primitivePatternMatch PEmptyPat objRef = do
   b <- isEmptyCollection objRef
   if b
