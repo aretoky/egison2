@@ -300,9 +300,9 @@ showExpr (NotPatExpr _) = "#<not-pat>"
 showExpr (AndPatExpr _) = "#<and-pat>"
 showExpr (OrPatExpr _) = "#<or-pat>"
 showExpr (PredPatExpr _ _) = "#<pred-pat>"
-showExpr (InductiveDataExpr cons args) = "<" ++ cons ++ "...>"
-showExpr (TupleExpr innerExprs) = "[...]"
-showExpr (CollectionExpr innerExprs) = "{...}"
+showExpr (InductiveDataExpr cons _) = "<" ++ cons ++ "...>"
+showExpr (TupleExpr _) = "[...]"
+showExpr (CollectionExpr _) = "{...}"
 showExpr (FuncExpr _ _) =
   "(lambda [" ++ "..." ++ "] ...)"
 showExpr (LoopExpr lVar iVar rExpr lExpr tExpr) =
@@ -320,9 +320,9 @@ showExpr (TypeExpr bindings) =
 showExpr (TypeRefExpr typExpr name) =
   "(type-ref " ++ show typExpr ++ " " ++ name ++ ")"
 showExpr (DestructorExpr _) = "(destructor ...)"
-showExpr (MatchExpr tgtExpr typExpr cls) =
+showExpr (MatchExpr tgtExpr typExpr _) =
   "(match " ++ show tgtExpr ++ " " ++ show typExpr ++ " ...)"
-showExpr (MatchAllExpr tgtExpr typExpr clss) =
+showExpr (MatchAllExpr tgtExpr typExpr _) =
   "(match-all " ++ show tgtExpr ++ " " ++ show typExpr ++ " ...)"
 showExpr (ApplyExpr opExpr argExpr) =
   "(" ++ show opExpr ++ " " ++ show argExpr ++ ")"
@@ -351,10 +351,11 @@ instance Eq EgisonVal where
   x == y = eqVal x y
 
 showVal :: EgisonVal -> String
-showVal (Char chr) = [chr]
 showVal (World _) = "#<world>"
 showVal (Bool True) = "#t"
 showVal (Bool False) = "#f"
+showVal (Char chr) = "'" ++ [chr] ++ "'"
+showVal (String str) = "\"" ++ str ++ "\""
 showVal (Number contents) = show contents
 showVal (Float contents) = show contents
 showVal WildCard = "_"
@@ -369,6 +370,7 @@ showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">
 showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
 showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
 showVal (Type _) = "#<type>"
+showVal (Destructor _) = "#<destructor>"
 showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"
 showVal (PrimitiveFunc _) = "#<primitive>"
 showVal (IOFunc _) = "#<IO primitive>"

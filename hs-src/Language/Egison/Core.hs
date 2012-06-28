@@ -138,6 +138,8 @@ cEval (Intermidiate iVal) = iEval iVal
 
 cEval1 :: Object -> IOThrowsError Object
 cEval1 (Closure _ (BoolExpr contents)) = return $ Value (Bool contents)
+cEval1 (Closure _ (CharExpr contents)) = return $ Value (Char contents)
+cEval1 (Closure _ (StringExpr contents)) = return $ Value (String contents)
 cEval1 (Closure _ (NumberExpr contents)) = return $ Value (Number contents)
 cEval1 (Closure _ (FloatExpr contents)) = return $ Value (Float contents)
 cEval1 (Closure env (VarExpr name numExprs)) = do
@@ -711,7 +713,8 @@ ioPrimitives :: [(String, [EgisonVal] -> IOThrowsError EgisonVal)]
 ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("open-output-file", makePort WriteMode),
                 ("close-input-port", closePort),
-                ("close-output-port", closePort)]
+                ("close-output-port", closePort)
+                ]
 
 {- "Pure" primitive functions -}
 primitives :: [(String, [EgisonVal] -> ThrowsError EgisonVal)]
