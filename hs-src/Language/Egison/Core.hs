@@ -732,8 +732,7 @@ primitiveBindings = do
 
 
 constants :: [(String, EgisonVal)]
-constants = [("stdin", Port "stdin" stdin),
-             ("stdout", Port "stdout" stdout)
+constants = [("pi", Float 3.14)
              ]
          
 {- I/O primitives
@@ -748,7 +747,15 @@ ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("write-char", writeChar),
                 ("write-string", writeString),
                 ("print", writeStringLine),
-                ("write", write)
+                ("write", write),
+                ("flush", flushStdout),
+                ("read-char-from-port", readCharFromPort),
+                ("read-line-from-port", readLineFromPort),
+                ("write-char-to-port", writeCharToPort),
+                ("write-string-to-port", writeStringToPort),
+                ("print-to-port", writeStringLineToPort),
+                ("write-to-port", writeToPort),
+                ("flush-port", flushPort)
                 ]
 
 {- "Pure" primitive functions -}

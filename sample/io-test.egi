@@ -1,24 +1,31 @@
 (define $main
   (lambda [$: $argv]
-    (do {[$: (print : "input char : ")]
-         [[$: $c] (read-char :)]
-         [$: (write-string : "output : ")]
-         [$: (write-char : c)]
-         [$: (write-char : '\n')]
-         [$: (print : "input number :")]
-         [[$: $e] (read-line :)]
-         [$: (write-string : "output : ")]
-         [$: (print : e)]}
+    (do {[$: (print : "Hello world!")]}
         :)))
-
-(execute)
-
 
 (define $main
   (lambda [$: $argv]
-    (do {[$: (print : "test")]}
+    (do {[[$: $p] (open-output-file : "hello.txt")]
+         [$: (print-to-port : p "Hello world!")]}
         :)))
 
+(define $main
+  (lambda [$: $argv]
+    (do {[$: (write-string : "input char : ")]
+         [[$: $c] (read-char :)]
+         [$: (write-string : "output : ")]
+         [$: (write-char : c)]
+         [$: (write-char : '\n')]}
+        :)))
+
+(define $main
+  (lambda [$: $argv]
+    (do {[$: (write-string : "input : ")]
+         [$: (flush :)]
+         [[$: $str] (read-line :)]
+         [$: (write-string : "output : ")]
+         [$: (print : str)]}
+        :)))
 
 (define $main
   (lambda [$:]

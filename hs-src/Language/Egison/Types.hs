@@ -174,6 +174,7 @@ data IntermidiateVal = IInductiveData String [ObjectRef]
 data Action = OpenInputPort String
   | OpenOutputPort String
   | ClosePort String
+  | FlushPort String
   | ReadFromPort String String
   | WriteToPort String String
 
@@ -190,6 +191,7 @@ innerValsToList ((SubCollection (Collection iVals)):rest) = (innerValsToList iVa
 
 tupleToList :: EgisonVal -> [EgisonVal]
 tupleToList (Tuple innerVals) = innerValsToList innerVals
+tupleToList val = [val]
   
 collectionToList :: EgisonVal -> [EgisonVal]
 collectionToList (Collection innerVals) = innerValsToList innerVals
