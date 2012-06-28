@@ -65,20 +65,28 @@ parseBool = do _ <- string "#"
                           'f' -> BoolExpr False
                           _ -> BoolExpr False
 
+parseBool2 :: Parser Bool
+parseBool2 = do
+  boolExpr <- parseBool
+  case boolExpr of
+    BoolExpr True -> return True
+    BoolExpr False -> return False
+                          
 parseChar :: Parser EgisonExpr
-parseChar = do c <- parseChar2
-               return $ CharExpr c
-
-parseChar2 :: Parser Char
-parseChar2 = do
+parseChar = do
   _ <- try (string "#\\")
   c <- anyChar
   r <- many (letter)
   let pchr = c : r
   return $ case pchr of
-    "space" -> ' '
-    "newline" -> '\n'
-    _ -> c
+    "space" -> CharExpr ' '
+    "newline" -> CharExpr '\n'
+    _ -> CharExpr c
+
+parseChar2 :: Parser Char
+parseChar2 = do chrExpr <- parseChar
+                case chrExpr of
+                  CharExpr chr -> return chr
 
 parseOctalNumber :: Parser EgisonExpr
 parseOctalNumber = do
@@ -331,12 +339,6 @@ parsePrimitivePattern :: Parser PrimitivePattern
 parsePrimitivePattern =
       do char '_'
          return PWildCard
-  <|> do c <- try parseChar2
-         return (PPatChar c)
-  <|> do d <- try parseRealNumber2
-         return (PPatDouble d)
-  <|> do n <- try parseNumber2
-         return (PPatInteger n)
   <|> do char '$'
          name <- identifier
          return (PPatVar name)
@@ -357,6 +359,14 @@ parsePrimitivePattern =
               b <- lexeme parsePrimitivePattern
               char '}'
               return (PSnocPat a b))
+  <|> do b <- try parseBool2
+         return (PPatBool b)
+  <|> do c <- try parseChar2
+         return (PPatChar c)
+  <|> do d <- try parseRealNumber2
+         return (PPatFloat d)
+  <|> do n <- try parseNumber2
+         return (PPatNumber n)
 
 parseMatchClause :: Parser MatchClause
 parseMatchClause = brackets (do pat <- lexeme parseExpr

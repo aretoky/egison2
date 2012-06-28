@@ -118,15 +118,15 @@ type ArgsExpr = Args
 type MatchClause = (EgisonExpr, EgisonExpr)
 
 data PrimitivePattern = PWildCard
+  | PPatVar String
   | PInductivePat String [PrimitivePattern]
   | PEmptyPat
   | PConsPat PrimitivePattern PrimitivePattern
   | PSnocPat PrimitivePattern PrimitivePattern
   | PPatBool Bool
   | PPatChar Char
-  | PPatInteger Integer
-  | PPatDouble Double
-  | PPatVar String
+  | PPatNumber Integer
+  | PPatFloat Double
 
 data InnerExpr = ElementExpr EgisonExpr
   | SubCollectionExpr EgisonExpr

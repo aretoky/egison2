@@ -465,7 +465,35 @@ inductiveMatch ((con,typObjRef,((env,ppat,expr):cls)):rest) pcon tgtObjRefRef =
 
 
 primitivePatternMatch :: PrimitivePattern -> ObjectRef -> IOThrowsError (Maybe FrameList)
-primitivePatternMatch PWildCard _ = return (Just [])
+primitivePatternMatch (PPatBool bool) objRef = do
+  val <- cRefEval objRef
+  case val of
+    Bool bool2 -> if bool == bool2
+                   then return (Just [])
+                   else return Nothing
+    _ -> return Nothing
+primitivePatternMatch (PPatChar chr) objRef = do
+  val <- cRefEval objRef
+  case val of
+    Char chr2 -> if chr == chr2
+                   then return (Just [])
+                   else return Nothing
+    _ -> return Nothing
+primitivePatternMatch (PPatNumber num) objRef = do
+  val <- cRefEval objRef
+  case val of
+    Number num2 -> if num == num2
+                     then return (Just [])
+                     else return Nothing
+    _ -> return Nothing
+primitivePatternMatch (PPatFloat d) objRef = do
+  val <- cRefEval objRef
+  case val of
+    Float d2 -> if d == d2
+                  then return (Just [])
+                  else return Nothing
+    _ -> return Nothing
+primitivePatternMatch PWildCard _ = return $ Just []
 primitivePatternMatch (PPatVar name) objRef = return (Just [((name,[]), objRef)])
 primitivePatternMatch (PInductivePat pCons pPats) objRef =  do
   obj <- cRefEval1 objRef
