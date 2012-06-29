@@ -15,7 +15,7 @@ import Paths_egison
 
 -- |egison version number
 egisonVersion :: String
-egisonVersion = "2.1.1"
+egisonVersion = "2.1.2"
 
 -- |A utility function to display the egison console banner
 showBanner :: IO ()

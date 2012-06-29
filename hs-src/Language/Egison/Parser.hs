@@ -284,7 +284,7 @@ parseCutPat = do char '!'
 parseNotPat :: Parser EgisonExpr
 parseNotPat = do char '^'
                  expr <- parseExpr
-                 return $ CutPatExpr expr
+                 return $ NotPatExpr expr
 
 parseValuePat :: Parser EgisonExpr
 parseValuePat = do char ','
