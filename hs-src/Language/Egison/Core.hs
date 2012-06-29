@@ -14,13 +14,13 @@ import Data.IORef
 import Paths_egison
 
 -- |egison version number
-version :: String
-version = "2.0.0"
+egisonVersion :: String
+egisonVersion = "2.0.4"
 
 -- |A utility function to display the egison console banner
 showBanner :: IO ()
 showBanner = do
-  putStrLn $ "Egison Version " ++ version ++ " (c) 2011-2012 Satoshi Egi"
+  putStrLn $ "Egison Version " ++ egisonVersion ++ " (c) 2011-2012 Satoshi Egi"
   putStrLn $ "http://hagi.is.s.u-tokyo.ac.jp/~egi/egison/"
   putStrLn $ "Welcome to Egison Interpreter!"
 

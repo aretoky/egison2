@@ -4,47 +4,23 @@
 
 (define $Something (type {[$var-match (lambda [$tgt] {tgt})]}))
 
-(define $Bool
-  (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[true []
-          {[<true> {[]}]
-           [#t {[]}]
-           [_ {}]}]
-         [false []
-          {[<false> {[]}]
-           [#f {[]}]
-           [_ {}]}]})]
-     [$=
-      (lambda [$val $tgt]
-        (match [val tgt] [Bool Bool]
-          {[[<true> <true>] #t]
-           [[<true> #t] #t]
-           [[#t <true>] #t]
-           [[<false> <false>] #t]
-           [[<false> #f] #t]
-           [[#f <false>] #t]
-           [[_ _] <false>]}))]}))
-
 (define $or
   (lambda [$b1 $b2]
-    (match b1 Bool
-      {[<true> #t]
-       [<false> b2]})))
+    (if b1
+        #t
+        b2)))
 
 (define $and
   (lambda [$b1 $b2]
-    (match b1 Bool
-      {[<true> b2]
-       [<false> #f]})))
+    (if b1
+        b2
+        #f)))
 
 (define $not
   (lambda [$b]
-    (match b Bool
-      {[<true> #f]
-       [<false> #t]})))
+    (if b
+        #f
+        #t)))
 
 (define $Order
   (type

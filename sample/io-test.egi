@@ -55,6 +55,13 @@
         :)))
 
 (define $main
+  (lambda [$: $argv]
+    (do {[$: (write-string : "output : ")]
+         [$: (write : argv)]
+         [$: (write-char : '\n')]}
+        :)))
+
+(define $main
   (lambda [$:]
     (do {[$: (print : "Return world? (y/n) : ")]
          [[$: $c] (read-char :)]}
