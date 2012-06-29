@@ -13,14 +13,10 @@ import System.IO
 import Data.IORef
 import Paths_egison
 
--- |egison version number
-egisonVersion :: String
-egisonVersion = "2.1.3"
-
 -- |A utility function to display the egison console banner
 showBanner :: IO ()
 showBanner = do
-  putStrLn $ "Egison Version " ++ egisonVersion ++ " (c) 2011-2012 Satoshi Egi"
+  putStrLn $ "Egison Version " ++ showVersion version ++ " (c) 2011-2012 Satoshi Egi"
   putStrLn $ "http://hagi.is.s.u-tokyo.ac.jp/~egi/egison/"
   putStrLn $ "Welcome to Egison Interpreter!"
 
@@ -753,8 +749,7 @@ constants :: [(String, EgisonVal)]
 constants = [("pi", Float 3.14)
              ]
          
-{- I/O primitives
-Primitive functions that execute within the IO monad -}
+{- I/O primitives -}
 ioPrimitives :: [(String, [EgisonVal] -> IOThrowsError EgisonVal)]
 ioPrimitives = [("open-input-file", makePort ReadMode),
                 ("open-output-file", makePort WriteMode),

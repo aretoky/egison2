@@ -114,7 +114,6 @@ parseHexNumber = do
      1 -> return $ NumberExpr $ fromInteger $ (*) (-1) $ fst $ Numeric.readHex num !! 0
      _ -> pzero
 
--- |Parser for Integer, base 10
 parseDecimalNumber :: Parser EgisonExpr
 parseDecimalNumber = do
   _ <- try (many (string "#d"))
@@ -124,18 +123,12 @@ parseDecimalNumber = do
      then pzero
      else return $ (NumberExpr . read) $ sign ++ num
 
--- |Parser for a base 10 Integer that will also
---  check to see if the number is followed by
---  an exponent (scientific notation). If so,
---  the integer is converted to a float of the
---  given magnitude.
 parseDecimalNumberMaybeExponent :: Parser EgisonExpr
 parseDecimalNumberMaybeExponent = do
   num <- parseDecimalNumber
   result <- parseNumberExponent num
   return result
 
--- |Parse an integer in any base
 parseNumber :: Parser EgisonExpr
 parseNumber = parseDecimalNumberMaybeExponent <|>
               parseHexNumber <|>

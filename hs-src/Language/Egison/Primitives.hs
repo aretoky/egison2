@@ -14,7 +14,6 @@ import System.IO.Error
 
 ---------------------------------------------------
 -- I/O Primitives
--- These primitives all execute within the IO monad
 ---------------------------------------------------
 makePort :: IOMode -> [EgisonVal] -> IOThrowsError EgisonVal
 makePort mode [(World actions), (String filename)] = do

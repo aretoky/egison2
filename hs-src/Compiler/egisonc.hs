@@ -48,15 +48,15 @@ defaultOptions = Options {
 
 options :: [OptDescr (Options -> IO Options)]
 options = [
-  Option ['V'] ["version"] (NoArg showVersion) "show version number",
+  Option ['V'] ["version"] (NoArg showVersionNumber) "show version number",
   Option ['h', '?'] ["help"] (NoArg showHelp) "show usage information",
   Option ['o'] ["output"] (ReqArg writeExec "FILE") "output file to write"
   ]
 
 -- |Print version information
-showVersion :: Options -> IO Options
-showVersion _ = do
-  putStrLn Language.Egison.Core.egisonVersion
+showVersionNumber :: Options -> IO Options
+showVersionNumber _ = do
+  putStrLn $ showVersion version
   exitWith ExitSuccess
 
 showHelp :: Options -> IO Options
