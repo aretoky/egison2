@@ -110,7 +110,7 @@ compileHaskellFile :: String -> IO()
 compileHaskellFile filename = do
   let ghc = "ghc"
 --  compileStatus <- system $ ghc ++ " " ++ " -cpp --make -package ghc -fglasgow-exts -o " ++ filename ++ " _tmp.hs"
-  _ <- system $ ghc ++ "-O2 -o " ++ filename ++ " _tmp.hs"
+  _ <- system $ ghc ++ " -O2 -o " ++ filename ++ " _tmp.hs"
   removeFile "./_tmp.hs"
   removeFile "./_tmp.hi"
   removeFile "./_tmp.o"
