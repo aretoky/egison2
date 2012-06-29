@@ -475,7 +475,7 @@ readTopExpr = readOrThrow mainParser
 
 -- |Parse an expression from a string of text
 readExpr :: String -> ThrowsError EgisonExpr
-readExpr = readOrThrow parseExpr
+readExpr = readOrThrow (whiteSpace >> parseExpr)
 
 -- |Parse many top expressions from a string of text
 readTopExprList :: String -> ThrowsError [TopExpr]

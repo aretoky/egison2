@@ -1,10 +1,8 @@
 module Paths_egison where
+import Data.Version
 
-version :: String
-version = "x.x.x"
-
-showVersion :: String -> String
-showVersion v = v
+version :: Version
+version = Version [2,1,6] []
 
 getDataFileName :: FilePath -> IO FilePath
 getDataFileName filename = return ("/home/egi/Egison-src/" ++ filename)

@@ -7,7 +7,7 @@ import System.Cmd (system)
 import System.Console.GetOpt
 import System.FilePath (dropExtension)
 import System.Environment
-import System.Directory (copyFile)
+import System.Directory (copyFile, removeFile)
 import System.Exit (ExitCode (..), exitWith, exitFailure)
 import System.IO
 import Paths_egison
@@ -56,7 +56,7 @@ options = [
 -- |Print version information
 showVersionNumber :: Options -> IO Options
 showVersionNumber _ = do
-  putStrLn $ showVersion version
+  putStrLn egisonVersion
   exitWith ExitSuccess
 
 showHelp :: Options -> IO Options
@@ -82,6 +82,11 @@ process inFile outExec = do
    Just errMsg -> putStrLn errMsg
    _ -> compileHaskellFile outExec
 
+replaceTabToSpace :: String -> String
+replaceTabToSpace [] = []
+replaceTabToSpace ('\t':cs) = ' ':(replaceTabToSpace cs)
+replaceTabToSpace (c:cs) = c:(replaceTabToSpace cs)
+
 createHaskellFile :: String -> String -> IOThrowsError ()
 createHaskellFile inFile outExec = do
   templatePath <- liftIO $ getDataFileName templateFile
@@ -90,7 +95,7 @@ createHaskellFile inFile outExec = do
   let pLines = lines egisonProgram
   liftIO $ appendFile "./_tmp.hs" "\nprogram :: String\n"
   liftIO $ appendFile "./_tmp.hs" "program = "
-  liftIO $ mapM_ (appendFile "./_tmp.hs") $ map (\pLine -> "  \"" ++ escapeDoubleQuote pLine ++ "\\n\" ++\n") pLines
+  liftIO $ mapM_ (appendFile "./_tmp.hs") $ map (\pLine -> "  \"" ++ escapeDoubleQuote (replaceTabToSpace pLine) ++ "\\n\" ++\n") pLines
   liftIO $ appendFile "./_tmp.hs" "  \"\"\n"
   return ()
 
@@ -106,4 +111,7 @@ compileHaskellFile filename = do
   let ghc = "ghc"
 --  compileStatus <- system $ ghc ++ " " ++ " -cpp --make -package ghc -fglasgow-exts -o " ++ filename ++ " _tmp.hs"
   _ <- system $ ghc ++ " -o " ++ filename ++ " _tmp.hs"
+  removeFile "./_tmp.hs"
+  removeFile "./_tmp.hi"
+  removeFile "./_tmp.o"
   return ()

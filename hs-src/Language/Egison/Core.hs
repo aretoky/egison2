@@ -11,12 +11,16 @@ import qualified System.Exit
 import System.Directory (doesFileExist, removeFile)
 import System.IO
 import Data.IORef
+import Data.Version
 import Paths_egison
+
+egisonVersion :: String
+egisonVersion = showVersion version
 
 -- |A utility function to display the egison console banner
 showBanner :: IO ()
 showBanner = do
-  putStrLn $ "Egison Version " ++ showVersion version ++ " (c) 2011-2012 Satoshi Egi"
+  putStrLn $ "Egison Version " ++ egisonVersion ++ " (c) 2011-2012 Satoshi Egi"
   putStrLn $ "http://hagi.is.s.u-tokyo.ac.jp/~egi/egison/"
   putStrLn $ "Welcome to Egison Interpreter!"
 
