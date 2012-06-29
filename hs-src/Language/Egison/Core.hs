@@ -15,7 +15,7 @@ import Paths_egison
 
 -- |egison version number
 egisonVersion :: String
-egisonVersion = "2.0.4"
+egisonVersion = "2.1.0"
 
 -- |A utility function to display the egison console banner
 showBanner :: IO ()
@@ -30,8 +30,15 @@ showByebyeMessage = do
   putStrLn $ "Leaving Egison."
   putStrLn $ "Byebye. See you again! (^^)/"
 
---libraries :: [String]
---libraries = ["lib/core/base.egi", "lib/core/number.egi", "lib/core/collection.egi"]
+-- |Load standard libraries into the given environment
+loadLibraries :: Env -> IO ()
+loadLibraries env = do
+  -- Load standard library
+  _ <- evalString env $ "(load \"lib/core/base.egi\")"
+  _ <- evalString env $ "(load \"lib/core/number.egi\")"
+  _ <- evalString env $ "(load \"lib/core/collection.egi\")"
+  return ()
+
   
 -- |A utility function to escape backslashes in the given string
 escapeBackslashes :: String -> String

@@ -202,6 +202,9 @@ valsToObjRefList vals = mapM newIORef (map Value vals)
 makeTupleFromValList :: [EgisonVal] -> EgisonVal
 makeTupleFromValList vals = Tuple $ map Element vals
 
+makeCollectionFromValList :: [EgisonVal] -> EgisonVal
+makeCollectionFromValList vals = Collection $ map Element vals
+
 data InnerValRef = IElement ObjectRef
   | ISubCollection ObjectRef
 

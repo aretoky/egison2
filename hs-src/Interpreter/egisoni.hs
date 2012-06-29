@@ -37,15 +37,6 @@ runOne args = do
           Just errMsg -> putStrLn errMsg
           _  -> return ())
 
--- |Load standard libraries into the given environment
-loadLibraries :: Env -> IO ()
-loadLibraries env = do
-  -- Load standard library
-  _ <- evalString env $ "(load \"lib/core/base.egi\")"
-  _ <- evalString env $ "(load \"lib/core/number.egi\")"
-  _ <- evalString env $ "(load \"lib/core/collection.egi\")"
-  return ()
-
 -- |Start the REPL (interactive interpreter)
 runRepl :: IO ()
 runRepl = do
