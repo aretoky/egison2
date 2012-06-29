@@ -152,9 +152,13 @@ cEval1 (Closure env (VarExpr name numExprs)) = do
   case obj of -- for Macro expansion
     Loop _ _ _ _ _ -> expandLoop env obj
     _ -> return obj
+cEval1 (Closure _ (InductiveDataExpr cons [])) = do
+  return $ Value $ InductiveData cons []
 cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
   args <- liftIO $ mapM (makeClosure env) argExprs
   return $ Intermidiate $ IInductiveData cons args
+cEval1 (Closure _ (TupleExpr [])) = do
+  return $ Value $ Tuple []
 cEval1 (Closure env (TupleExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   objRefs <- innerRefsToObjRefList innerRefs
@@ -481,14 +485,16 @@ inductiveMatch ((con,_,[]):rest) pcon tgtObjRefRef =
   if (con == pcon)
     then throwError (Default "inductiveMatch: not matched any clauses")
     else inductiveMatch rest pcon tgtObjRefRef
-inductiveMatch ((con,typObjRef,((env,ppat,expr):cls)):rest) pcon tgtObjRefRef =
+inductiveMatch ((con,typObjRef,((env,ppat,expr):cls)):rest) pcon tgtObjRefRef = do
   if (con == pcon)
     then do mPpmRet <- primitivePatternMatch ppat tgtObjRefRef
+            
             case mPpmRet of
               Nothing -> inductiveMatch ((con,typObjRef,cls):rest) pcon tgtObjRefRef
-              Just ppmRet -> do newEnv <- liftIO $ extendEnv env ppmRet
-                                ret <- liftIO $ makeClosure newEnv expr
-                                return (typObjRef,ret)
+              Just ppmRet -> do
+                newEnv <- liftIO $ extendEnv env ppmRet
+                ret <- liftIO $ makeClosure newEnv expr
+                return (typObjRef,ret)
     else inductiveMatch rest pcon tgtObjRefRef
 
 
@@ -529,6 +535,11 @@ primitivePatternMatch (PInductivePat pCons pPats) objRef =  do
     Intermidiate (IInductiveData cons objRefs) ->
       if pCons == cons
         then primitivePatternMatchList pPats objRefs
+        else return Nothing
+    Value (InductiveData cons vals) ->
+      if pCons == cons
+        then do objRefs <- liftIO $ mapM (newIORef . Value) vals
+                primitivePatternMatchList pPats objRefs
         else return Nothing
     _ -> return Nothing
 primitivePatternMatch PEmptyPat objRef = do

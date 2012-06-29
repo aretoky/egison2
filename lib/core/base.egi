@@ -4,6 +4,26 @@
 
 (define $Something (type {[$var-match (lambda [$tgt] {tgt})]}))
 
+(define $Bool
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[true []
+          {[<true> {[]}]
+           [#t {[]}]
+           [_ {}]}]
+         [false []
+          {[<false> {[]}]
+           [#f {[]}]
+           [_ {}]}]})]
+     [$=
+      (lambda [$val $tgt]
+        (match [val tgt] [Bool Bool]
+          {[[<true> <true>] #t]
+           [[<false> <false>] #t]
+           [[_ _] #f]}))]}))
+
 (define $or
   (lambda [$b1 $b2]
     (if b1
