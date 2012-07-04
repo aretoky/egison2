@@ -12,7 +12,8 @@
 (define $main
   (lambda [$: $argv]
     (do {[[$: $p] (open-output-file : "hello.txt")]
-         [$: (print-to-port : p "Hello world!")]}
+         [$: (print-to-port : p "Hello world!")]
+         [$: (close-output-port : p)]}
         :)))
 
 (define $main

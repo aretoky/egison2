@@ -16,6 +16,14 @@
     {[$var-match (lambda [$tgt] {tgt})]
      [$= (lambda [$val $tgt] (eq-f? val tgt))]}))
 
+(define $compare-integer
+  (lambda [$m $n]
+    (if (lt-f? m n)
+        <less>
+        (if (eq-f? m n)
+            <equal>
+            <greater>))))
+
 (define $Nat
   (type
     {[$var-match (lambda [$tgt] {tgt})]
@@ -56,6 +64,18 @@
           (match (compare-integer n r) Order
             {[<greater> n]
              [_ r]}))]})))
+
+(define $min&max
+  (lambda [$ns]
+    (match ns (List Integer)
+      {[<cons $n <nil>> [n n]]
+       [<cons $n $rs>
+        (let {[[$min-n $max-n] (min&max rs)]}
+          (match (compare-integer n min-n) Order
+            {[<less> [n max-n]]
+             [_ (match (compare-integer n max-n) Order
+                  {[<greater> [min-n n]]
+                   [_ [min-n max-n]]})]}))]})))
 
 (define $gcd
   (lambda [$ns]
