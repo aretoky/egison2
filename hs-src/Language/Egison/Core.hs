@@ -664,16 +664,18 @@ snocDestruct objRef = do
 
 snocDestructInnerRefs :: [InnerValRef] -> IOThrowsError (ObjectRef, ObjectRef)
 snocDestructInnerRefs [] = throwError $ Default "snocDestructInnerRefs: empty collection"
-snocDestructInnerRefs ((IElement objRef):rest) = do
-  cdrObjRef <- liftIO $ newIORef $ Intermidiate $ ICollection rest
-  return (objRef, cdrObjRef)
-snocDestructInnerRefs ((ISubCollection objRef):rest) = do
-  b <- isEmptyCollection objRef
-  if b
-    then snocDestructInnerRefs rest
-    else do (carObjRef, cdrObjRef) <- snocDestruct objRef
-            cdrObjRef2 <- liftIO $ newIORef $ Intermidiate $ ICollection $ (ISubCollection cdrObjRef):rest
-            return (carObjRef, cdrObjRef2)
+snocDestructInnerRefs innerRefs =
+  case reverse innerRefs of
+    ((IElement objRef):rest) -> do
+      cdrObjRef <- liftIO $ newIORef $ Intermidiate $ ICollection $ reverse rest
+      return (objRef, cdrObjRef)
+    ((ISubCollection objRef):rest) -> do
+      b <- isEmptyCollection objRef
+      if b
+        then snocDestructInnerRefs $ reverse rest
+        else do (racObjRef, rdcObjRef) <- snocDestruct objRef
+                rdcObjRef2 <- liftIO $ newIORef $ Intermidiate $ ICollection $ (reverse rest) ++ [(ISubCollection rdcObjRef)]
+                return (racObjRef, rdcObjRef2)
     
 snocDestructInnerVals :: [InnerVal] -> IOThrowsError (ObjectRef, ObjectRef)
 snocDestructInnerVals [] = throwError $ Default "snocDestructInnerVals: empty collection"
