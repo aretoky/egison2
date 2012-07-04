@@ -16,11 +16,11 @@
     {[$var-match (lambda [$tgt] {tgt})]
      [$= (lambda [$val $tgt] (eq-f? val tgt))]}))
 
-(define $compare-integer
-  (lambda [$m $n]
-    (if (lt-f? m n)
+(define $compare-float
+  (lambda [$d1 $d2]
+    (if (lt-f? d1 d2)
         <less>
-        (if (eq-f? m n)
+        (if (eq-f? d1 d2)
             <equal>
             <greater>))))
 
@@ -32,7 +32,7 @@
         {[o []
           {[0 {[]}]
            [_ {}]}]
-         [s [Nat]
+         [s Nat
           {[$tgt (match (compare-integer tgt 0) Order
                    {[<greater> {(- tgt 1)}]
                     [_ {}]})]}]})]

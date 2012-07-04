@@ -26,21 +26,31 @@
 
 (define $or
   (lambda [$b1 $b2]
-    (if b1
-        #t
-        b2)))
+    (match b1 Bool
+      {[<true> #t]
+       [<false> b2]})))
 
 (define $and
   (lambda [$b1 $b2]
-    (if b1
-        b2
-        #f)))
+    (match b1 Bool
+      {[<true> b2]
+       [<false> #f]})))
 
 (define $not
   (lambda [$b]
-    (if b
-        #f
-        #t)))
+    (match b Bool
+      {[<true> #f]
+       [<false> #t]})))
+
+(define $Char
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$= eq-c?]}))
+
+(define $String
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$= eq-s?]}))
 
 (define $Order
   (type
@@ -63,4 +73,3 @@
            [[<equal> <equal>] #t]
            [[<greater> <greater>] #t]
            [[_ _] #f]}))]}))
-

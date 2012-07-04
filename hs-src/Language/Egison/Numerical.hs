@@ -1,30 +1,5 @@
-module Language.Egison.Numerical (
-   boolBinop
- , numericSglop 
- , floatSglop
- , floatNumSglop
- , numericBinop
- , floatBinop
- , numBoolBinop
- , floatBoolBinop
--- , foldlM
--- , foldl1M
- , floatFloor
- , floatCeiling
- , floatTruncate
- , floatRound
- , numExpt
- , numSqrt
- , numExp
- , numLog
--- , numToString
--- , floatToString
- , unpackBool
- , unpackNum
- , unpackFloat
-) where
+module Language.Egison.Numerical where
 import Language.Egison.Types
-
 import Control.Monad.Error
 --import Data.Char hiding (isNumber)
 --import Data.Fixed
@@ -55,12 +30,23 @@ floatBinop :: (Double -> Double -> Double) -> [EgisonVal] -> ThrowsError EgisonV
 floatBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
 floatBinop op aparams = mapM unpackFloat aparams >>= return . Float . foldl1 op
 
+charBoolBinop :: (Char -> Char -> Bool) -> [EgisonVal] -> ThrowsError EgisonVal
+charBoolBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
+charBoolBinop op aparams = mapM unpackChar aparams >>= doOp
+  where doOp [a, b] = return $ Bool $ op a b
+        doOp _ = throwError $ Default "Unexpected error in numCharBinop"
+
+strBoolBinop :: (String -> String -> Bool) -> [EgisonVal] -> ThrowsError EgisonVal
+strBoolBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
+strBoolBinop op aparams = mapM unpackString aparams >>= doOp
+  where doOp [a, b] = return $ Bool $ op a b
+        doOp _ = throwError $ Default "Unexpected error in numCharBinop"
+
 numBoolBinop :: (Integer -> Integer -> Bool) -> [EgisonVal] -> ThrowsError EgisonVal
 numBoolBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
 numBoolBinop op aparams = mapM unpackNum aparams >>= doOp
   where doOp [a, b] = return $ Bool $ op a b
         doOp _ = throwError $ Default "Unexpected error in numBoolBinop"
-
 
 floatBoolBinop :: (Double -> Double -> Bool) -> [EgisonVal] -> ThrowsError EgisonVal
 floatBoolBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
@@ -137,11 +123,23 @@ numLog badArgList = throwError $ NumArgs 1 badArgList
 
 -- - end Numeric operations section
 
--- |Extract an integer from the given value, throwing a type error if
+-- |Extract an bool from the given value, throwing a type error if
 --  the wrong type is passed.
 unpackBool :: EgisonVal -> ThrowsError Bool
 unpackBool (Bool b) = return b
 unpackBool notBool = throwError $ TypeMismatch "bool" notBool
+
+-- |Extract an char from the given value, throwing a type error if
+--  the wrong type is passed.
+unpackChar :: EgisonVal -> ThrowsError Char
+unpackChar (Char c) = return c
+unpackChar notChar = throwError $ TypeMismatch "char" notChar
+
+-- |Extract an char from the given value, throwing a type error if
+--  the wrong type is passed.
+unpackString :: EgisonVal -> ThrowsError String
+unpackString (String str) = return str
+unpackString notString = throwError $ TypeMismatch "string" notString
 
 -- |Extract an integer from the given value, throwing a type error if
 --  the wrong type is passed.

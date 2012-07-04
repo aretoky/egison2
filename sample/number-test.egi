@@ -9,7 +9,7 @@
 
 (define $fact
   (lambda [$n]
-    (match n Nat
+    (match n [Nat]
       {[<o> 1]
        [<s $n1> (* n (fact n1))]})))
 

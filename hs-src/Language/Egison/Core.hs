@@ -709,7 +709,7 @@ tupleToObjRefList objRef = do
   case obj of
     Intermidiate (ITuple innerRefs) -> innerRefsToObjRefList innerRefs
     Value (Tuple innerVals) -> innerValsToObjRefList innerVals
-    _ -> throwError $ Default "tupleToObjRefList: not tuple"
+    _ -> return [objRef]
 
 innerRefsToObjRefList :: [InnerValRef] -> IOThrowsError [ObjectRef]
 innerRefsToObjRefList [] = return []
@@ -828,6 +828,9 @@ primitives = [("+", numericBinop (+)),
               ("gt-f?", floatBoolBinop (>)),
               ("gte-f?", floatBoolBinop (>=)),
 
+              ("eq-c?", charBoolBinop (==)),
+              ("eq-s?", strBoolBinop (==)),
+              
               ("&&", boolBinop (&&)),
               ("||", boolBinop (||))]
 
