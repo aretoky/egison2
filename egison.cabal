@@ -16,8 +16,12 @@ Category:            Compilers/Interpreters
 Build-type:          Simple
 Cabal-version:       >=1.8
 
-Data-files:          lib/core/base.egi lib/core/number.egi lib/core/collection.egi lib/graph.egi lib/poker-hands.egi sample/number-test.egi sample/collection-test.egi sample/graph-test.egi sample/io-test.egi sample/poker-hands-test.egi sample/compile-test.egi elisp/egison-mode.el etc/template.hs
-
+Data-files:          lib/core/base.egi lib/core/number.egi lib/core/collection.egi lib/graph.egi lib/poker-hands.egi
+                     sample/number-test.egi sample/collection-test.egi sample/graph-test.egi
+                     sample/poker-hands-test.egi sample/compile-test.egi
+                     sample/io/argv-test.egi sample/io/cat.egi sample/io/copy.egi sample/io/char-test.egi sample/io/hello.egi sample/io/read-write-test.egi
+                     elisp/egison-mode.el
+                     etc/template.hs
 
 Library
   Build-Depends:   base >= 4.0 && < 5, array, containers, haskeline, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths
