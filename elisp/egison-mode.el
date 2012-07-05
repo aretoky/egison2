@@ -37,7 +37,6 @@
    (eval-when-compile
      (list
       (cons "\\\$\\\w*" font-lock-variable-name-face)
-      (cons ";.*$" font-lock-comment-face)
       )))
   "Gaudy expressions to highlight in Egison modes.")
 
@@ -122,7 +121,10 @@
   (let ((egison-mode-syntax-table (make-syntax-table)))
     (modify-syntax-entry 60 "(" egison-mode-syntax-table)
     (modify-syntax-entry 62 ")" egison-mode-syntax-table)
+    (modify-syntax-entry 59 "<" egison-mode-syntax-table)
+    (modify-syntax-entry 10 ">" egison-mode-syntax-table)
     egison-mode-syntax-table)
+  ;; (copy-syntax-table lisp-mode-syntax-table)
   "Syntax table for Egison mode")
 
 (defun egison-mode-variables ()
@@ -132,8 +134,11 @@
           egison-font-lock-keywords-1 egison-font-lock-keywords-2)
          nil t (("+-*/=?%:_" . "w") ("<" . "(") (">" . ")"))
          ))
-  (set (make-local-variable 'indent-line-function)
-       'egison-indent-line)
+  (set (make-local-variable 'indent-line-function) 'egison-indent-line)
+  (set (make-local-variable 'comment-start) ";")
+  (set (make-local-variable 'comment-end) "")
+  (set (make-local-variable 'comment-start-skip) ";+ *")
+  (set (make-local-variable 'comment-end-skip) nil)
   )
 
 
