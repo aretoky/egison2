@@ -1,0 +1,9 @@
+(define $main
+  (lambda [$: $argv]
+    (do {[$: (write-string : "input : ")]
+         [$: (flush :)]
+         [[$: $val] (read :)]
+         [$: (write-string : "output : ")]
+         [$: (write : val)]
+         [$: (write-char : '\n')]}
+        :)))

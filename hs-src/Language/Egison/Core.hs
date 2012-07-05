@@ -316,7 +316,7 @@ extendLet env abindings = do
            Value (Tuple innerVals) -> do
              objRefs <- liftIO $ mapM (newIORef . Value) $ innerValsToList innerVals
              liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
-           _ -> throwError $ Default "extendLet: not tuple"
+           _ -> liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss [objRef]
 
 makeFrame :: Args -> ObjectRef -> IOThrowsError [(Var, ObjectRef)]
 makeFrame (AVar name) objRef = return $ [((name,[]), objRef)]
@@ -834,5 +834,9 @@ primitives = [("+", numericBinop (+)),
               ("eq-s?", strBoolBinop (==)),
               
               ("&&", boolBinop (&&)),
-              ("||", boolBinop (||))]
+              ("||", boolBinop (||)),
+
+              ("eof?", isEgisonEOF)
+
+              ]
 

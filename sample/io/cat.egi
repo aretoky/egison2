@@ -1,0 +1,17 @@
+(define $main
+  (lambda [$: $argv]
+    (match argv (List String)
+      {[<cons $file1 <nil>>
+        (do {[[$: $port] (open-input-file : file1)]}
+            (letrec {[$copyLoop (lambda [$:]
+                                  (do {[[$: $line] (read-line-from-port : port)]}
+                                      (if (eof? line)
+                                          :
+                                          (do {[$: (write-string : line)]
+                                               [$: (write-char : '\n')]}
+                                              (copyLoop :)))))]}
+              (do {[$: (copyLoop :)]
+                   [$: (close-input-port : port)]}
+                  :)))]
+       [_ <argv-error>]})))
+

@@ -121,7 +121,13 @@ numLog badArgList = throwError $ NumArgs 1 badArgList
 --floatToString [x] = throwError $ TypeMismatch "number" x
 --floatToString badArgList = throwError $ NumArgs 1 badArgList
 
+isEgisonEOF :: [EgisonVal] -> ThrowsError EgisonVal
+isEgisonEOF [EOF] = return $ Bool True
+isEgisonEOF [_] = return $ Bool False
+isEgisonEOF badArgList = throwError $ NumArgs 1 badArgList
+
 -- - end Numeric operations section
+
 
 -- |Extract an bool from the given value, throwing a type error if
 --  the wrong type is passed.

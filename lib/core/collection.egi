@@ -49,6 +49,19 @@
       {[<nil> {}]
        [<cons $x $xs> {(fn x) @(map fn xs)}]})))
 
+(define $foldr
+  (lambda [$fn $init $ls]
+    (match ls (List Something)
+      {[<nil> init]
+       [<cons $x $xs> (fn x (foldr fn init xs))]})))
+
+(define $foldl
+  (lambda [$fn $init $ls]
+    (match ls (List Something)
+      {[<nil> init]
+       [<cons $x $xs> (let {[$y (fn init x)]}
+                        (foldl fn y xs))]})))
+
 (define $filter
   (lambda [$pred $ls]
     (match ls (List Something)

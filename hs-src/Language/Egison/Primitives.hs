@@ -1,16 +1,15 @@
 module Language.Egison.Primitives where
-import Language.Egison.Numerical
 import Language.Egison.Parser
 import Language.Egison.Types
-import qualified Control.Exception
 import Control.Monad.Error
+import Control.Exception (try)
 import Data.Char hiding (isSymbol)
 import Data.Array
 import Data.Unique
 import qualified Data.Map
 import System.IO
 import System.Directory (doesFileExist, removeFile)
-import System.IO.Error
+import System.IO.Error hiding (try)
 
 ---------------------------------------------------
 -- I/O Primitives
@@ -72,21 +71,37 @@ flushStdout _ = throwError $ Default $ "flush: invalid arguments"
 
 readChar :: [EgisonVal] -> IOThrowsError EgisonVal
 readChar [World actions] = do
-  c <- liftIO $ getChar
-  let newWorld = World $ (ReadFromPort "stdin" [c]):actions
-  return $ makeTupleFromValList [newWorld, Char c]
+  liftIO $ hSetBuffering stdin NoBuffering
+  input <- liftIO $ try (liftIO getChar)
+  liftIO $ hSetBuffering stdin LineBuffering
+  case input of
+    Left e -> if isEOFError e
+                then do
+                  let newWorld = World $ (ReadFromPort "stdin" "EOF"):actions
+                  return $ makeTupleFromValList [newWorld, EOF]
+                else throwError $ Default "I/O error read-char"
+    Right inpChr -> do
+      let newWorld = World $ (ReadFromPort "stdin" [inpChr]):actions
+      return $ makeTupleFromValList [newWorld, Char inpChr]
 readChar _ = throwError $ Default $ "readChar: invalid arguments"
 
 readLine :: [EgisonVal] -> IOThrowsError EgisonVal
 readLine [World actions] = do
-  str <- liftIO $ getLine
-  let newWorld = World $ (ReadFromPort "stdin" str):actions
-  return $ makeTupleFromValList [newWorld, String str]
+  input <- liftIO $ try (liftIO getLine)
+  case input of
+    Left e -> if isEOFError e
+                then do
+                  let newWorld = World $ (ReadFromPort "stdin" "EOF"):actions
+                  return $ makeTupleFromValList [newWorld, EOF]
+                else throwError $ Default "I/O error read-line"
+    Right inpStr -> do
+      let newWorld = World $ (ReadFromPort "stdin" inpStr):actions
+      return $ makeTupleFromValList [newWorld, String inpStr]
 readLine _ = throwError $ Default $ "readLine: invalid arguments"
 
 readFromStdin :: [EgisonVal] -> IOThrowsError EgisonVal
 readFromStdin [World actions] = do
-  str <- liftIO $ hGetExpr stdin
+  str <- hGetExpr stdin
   let newWorld = World $ (ReadFromPort "stdin" str):actions
   expr <- liftThrows $ readExpr str
   val <- liftThrows $ exprToVal expr
@@ -132,21 +147,37 @@ flushPort _ = throwError $ Default $ "flush-port: invalid arguments"
 
 readCharFromPort :: [EgisonVal] -> IOThrowsError EgisonVal
 readCharFromPort [World actions, Port filename port] = do
-  c <- liftIO $ hGetChar port
-  let newWorld = World $ (ReadFromPort filename [c]):actions
-  return $ makeTupleFromValList [newWorld, Char c]
+  liftIO $ hSetBuffering port NoBuffering
+  input <- liftIO $ try (liftIO $ hGetChar port)
+  liftIO $ hSetBuffering port LineBuffering
+  case input of
+    Left e -> if isEOFError e
+                then do
+                  let newWorld = World $ (ReadFromPort filename "EOF"):actions
+                  return $ makeTupleFromValList [newWorld, EOF]
+                else throwError $ Default "I/O error read-char-from-port"
+    Right inpChr -> do
+      let newWorld = World $ (ReadFromPort filename [inpChr]):actions
+      return $ makeTupleFromValList [newWorld, Char inpChr]
 readCharFromPort _ = throwError $ Default $ "readCharFromPort: invalid arguments"
 
 readLineFromPort :: [EgisonVal] -> IOThrowsError EgisonVal
 readLineFromPort [World actions, Port filename port] = do
-  str <- liftIO $ hGetLine port
-  let newWorld = World $ (ReadFromPort filename str):actions
-  return $ makeTupleFromValList [newWorld, String str]
+  input <- liftIO $ try (liftIO $ hGetLine port)
+  case input of
+    Left e -> if isEOFError e
+                then do
+                  let newWorld = World $ (ReadFromPort filename "EOF"):actions
+                  return $ makeTupleFromValList [newWorld, EOF]
+                else throwError $ Default "I/O error read-line-from-port"
+    Right inpStr -> do
+      let newWorld = World $ (ReadFromPort filename inpStr):actions
+      return $ makeTupleFromValList [newWorld, String inpStr]
 readLineFromPort _ = throwError $ Default $ "readLineFromPort: invalid arguments"
 
 readFromPort :: [EgisonVal] -> IOThrowsError EgisonVal
 readFromPort [World actions, Port filename port] = do
-  str <- liftIO $ hGetExpr port
+  str <- hGetExpr port
   let newWorld = World $ (ReadFromPort filename str):actions
   expr <- liftThrows $ readExpr str
   val <- liftThrows $ exprToVal expr
@@ -154,18 +185,23 @@ readFromPort [World actions, Port filename port] = do
 readFromPort _ = throwError $ Default $ "read: invalid arguments"
 
 
-hGetExpr :: Handle -> IO String
+hGetExpr :: Handle -> IOThrowsError String
 hGetExpr h = do
   str <- loop ""
   return str
  where
-    loop :: String -> IO String
+    loop :: String -> IOThrowsError String
     loop input0 = do
-      input <- hGetLine h
-      let newInput = input0 ++ input
-      if countParens newInput
-        then return newInput
-        else loop newInput
+      input <- liftIO $ try (liftIO $ hGetLine h)
+      case input of
+        Left e -> if isEOFError e
+                    then throwError $ Default "EOF error read or read-from-port"
+                    else throwError $ Default "I/O error read or read-from-port"
+        Right inpStr ->
+          let newInput = input0 ++ inpStr in
+          if countParens newInput
+            then return newInput
+            else loop newInput
 
 countParens :: String -> Bool
 countParens str = let countOpen = length $ filter (\c -> ('(' == c)
