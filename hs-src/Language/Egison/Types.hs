@@ -338,8 +338,24 @@ eqv [(Number arg1), (Number arg2)] = return $ Bool $ arg1 == arg2
 eqv [(Float arg1), (Float arg2)] = return $ Bool $ arg1 == arg2
 eqv [(Char arg1), (Char arg2)] = return $ Bool $ arg1 == arg2
 eqv [(String arg1), (String arg2)] = return $ Bool $ arg1 == arg2
+eqv [(InductiveData cons1 args1), (InductiveData cons2 args2)] =
+  if (cons1 == cons2)
+    then return $ Bool $ eqValList args1 args2
+    else return $ Bool False
+eqv [(Tuple innerVals1), (Tuple innerVals2)] =
+  return $ Bool $ eqValList (innerValsToList innerVals1) (innerValsToList innerVals2)
+eqv [(Collection innerVals1), (Collection innerVals2)] =
+  return $ Bool $ eqValList (innerValsToList innerVals1) (innerValsToList innerVals2)
 eqv [_, _] = return $ Bool False
 eqv badArgList = throwError $ NumArgs 2 badArgList
+
+eqValList :: [EgisonVal] -> [EgisonVal] -> Bool
+eqValList [] [] = True
+eqValList (val1:vals1) (val2:vals2) =
+  if eqVal val1 val2
+    then eqValList vals1 vals2
+    else False
+eqValList _ _ = False
 
 eqVal :: EgisonVal -> EgisonVal -> Bool
 eqVal a b = do

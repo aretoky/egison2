@@ -850,11 +850,13 @@ primitives = [("+", numericBinop (+)),
               ("sqrt", numSqrt),
               ("expt", numExpt),
 
-              ("eq?", numBoolBinop (==)),
-              ("lt?", numBoolBinop (<)),
-              ("lte?", numBoolBinop (<=)),
-              ("gt?", numBoolBinop (>)),
-              ("gte?", numBoolBinop (>=)),
+              ("eq?", eqv),
+              
+              ("eq-n?", numBoolBinop (==)),
+              ("lt-n?", numBoolBinop (<)),
+              ("lte-n?", numBoolBinop (<=)),
+              ("gt-n?", numBoolBinop (>)),
+              ("gte-n?", numBoolBinop (>=)),
 
               ("eq-f?", floatBoolBinop (==)),
               ("lt-f?", floatBoolBinop (<)),

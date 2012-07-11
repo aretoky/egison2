@@ -1,13 +1,13 @@
 (define $Integer
   (type
     {[$var-match (lambda [$tgt] {tgt})]
-     [$= (lambda [$val $tgt] (eq? val tgt))]}))
+     [$= (lambda [$val $tgt] (eq-n? val tgt))]}))
 
 (define $compare-integer
   (lambda [$m $n]
-    (if (lt? m n)
+    (if (lt-n? m n)
         <less>
-        (if (eq? m n)
+        (if (eq-n? m n)
             <equal>
             <greater>))))
 
@@ -36,7 +36,7 @@
           {[$tgt (match (compare-integer tgt 0) Order
                    {[<greater> {(- tgt 1)}]
                     [_ {}]})]}]})]
-     [$= (lambda [$val $tgt] (eq? val tgt))]}))
+     [$= (lambda [$val $tgt] (eq-n? val tgt))]}))
 
 (define $between
   (lambda [$m $n]
