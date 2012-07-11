@@ -133,6 +133,16 @@
     (match xs (List Something)
       {[<cons _ $ys> ys]})))
 
+(define $rac
+  (lambda [$xs]
+    (match xs (List Something)
+      {[<snoc $x _> x]})))
+
+(define $rdc
+  (lambda [$xs]
+    (match xs (List Something)
+      {[<snoc _ $ys> ys]})))
+
 (define $reverse
   (lambda [$xs]
     (match xs (List Something)

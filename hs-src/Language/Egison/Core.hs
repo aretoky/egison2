@@ -397,7 +397,7 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
         Value (Type tf) ->
           let mObjRef = Data.Map.lookup ("inductive-match",[]) tf in
             case mObjRef of
-              Nothing -> throwError (Default "no method in type: inductiver-match")
+              Nothing -> throwError (Default "no method in type: inductive-match")
               Just fnObjRef ->
                 do fnObj <- cRefEval1 fnObjRef
                    case fnObj of
@@ -419,7 +419,7 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
         Value (Type tf) ->
           let mObjRef = Data.Map.lookup ("inductive-match",[]) tf in
             case mObjRef of
-              Nothing -> throwError (Default "no method in type: inductiver-match")
+              Nothing -> throwError (Default "no method in type: inductive-match")
               Just fnObjRef ->
                 do fnObj <- cRefEval1 fnObjRef
                    case fnObj of
@@ -560,7 +560,7 @@ primitivePatternMatch (PConsPat carPat cdrPat) objRef = do
                                     Nothing -> return Nothing
                                     Just cdrFrame -> return (Just (carFrame ++ cdrFrame))
 primitivePatternMatch (PSnocPat rdcPat racPat) objRef = do
-  b <- isEmptyCollection objRef
+  b <- isEmptyCollectionForSnoc objRef
   if b
     then return Nothing
     else do (racObjRef, rdcObjRef) <- snocDestruct objRef
@@ -611,6 +611,37 @@ isEmptyInnerVals ((SubCollection val):rest) = do
   if b
     then isEmptyInnerVals rest
     else return False
+
+isEmptyCollectionForSnoc :: ObjectRef -> IOThrowsError Bool
+isEmptyCollectionForSnoc objRef = do
+  obj <- cRefEval1 objRef
+  case obj of
+    Intermidiate (ICollection innerRefs) -> isEmptyInnerRefsForSnoc innerRefs
+    Value (Collection innerVals) -> isEmptyInnerValsForSnoc innerVals
+    _ -> throwError $ Default $ "isEmptyCollectionForSnoc: not collection:" ++ show obj
+
+isEmptyInnerRefsForSnoc :: [InnerValRef] -> IOThrowsError Bool
+isEmptyInnerRefsForSnoc innerRefs =
+  case reverse innerRefs of
+    [] -> return True
+    ((IElement _):_) -> return False
+    ((ISubCollection objRef):rest) -> do
+      b <- isEmptyCollectionForSnoc objRef
+      if b
+        then isEmptyInnerRefsForSnoc $ reverse rest
+        else return False
+
+isEmptyInnerValsForSnoc :: [InnerVal] -> IOThrowsError Bool
+isEmptyInnerValsForSnoc innerVals =
+  case reverse innerVals of
+    [] -> return True
+    ((Element _):_) -> return False
+    ((SubCollection val):rest) -> do
+      objRef <- liftIO $ newIORef $ Value val
+      b <- isEmptyCollectionForSnoc objRef
+      if b
+        then isEmptyInnerValsForSnoc $ reverse rest
+        else return False
 
 
 consDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
@@ -663,14 +694,14 @@ snocDestruct objRef = do
     _ -> throwError $ Default "snocDestruct: not collection"
 
 snocDestructInnerRefs :: [InnerValRef] -> IOThrowsError (ObjectRef, ObjectRef)
-snocDestructInnerRefs [] = throwError $ Default "snocDestructInnerRefs: empty collection"
 snocDestructInnerRefs innerRefs =
   case reverse innerRefs of
+    [] -> throwError $ Default "snocDestructInnerRefs: empty collection"
     ((IElement objRef):rest) -> do
-      cdrObjRef <- liftIO $ newIORef $ Intermidiate $ ICollection $ reverse rest
-      return (objRef, cdrObjRef)
+      rdcObjRef <- liftIO $ newIORef $ Intermidiate $ ICollection $ reverse rest
+      return (objRef, rdcObjRef)
     ((ISubCollection objRef):rest) -> do
-      b <- isEmptyCollection objRef
+      b <- isEmptyCollectionForSnoc objRef
       if b
         then snocDestructInnerRefs $ reverse rest
         else do (racObjRef, rdcObjRef) <- snocDestruct objRef
@@ -678,24 +709,25 @@ snocDestructInnerRefs innerRefs =
                 return (racObjRef, rdcObjRef2)
     
 snocDestructInnerVals :: [InnerVal] -> IOThrowsError (ObjectRef, ObjectRef)
-snocDestructInnerVals [] = throwError $ Default "snocDestructInnerVals: empty collection"
-snocDestructInnerVals ((Element val):rest) = do
-  carObjRef <- liftIO $ newIORef $ Value val
-  cdrObjRef <- liftIO $ newIORef $ Value $ Collection rest
-  return (carObjRef, cdrObjRef)
-snocDestructInnerVals ((SubCollection val):rest) = do
-  objRef <- liftIO $ newIORef $ Value val
-  b <- isEmptyCollection objRef
-  if b
-    then snocDestructInnerVals rest
-    else do (carObjRef, cdrObjRef) <- snocDestruct objRef
-            cdrObj <- liftIO $ readIORef cdrObjRef
-            case cdrObj of
-              Value (Collection innerVals) -> do
-                cdrObjRef2 <- liftIO $ newIORef $ Value $ Collection $ (SubCollection (Collection innerVals)):rest
-                return (carObjRef, cdrObjRef2)
-              _ -> throwError $ Default "snocDestructInnerVals: cannot reach here!"
-
+snocDestructInnerVals innerVals =
+  case reverse innerVals of
+    [] -> throwError $ Default "snocDestructInnerVals: empty collection"
+    ((Element val):rest) -> do
+      racObjRef <- liftIO $ newIORef $ Value val
+      rdcObjRef <- liftIO $ newIORef $ Value $ Collection $ reverse rest
+      return (racObjRef, rdcObjRef)
+    ((SubCollection val):rest) -> do
+      objRef <- liftIO $ newIORef $ Value val
+      b <- isEmptyCollectionForSnoc objRef
+      if b
+        then snocDestructInnerVals $ reverse rest
+        else do (racObjRef, rdcObjRef) <- snocDestruct objRef
+                rdcObj <- liftIO $ readIORef rdcObjRef
+                case rdcObj of
+                  Value (Collection innerVals2) -> do
+                    rdcObjRef2 <- liftIO $ newIORef $ Value $ Collection $ (reverse rest) ++ [(SubCollection (Collection innerVals))]
+                    return (racObjRef, rdcObjRef2)
+                  _ -> throwError $ Default "snocDestructInnerVals: cannot reach here!"
 
 collectionToObjRefList :: ObjectRef -> IOThrowsError [ObjectRef]
 collectionToObjRefList objRef = do
