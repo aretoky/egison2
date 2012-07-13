@@ -76,6 +76,7 @@ data TopExpr = Define String EgisonExpr
   | Execute [String]
   | LoadFile String
   | Load String
+ deriving (Show)
         
 data EgisonExpr = CharExpr Char
   | StringExpr String
@@ -108,6 +109,7 @@ data EgisonExpr = CharExpr Char
   | MatchExpr EgisonExpr EgisonExpr [MatchClause]
   | MatchAllExpr EgisonExpr EgisonExpr MatchClause
   | ApplyExpr EgisonExpr EgisonExpr
+ deriving (Show)
 
 type ArgsExpr = Args
                
@@ -123,9 +125,11 @@ data PrimitivePattern = PWildCard
   | PPatChar Char
   | PPatNumber Integer
   | PPatFloat Double
+ deriving (Show)
 
 data InnerExpr = ElementExpr EgisonExpr
   | SubCollectionExpr EgisonExpr
+ deriving (Show)
 
 type Bindings = [(Args, EgisonExpr)]
 
@@ -180,6 +184,7 @@ data Action = OpenInputPort String
 
 data Args = AVar String
   | ATuple [Args]
+ deriving (Show)
   
 data InnerVal = Element EgisonVal
   | SubCollection EgisonVal
@@ -265,6 +270,11 @@ data MState = MState {msFrame :: FrameList,
 unwordsList :: Show a => [a] -> String
 unwordsList = unwords . map show
 
+-- |Convert a list of Egison expressions into a '_'-separated string
+unwordsNumExprs :: [EgisonExpr] -> String
+unwordsNumExprs [] = ""
+unwordsNumExprs (n:ns) = "_" ++ showExpr n ++ unwordsNumExprs ns
+
 -- |Convert a list of Egison objects into a '_'-separated string
 unwordsNums :: Show a => [a] -> String
 unwordsNums [] = ""
@@ -276,12 +286,12 @@ showVar (name, nums) = name ++ unwordsNums nums
 showBindings :: Bindings -> String
 showBindings [] = "{}"
 showBindings bindings = "{" ++ unwords (map showBinding bindings) ++ "}"
- where showBinding (_,expr) = "[$" ++ "..." ++ " " ++ show expr ++ "]" 
+ where showBinding (_,expr) = "[$" ++ "..." ++ " " ++ showExpr expr ++ "]" 
 
 showRecursiveBindings :: RecursiveBindings -> String
 showRecursiveBindings [] = "{}"
 showRecursiveBindings bind = "{" ++ unwords (map showBinding bind) ++ "}"
- where showBinding (_,expr) = "[$" ++ "..." ++ " " ++ show expr ++ "]" 
+ where showBinding (_,expr) = "[$" ++ "..." ++ " " ++ showExpr expr ++ "]" 
 
 showExpr :: EgisonExpr -> String
 showExpr (CharExpr chr) = [chr]
@@ -290,11 +300,11 @@ showExpr (BoolExpr True) = "#t-expr"
 showExpr (BoolExpr False) = "#f-expr"
 showExpr (NumberExpr contents) = show contents
 showExpr (FloatExpr contents) = show contents
-showExpr (VarExpr name nums) = name ++ unwordsNums nums
-showExpr (SymbolExpr name nums) = "#" ++ name ++ unwordsNums nums
-showExpr (PatVarExpr name nums) = "$" ++ name ++ unwordsNums nums
+showExpr (VarExpr name nums) = name ++ unwordsNumExprs nums
+showExpr (SymbolExpr name nums) = "#" ++ name ++ unwordsNumExprs nums
+showExpr (PatVarExpr name nums) = "$" ++ name ++ unwordsNumExprs nums
 showExpr WildCardExpr = "_"
-showExpr (PatVarOmitExpr pvar) = "(omit " ++ show pvar ++ ")"
+showExpr (PatVarOmitExpr pvar) = "(omit " ++ showExpr pvar ++ ")"
 showExpr (CutPatExpr _) = "#<cut-pat>"
 showExpr (NotPatExpr _) = "#<not-pat>"
 showExpr (AndPatExpr _) = "#<and-pat>"
@@ -306,31 +316,31 @@ showExpr (CollectionExpr _) = "{...}"
 showExpr (FuncExpr _ _) =
   "(lambda [" ++ "..." ++ "] ...)"
 showExpr (LoopExpr lVar iVar rExpr lExpr tExpr) =
-  "(loop $" ++ lVar ++ " $" ++ iVar ++ " " ++ show rExpr ++ " " ++  show lExpr ++ " " ++ show tExpr ++ ")"
+  "(loop $" ++ lVar ++ " $" ++ iVar ++ " " ++ showExpr rExpr ++ " " ++  showExpr lExpr ++ " " ++ showExpr tExpr ++ ")"
 showExpr (ParamsExpr pVar pExpr body) =
-  "(loop $" ++ pVar ++ " " ++ show pExpr ++ " " ++ show body ++ ")"
+  "(loop $" ++ pVar ++ " " ++ showExpr pExpr ++ " " ++ showExpr body ++ ")"
 showExpr (IfExpr condExpr expr1 expr2) =
-  "(if " ++ show condExpr ++ " " ++ show expr1 ++ " " ++ show expr2 ++ ")"
+  "(if " ++ showExpr condExpr ++ " " ++ showExpr expr1 ++ " " ++ showExpr expr2 ++ ")"
 showExpr (LetExpr bindings body) =
-  "(let " ++ showBindings bindings ++ " " ++ show body ++ ")"
+  "(let " ++ showBindings bindings ++ " " ++ showExpr body ++ ")"
 showExpr (LetRecExpr bindings body) =
-  "(letrec " ++ showRecursiveBindings bindings ++ " " ++ show body ++ ")"
+  "(letrec " ++ showRecursiveBindings bindings ++ " " ++ showExpr body ++ ")"
 showExpr (DoExpr bindings body) =
-  "(do " ++ showBindings bindings ++ " " ++ show body ++ ")"
+  "(do " ++ showBindings bindings ++ " " ++ showExpr body ++ ")"
 showExpr (TypeExpr bindings) =
   "(type " ++ showRecursiveBindings bindings ++ ")"
 showExpr (TypeRefExpr typExpr name) =
-  "(type-ref " ++ show typExpr ++ " " ++ name ++ ")"
+  "(type-ref " ++ showExpr typExpr ++ " " ++ name ++ ")"
 showExpr (DestructorExpr _) = "(destructor ...)"
 showExpr (MatchExpr tgtExpr typExpr _) =
-  "(match " ++ show tgtExpr ++ " " ++ show typExpr ++ " ...)"
+  "(match " ++ showExpr tgtExpr ++ " " ++ showExpr typExpr ++ " ...)"
 showExpr (MatchAllExpr tgtExpr typExpr _) =
-  "(match-all " ++ show tgtExpr ++ " " ++ show typExpr ++ " ...)"
+  "(match-all " ++ showExpr tgtExpr ++ " " ++ showExpr typExpr ++ " ...)"
 showExpr (ApplyExpr opExpr argExpr) =
-  "(" ++ show opExpr ++ " " ++ show argExpr ++ ")"
+  "(" ++ showExpr opExpr ++ " " ++ showExpr argExpr ++ ")"
   
--- |Allow conversion of egisonexpr instances to strings
-instance Show EgisonExpr where show = showExpr
+---- |Allow conversion of egisonexpr instances to strings
+--instance Show EgisonExpr where show = showExpr
                       
 eqv :: [EgisonVal] -> ThrowsError EgisonVal
 eqv [(Bool arg1), (Bool arg2)] = return $ Bool $ arg1 == arg2
@@ -421,7 +431,7 @@ showIVal (ICollection _) = "{" ++ "..." ++ "}"
 instance Show IntermidiateVal where show = showIVal
 
 showObj :: Object -> String
-showObj (Closure _ expr) = "(Closure env " ++  show expr ++ ")"
+showObj (Closure _ expr) = "(Closure env " ++  showExpr expr ++ ")"
 showObj (Value val) = "(Value " ++ show val ++ ")"
 showObj (Intermidiate val) = "(Intermidiate " ++ show val ++ ")"
 showObj (Loop _ _ _ _ _) = "#<loop>"

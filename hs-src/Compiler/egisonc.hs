@@ -1,6 +1,7 @@
 module Main where
 import Language.Egison.Core
 import Language.Egison.Types
+import Language.Egison.Parser
 --import Language.Egison.Variables
 import Control.Monad.Error
 import System.Cmd (system)
@@ -77,7 +78,7 @@ writeExec arg opt = return opt { optOutput = Just arg }
 -- |High level code to compile the given file
 process :: String -> String -> IO ()
 process inFile outExec = do
-  result <- (runIOThrows $ liftM show $ createHaskellFile inFile outExec)
+  result <- (runIOThrows $ liftM show $ createHaskellFile inFile)
   case result of
    Just errMsg -> putStrLn errMsg
    _ -> compileHaskellFile outExec
@@ -87,23 +88,17 @@ replaceTabToSpace [] = []
 replaceTabToSpace ('\t':cs) = ' ':(replaceTabToSpace cs)
 replaceTabToSpace (c:cs) = c:(replaceTabToSpace cs)
 
-createHaskellFile :: String -> String -> IOThrowsError ()
-createHaskellFile inFile outExec = do
+createHaskellFile :: String -> IOThrowsError ()
+createHaskellFile inFile = do
   templatePath <- liftIO $ getDataFileName templateFile
   liftIO $ copyFile templatePath "./_tmp.hs"
   egisonProgram <- liftIO $ readFile inFile
-  let pLines = lines egisonProgram
-  liftIO $ appendFile "./_tmp.hs" "\nprogram :: String\n"
-  liftIO $ appendFile "./_tmp.hs" "program = "
-  liftIO $ mapM_ (appendFile "./_tmp.hs") $ map (\pLine -> "  \"" ++ escapeDoubleQuote (replaceTabToSpace pLine) ++ "\\n\" ++\n") pLines
-  liftIO $ appendFile "./_tmp.hs" "  \"\"\n"
+  topExprs <- liftThrows $ readTopExprList egisonProgram
+  liftIO $ appendFile "./_tmp.hs" "\ntopExprs :: [TopExpr]\n"
+  liftIO $ appendFile "./_tmp.hs" "topExprs = "
+  liftIO $ appendFile "./_tmp.hs" $ show topExprs
   return ()
 
-escapeDoubleQuote :: String -> String
-escapeDoubleQuote [] = []
-escapeDoubleQuote (c:cs) = case c of
-                             '"' -> '\\':'"':(escapeDoubleQuote cs)
-                             _ -> c:(escapeDoubleQuote cs)
   
 -- |Compile the intermediate haskell file using GHC
 compileHaskellFile :: String -> IO()

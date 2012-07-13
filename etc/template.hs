@@ -14,8 +14,7 @@ main = do
   args <- getArgs
   env <- primitiveBindings
   _ <- loadLibraries env
-  _ <- runIOThrows (do topExprs <- liftThrows (readTopExprList program)
-                       liftM concat $ mapM (evalTopExpr env) topExprs)
+  _ <- runIOThrows $ liftM concat $ mapM (evalTopExpr env) topExprs
   _ <- runIOThrows $ evalTopExpr env $ Execute args
   return ()
 
