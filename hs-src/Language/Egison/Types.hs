@@ -87,7 +87,6 @@ data EgisonExpr = CharExpr Char
   | MacroVarExpr String [EgisonExpr]
   | PatVarOmitExpr EgisonExpr
   | VarOmitExpr EgisonExpr
-  | SymbolExpr String [EgisonExpr]
   | PatVarExpr String [EgisonExpr]
   | WildCardExpr
   | CutPatExpr EgisonExpr
@@ -274,6 +273,10 @@ data MState = MState {msFrame :: FrameList,
 unwordsList :: Show a => [a] -> String
 unwordsList = unwords . map show
 
+-- |Convert a list of Egison expressions into a space-separated string
+unwordsExpr :: [EgisonExpr] -> String
+unwordsExpr = unwords . map showExpr
+
 -- |Convert a list of Egison expressions into a '_'-separated string
 unwordsNumExprs :: [EgisonExpr] -> String
 unwordsNumExprs [] = ""
@@ -305,20 +308,24 @@ showExpr (BoolExpr False) = "#f-expr"
 showExpr (NumberExpr contents) = show contents
 showExpr (FloatExpr contents) = show contents
 showExpr (VarExpr name nums) = name ++ unwordsNumExprs nums
-showExpr (SymbolExpr name nums) = "#" ++ name ++ unwordsNumExprs nums
+showExpr (MacroVarExpr name nums) = "%" ++ name ++ unwordsNumExprs nums
 showExpr (PatVarExpr name nums) = "$" ++ name ++ unwordsNumExprs nums
 showExpr WildCardExpr = "_"
-showExpr (PatVarOmitExpr pvar) = "(omit " ++ showExpr pvar ++ ")"
+showExpr (PatVarOmitExpr pvar) = "$~" ++ showExpr pvar
+showExpr (VarOmitExpr pvar) = "~" ++ showExpr pvar
 showExpr (CutPatExpr _) = "#<cut-pat>"
 showExpr (NotPatExpr _) = "#<not-pat>"
 showExpr (AndPatExpr _) = "#<and-pat>"
 showExpr (OrPatExpr _) = "#<or-pat>"
 showExpr (PredPatExpr _ _) = "#<pred-pat>"
-showExpr (InductiveDataExpr cons _) = "<" ++ cons ++ "...>"
+showExpr (InductiveDataExpr cons []) = "<" ++ cons ++ ">"
+showExpr (InductiveDataExpr cons exprs) = "<" ++ cons ++ " " ++ unwordsExpr exprs ++ ">"
 showExpr (TupleExpr _) = "[...]"
 showExpr (CollectionExpr _) = "{...}"
 showExpr (FuncExpr _ _) =
   "(lambda [" ++ "..." ++ "] ...)"
+showExpr (MacroExpr _ _) =
+  "(macro [" ++ "..." ++ "] ...)"
 showExpr (LoopExpr lVar iVar rExpr lExpr tExpr) =
   "(loop $" ++ lVar ++ " $" ++ iVar ++ " " ++ showExpr rExpr ++ " " ++  showExpr lExpr ++ " " ++ showExpr tExpr ++ ")"
 showExpr (ParamsExpr pVar pExpr body) =
