@@ -1,6 +1,7 @@
 module Main where
 import Paths_egison
 import Language.Egison.Core      -- Egison Interpreter
+import Language.Egison.Parser
 import Language.Egison.Types     -- Egison data types
 import Language.Egison.Variables -- Egison variable operations
 --import Control.Monad (when)
@@ -8,6 +9,7 @@ import Control.Monad.Error
 import System.IO
 import System.Environment
 import System.Console.Haskeline
+import Text.Regex.Posix
 
 main :: IO ()
 main = do args <- getArgs
@@ -52,20 +54,27 @@ runRepl = do
                 Just "" -> if input0 == ""
                              then loop env "> " ""
                              else loop env "  " (input0 ++ "\n")
-                Just input ->
-                  let newInput = input0 ++ input in
-                    if (countParens newInput)
-                      then do result <- liftIO (evalString env newInput)
-                              if (length result) > 0
-                                then do outputStrLn result
-                                        loop env "> " ""
-                                else loop env "> " ""
-                      else loop env "  " newInput
+                Just input -> do
+                  let newInput = input0 ++ input
+                  let eTopExpr = readTopExpr newInput
+                  case eTopExpr of
+                    Left e -> do
+                      if show e =~ "unexpected end of input" -- Is this really OK?
+                        then loop env "  " $ newInput ++ "\n"
+                        else do liftIO $ putStrLn $ show e
+                                loop env "> " ""
+                    Right _ -> do
+                      result <- liftIO (evalString env newInput)
+                      if (length result) > 0
+                        then do outputStrLn result
+                                loop env "> " ""
+                        else loop env "> " ""
 
-countParens :: String -> Bool
-countParens str = let countOpen = length $ filter ((==) '(') str in
-                  let countClose = length $ filter  ((==) ')') str in
-                    (countOpen > 0) && (countOpen <= countClose)
+--countParens :: String -> Bool
+--countParens str = let countOpen = length $ filter ((==) '(') str in
+--                  let countClose = length $ filter  ((==) ')') str in
+--                    (countOpen > 0) && (countOpen <= countClose)
+
 -- End REPL Section
 
 -- Begin Util section, of generic functions

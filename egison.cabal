@@ -1,5 +1,5 @@
 Name:                egison
-Version:             2.1.13
+Version:             2.1.14
 Synopsis:            An Interpreter for the Programming Language Egison
 Description:         An interpreter for the programming language Egison.
                      A feature of Egison is the strong pattern match facility.
@@ -38,7 +38,7 @@ Library
 
 Executable egison
   Main-is:             egisoni.hs
-  Build-depends:       egison, base >= 4.0 && < 5, array, containers, haskeline, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths
+  Build-depends:       egison, base >= 4.0 && < 5, array, containers, haskeline, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths, regex-posix
   Other-modules:       Paths_egison
   Hs-Source-Dirs:      hs-src/Interpreter
   
