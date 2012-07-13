@@ -405,3 +405,10 @@
 
 (test (match-all {[1 2] [1 2]} (List [Integer Integer])
         [<cons [$a $b] _> [a b]]))
+
+(define $pair
+  (macro [$s $pat]
+    <cons $~s <cons ,~s pat>>))
+
+(test (match-all {1 2 3 1 2} (Multiset Integer)
+        [(pair %k _) k]))

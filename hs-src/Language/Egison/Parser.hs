@@ -228,16 +228,25 @@ parsePatVar :: Parser EgisonExpr
 parsePatVar = do (name, nums) <- parsePatVar2
                  return $ PatVarExpr name nums
                     
-parseSymbol2 :: Parser VarExpr
-parseSymbol2 = do char '#'
-                  name <- identifier
-                  nums <- lexeme parseIndexNums
-                  return (name, nums)
+parseMacroVarExpr :: Parser EgisonExpr
+parseMacroVarExpr = do
+  char '%'
+  name <- identifier
+  nums <- lexeme parseIndexNums
+  return $ MacroVarExpr name nums
 
-parseSymbol :: Parser EgisonExpr
-parseSymbol = do (name, nums) <- parseSymbol2
-                 return $ SymbolExpr name nums
-               
+parsePatVarOmitExpr :: Parser EgisonExpr
+parsePatVarOmitExpr = do
+  string "$~"
+  expr <- lexeme parseExpr
+  return $ PatVarOmitExpr expr
+
+parseVarOmitExpr :: Parser EgisonExpr
+parseVarOmitExpr = do
+  char '~'
+  expr <- lexeme parseExpr
+  return $ VarOmitExpr expr
+
 parseArgs :: Parser ArgsExpr
 parseArgs = do
       try (do (name, _) <- lexeme parsePatVar2
@@ -370,9 +379,10 @@ parseExpr =
   <|> lexeme parseChar
   <|> lexeme parseString
   <|> try (lexeme parseBool)
-  <|> try (lexeme parseSymbol)
   <|> try (lexeme parsePattern)
---  <|> lexeme parsePatVarOmitExpr
+  <|> lexeme parseMacroVarExpr
+  <|> lexeme parsePatVarOmitExpr
+  <|> lexeme parseVarOmitExpr
   <|> lexeme parseVar
   <|> angles (do cons <- lexeme identifier
                  argExprs <- sepEndBy parseExpr whiteSpace
@@ -385,6 +395,12 @@ parseExpr =
                  args <- lexeme parseArgs
                  body <- lexeme parseExpr
                  return (FuncExpr args body)
+          <|> do try (string "macro" >> many1 space)
+                 args <- lexeme (brackets (sepEndBy (do (name, _) <- parsePatVar2
+                                                        return name)
+                                                    whiteSpace))
+                 body <- lexeme parseExpr
+                 return (MacroExpr args body)
           <|> do try (string "if" >> many1 space)
                  condExpr <- lexeme parseExpr
                  expr1 <- lexeme parseExpr

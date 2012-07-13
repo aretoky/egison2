@@ -29,10 +29,10 @@ Library
   Exposed-Modules: Language.Egison.Core
                    Language.Egison.Types
                    Language.Egison.Variables
---                   Language.Egison.Compiler
                    Language.Egison.Numerical
                    Language.Egison.Parser
                    Language.Egison.Primitives
+                   Language.Egison.Macro
   Other-modules:   Paths_egison
 
 

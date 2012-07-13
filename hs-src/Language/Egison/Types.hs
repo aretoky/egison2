@@ -84,10 +84,12 @@ data EgisonExpr = CharExpr Char
   | NumberExpr Integer
   | FloatExpr Double
   | VarExpr String [EgisonExpr]
+  | MacroVarExpr String [EgisonExpr]
+  | PatVarOmitExpr EgisonExpr
+  | VarOmitExpr EgisonExpr
   | SymbolExpr String [EgisonExpr]
   | PatVarExpr String [EgisonExpr]
   | WildCardExpr
-  | PatVarOmitExpr EgisonExpr
   | CutPatExpr EgisonExpr
   | NotPatExpr EgisonExpr
   | AndPatExpr [EgisonExpr]
@@ -97,6 +99,7 @@ data EgisonExpr = CharExpr Char
   | TupleExpr [InnerExpr]
   | CollectionExpr [InnerExpr]
   | FuncExpr Args EgisonExpr
+  | MacroExpr [String] EgisonExpr
   | LoopExpr String String EgisonExpr EgisonExpr EgisonExpr
   | ParamsExpr String EgisonExpr EgisonExpr
   | IfExpr EgisonExpr EgisonExpr EgisonExpr
@@ -166,6 +169,7 @@ data EgisonVal = World [Action]
   | Type Frame
   | Destructor DestructInfo
   | Func Args EgisonExpr Env
+  | Macro [String] EgisonExpr
   | PrimitiveFunc ([EgisonVal] -> ThrowsError EgisonVal)
   | IOFunc ([EgisonVal] -> IOThrowsError EgisonVal)
   | Port String Handle

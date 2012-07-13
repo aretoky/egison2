@@ -4,6 +4,7 @@ import Language.Egison.Parser
 import Language.Egison.Primitives
 import Language.Egison.Types
 import Language.Egison.Variables
+import Language.Egison.Macro
 import Control.Monad.Error
 import Data.Array
 import qualified Data.Map
@@ -193,6 +194,8 @@ cEval1 (Closure env (AndPatExpr patExprs)) = do
   return $ Value $ AndPat patObjRefs
 cEval1 (Closure env (FuncExpr args body)) = do
   return $ Value $ Func args body env
+cEval1 (Closure _ (MacroExpr args body)) = do
+  return $ Value $ Macro args body
 cEval1 (Closure env (IfExpr condExpr expr1 expr2)) = do
   obj <- cEval1 $ Closure env condExpr
   case obj of
@@ -268,6 +271,9 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
     Value (Func fArgs body cEnv) -> do frame <- liftIO (makeClosure env argExpr) >>= makeFrame fArgs
                                        newEnv <- liftIO $ extendEnv cEnv frame
                                        cEval1 (Closure newEnv body)
+    Value (Macro mArgs body) -> do argExprs <- liftThrows $ tupleExprToExprList argExpr
+                                   newBody <- expandMacro (Data.Map.fromList (zip mArgs argExprs)) body
+                                   cEval1 (Closure env newBody)
     _ -> throwError $ Default "not function"
 cEval1 val = return val
 
@@ -275,7 +281,9 @@ cApply1 :: ObjectRef -> ObjectRef -> IOThrowsError Object
 cApply1 fnObjRef argObjRef = do
   fnObj <- cRefEval1 fnObjRef
   case fnObj of
-    Value (IOFunc fn) -> throwError $ Default "undefined ioFunc"
+    Value (IOFunc fn) -> do arg <- cRefEval argObjRef
+                            val <- fn (tupleToList arg)
+                            return $ Value val
     Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
@@ -336,6 +344,16 @@ makeFrame (ATuple fArgs) objRef = do
       return $ concat frames
     _ -> throwError $ Default "makeFrame: not tuple"
 
+tupleExprToExprList :: EgisonExpr -> ThrowsError [EgisonExpr]
+tupleExprToExprList (TupleExpr innerExprs) = innerExprsToExprList innerExprs
+tupleExprToExprList expr = return [expr]
+
+innerExprsToExprList :: [InnerExpr] -> ThrowsError [EgisonExpr]
+innerExprsToExprList [] = return []
+innerExprsToExprList ((ElementExpr expr):rest) = do retRest <- innerExprsToExprList rest
+                                                    return (expr:retRest)
+innerExprsToExprList ((SubCollectionExpr _):_) = throwError $ Default "innerExprsToExprList: subcollection is not supported"
+    
 innerValRefsToObjRefList :: [InnerValRef] -> IOThrowsError [ObjectRef]
 innerValRefsToObjRefList [] = return []
 innerValRefsToObjRefList (innerRef:rest) = do

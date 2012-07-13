@@ -1,15 +1,27 @@
-module Language.Egison.Types where
+module Language.Egison.Macro where
 import Language.Egison.Types
-import Control.Monad.Error
+import qualified Data.Map
 
-type MacroFrame = Data.Map.Map Var EgisonExpr
+type MacroFrame = Data.Map.Map String EgisonExpr
 
-getExpr :: MacroFrame -> Var -> IOThrowsError EgisonExpr
-  case Data.Map.lookup var frame of
-    (Just a) -> return a
-    Nothing -> throwError $ UnboundVar "Getting an unbound variable" (showVar var)
+getExpr :: MacroFrame -> String -> Maybe EgisonExpr
+getExpr frame name = Data.Map.lookup name frame
 
 expandMacro :: MacroFrame -> EgisonExpr -> IOThrowsError EgisonExpr
+expandMacro frame (VarExpr name []) =
+  case getExpr frame name of
+    Nothing -> return $ MacroVarExpr name []
+    Just expr -> return expr
+expandMacro frame (PatVarOmitExpr expr) = do
+  newExpr <- expandMacro frame expr
+  case newExpr of
+    MacroVarExpr name numExprs -> return $ PatVarExpr name numExprs
+    _ -> return $ PatVarOmitExpr newExpr
+expandMacro frame (VarOmitExpr expr) = do
+  newExpr <- expandMacro frame expr
+  case newExpr of
+    MacroVarExpr name numExprs -> return $ VarExpr name numExprs
+    _ -> return $ VarOmitExpr newExpr
 expandMacro frame (InductiveDataExpr cons exprs) = do
   newExprs <- mapM (expandMacro frame) exprs
   return $ InductiveDataExpr cons newExprs
@@ -20,8 +32,8 @@ expandMacro frame (CollectionExpr innerExprs) = do
   newInnerExprs <- mapM (expandMacroInnerExpr frame) innerExprs
   return $ CollectionExpr newInnerExprs
 expandMacro frame (PredPatExpr predName argExprs) = do
-  newExprs <- mapM (expandMacro frame) exprs
-  return $ PredPatExpr predName newExprs
+  newArgExprs <- mapM (expandMacro frame) argExprs
+  return $ PredPatExpr predName newArgExprs
 expandMacro frame (CutPatExpr patExpr) = do
   newPatExpr <- expandMacro frame patExpr
   return $ CutPatExpr newPatExpr
@@ -34,7 +46,7 @@ expandMacro frame (OrPatExpr patExprs) = do
 expandMacro frame (AndPatExpr patExprs) = do
   newPatExprs <- mapM (expandMacro frame) patExprs
   return $ AndPatExpr newPatExprs
-expandMacro frame (FuncExpr args body) = undefined
+expandMacro frame (FuncExpr args body) = do
   newBody <- expandMacro frame body
   return $ FuncExpr args newBody
 expandMacro frame (IfExpr condExpr expr1 expr2) = do
@@ -58,14 +70,14 @@ expandMacro frame (MatchAllExpr tgtExpr typExpr mc) = do
   newTgtExpr <- expandMacro frame tgtExpr
   newTypExpr <- expandMacro frame typExpr
   newMc <- expandMacroMatchClause frame mc
-  return $ MatchExpr newTgtExpr newTypExpr newMc
+  return $ MatchAllExpr newTgtExpr newTypExpr newMc
 expandMacro _ expr = return expr
 
 expandMacroMatchClause :: MacroFrame -> MatchClause -> IOThrowsError MatchClause
-expandMacroMatchClause frame (MatchClause patExpr body) = do
+expandMacroMatchClause frame (patExpr, body) = do
   newPatExpr <- expandMacro frame patExpr
   newBody <- expandMacro frame body
-  return $ MatchClause newPatExpr newBody
+  return (newPatExpr, newBody)
 
 expandMacroInnerExpr :: MacroFrame -> InnerExpr -> IOThrowsError InnerExpr
 expandMacroInnerExpr frame (ElementExpr expr) = do
