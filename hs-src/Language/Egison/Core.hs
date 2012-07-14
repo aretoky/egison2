@@ -170,9 +170,29 @@ cEval1 (Closure env (TupleExpr innerExprs)) = do
 cEval1 (Closure env (CollectionExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   return $ Intermidiate $ ICollection innerRefs
-cEval1 (Closure env (ArrayExpr exprs)) = do
-  vals <- mapM (eval env) exprs
-  return $ Value $ Array $ listArray (1, (length vals)) vals
+cEval1 (Closure env (ArrayExpr innerArrayExprs)) = do
+  let dimension = calcDimension innerArrayExprs
+  let size = calcSize innerArrayExprs
+  elemExprs <- liftThrows $ calcElemExprs innerArrayExprs
+  vals <- mapM (eval env) elemExprs
+  return $ Value $ Array dimension size $ listArray (1, (fromIntegral (length vals))) vals
+ where calcDimension aExprs = helper 1 aExprs
+        where helper n [] = n
+              helper n ((AElementExpr _):_) = n
+              helper n ((AInnerArrayExpr inner):_) = helper (n + 1) inner
+       calcSize aExprs = helper [] aExprs
+        where helper ns [] = ns ++ [0]
+              helper ns aExprs2@((AElementExpr _):_) = ns ++ [(fromIntegral (length aExprs2))]
+              helper ns aExprs2@((AInnerArrayExpr inner):_) = helper (ns ++ [(fromIntegral (length aExprs2))]) inner
+       calcElemExprs [] = return []
+       calcElemExprs aExprs@((AElementExpr _):_) = mapM (\aExpr -> case aExpr of
+                                                                     AElementExpr expr -> return expr
+                                                                     _ -> throwError $ Default "type error in array")
+                                                        aExprs
+       calcElemExprs aExprs@((AInnerArrayExpr _):_) = liftM concat $ mapM (\aExpr -> case aExpr of
+                                                                                       AInnerArrayExpr aExprs2 -> calcElemExprs aExprs2
+                                                                                       _ -> throwError $ Default "type error in array")
+                                                                          aExprs
 cEval1 (Closure _ WildCardExpr) = return $ Value WildCard
 cEval1 (Closure env (PatVarExpr name numExprs)) = do
   numVals <- mapM (eval env) numExprs
@@ -266,6 +286,22 @@ cEval1 (Closure env (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)) = d
   rangeObjRef <- liftIO $ makeClosure env rangeExpr
   let loopObj = Loop loopVar indexVar rangeObjRef loopExpr tailExpr
   expandLoop env loopObj
+cEval1 (Closure env (ArrayMapExpr fnExpr arrExpr)) = do
+  fnObjRef <- liftIO $ makeClosure env fnExpr
+  arrObj <- cEval1 (Closure env arrExpr)
+  case arrObj of
+    Value (Array d ms _) -> do
+      let is = map (\iss -> (Value . Tuple) $ map (Element . Number) iss) $ indexList ms
+      isRefs <- liftIO $ mapM newIORef is
+      vals <- mapM (cApply fnObjRef) isRefs
+      return $ Value $ Array d ms $ listArray (1, (fromIntegral (length vals))) vals
+    _ -> throwError $ Default "array-map: not array"
+ where indexList [m] = map (\i -> [i]) $ between 1 m
+       indexList (m:ms) = concat $ map (\n -> map (\is -> n:is) $ indexList ms)
+                                       (between 1 m)
+       between m n = if m == n
+                       then [n]
+                       else (m:(between (m + 1) n))
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
@@ -284,6 +320,21 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
                                    cEval1 (Closure env newBody)
     _ -> throwError $ Default "not function"
 cEval1 val = return val
+
+cApply :: ObjectRef -> ObjectRef -> IOThrowsError EgisonVal
+cApply fnObjRef argObjRef = do
+  fnObj <- cRefEval1 fnObjRef
+  case fnObj of
+    Value (IOFunc fn) -> do arg <- cRefEval argObjRef
+                            val <- fn (tupleToList arg)
+                            return $ val
+    Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
+                                   val <- liftThrows $ fn (tupleToList arg)
+                                   return $ val
+    Value (Func fArgs body cEnv) -> do frame <- makeFrame fArgs argObjRef
+                                       newEnv <- liftIO $ extendEnv cEnv frame
+                                       cEval (Closure newEnv body)
+    _ -> throwError $ Default "cApply1 not function"
 
 cApply1 :: ObjectRef -> ObjectRef -> IOThrowsError Object
 cApply1 fnObjRef argObjRef = do
@@ -954,11 +1005,11 @@ primitives = [("+", numericBinop (+)),
               ("array-dimension", arrayDimension),
               ("array-size", arraySize),
 
-              ("array-ref", arrayRef),
+              ("array-ref", arrayRef)
 --              ("array-sub-ref", arrayRef),
               
-              ("array-to-collection", arrayToCollection),
-              ("collection-to-array", collectionToArray)
+--              ("array-to-collection", arrayToCollection),
+--              ("collection-to-array", collectionToArray)
 
               ]
 

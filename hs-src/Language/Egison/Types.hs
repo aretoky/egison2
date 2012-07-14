@@ -98,7 +98,7 @@ data EgisonExpr = CharExpr Char
   | InductiveDataExpr String [EgisonExpr]
   | TupleExpr [InnerExpr]
   | CollectionExpr [InnerExpr]
-  | ArrayExpr [EgisonExpr]
+  | ArrayExpr [ArrayElementExpr]
   | FuncExpr Args EgisonExpr
   | MacroExpr [String] EgisonExpr
   | LoopExpr String String EgisonExpr EgisonExpr EgisonExpr
@@ -112,9 +112,14 @@ data EgisonExpr = CharExpr Char
   | DestructorExpr DestructInfoExpr
   | MatchExpr EgisonExpr EgisonExpr [MatchClause]
   | MatchAllExpr EgisonExpr EgisonExpr MatchClause
+  | ArrayMapExpr EgisonExpr EgisonExpr
   | ApplyExpr EgisonExpr EgisonExpr
  deriving (Show)
 
+data ArrayElementExpr = AElementExpr EgisonExpr
+  | AInnerArrayExpr [ArrayElementExpr]
+ deriving (Show)
+ 
 type ArgsExpr = Args
                
 type MatchClause = (EgisonExpr, EgisonExpr)
@@ -173,7 +178,7 @@ data EgisonVal = World [Action]
   | InductiveData String [EgisonVal]
   | Tuple [InnerVal]
   | Collection [InnerVal]
-  | Array (Array Int EgisonVal)
+  | Array Integer [Integer] (Array Integer EgisonVal)
   | Type Frame
   | Destructor DestructInfo
   | Func Args EgisonExpr Env
@@ -332,6 +337,7 @@ showExpr (InductiveDataExpr cons []) = "<" ++ cons ++ ">"
 showExpr (InductiveDataExpr cons exprs) = "<" ++ cons ++ " " ++ unwordsExpr exprs ++ ">"
 showExpr (TupleExpr _) = "[...]"
 showExpr (CollectionExpr _) = "{...}"
+showExpr (ArrayExpr _) = "[|...|]"
 showExpr (FuncExpr _ _) =
   "(lambda [" ++ "..." ++ "] ...)"
 showExpr (MacroExpr _ _) =
@@ -357,6 +363,8 @@ showExpr (MatchExpr tgtExpr typExpr _) =
   "(match " ++ showExpr tgtExpr ++ " " ++ showExpr typExpr ++ " ...)"
 showExpr (MatchAllExpr tgtExpr typExpr _) =
   "(match-all " ++ showExpr tgtExpr ++ " " ++ showExpr typExpr ++ " ...)"
+showExpr (ArrayMapExpr fnExpr arrExpr) =
+  "(array-map " ++ showExpr fnExpr ++ " " ++ showExpr arrExpr ++ " )"
 showExpr (ApplyExpr opExpr argExpr) =
   "(" ++ showExpr opExpr ++ " " ++ showExpr argExpr ++ ")"
   
@@ -419,7 +427,7 @@ showVal (InductiveData cons []) = "<" ++ cons ++ ">"
 showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">"
 showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
 showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
-showVal (Array _) = "#<array>"
+showVal (Array d ns _) = "#<array " ++ show d ++ " " ++ show ns ++ ">"
 showVal (Type _) = "#<type>"
 showVal (Destructor _) = "#<destructor>"
 showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"

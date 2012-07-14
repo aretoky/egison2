@@ -237,13 +237,13 @@ parseMacroVarExpr = do
 
 parsePatVarOmitExpr :: Parser EgisonExpr
 parsePatVarOmitExpr = do
-  string "$~"
+  string "$`"
   expr <- lexeme parseExpr
   return $ PatVarOmitExpr expr
 
 parseVarOmitExpr :: Parser EgisonExpr
 parseVarOmitExpr = do
-  char '~'
+  char '`'
   expr <- lexeme parseExpr
   return $ VarOmitExpr expr
 
@@ -389,7 +389,16 @@ parseMatchClause :: Parser MatchClause
 parseMatchClause = brackets (do pat <- lexeme parseExpr
                                 body <- lexeme parseExpr
                                 return (pat, body))
-              
+
+parseArrayElementExpr :: Parser ArrayElementExpr
+parseArrayElementExpr =
+      do try (lexeme (string "[~"))
+         exprs <- sepEndBy parseArrayElementExpr whiteSpace
+         (lexeme (string "~]"))
+         return (AInnerArrayExpr exprs)
+  <|> do expr <- parseExpr
+         return (AElementExpr expr)
+
 -- |Parse an expression
 parseExpr :: Parser EgisonExpr
 parseExpr =
@@ -404,7 +413,7 @@ parseExpr =
   <|> lexeme parseVarOmitExpr
   <|> lexeme parseVar
   <|> do try (lexeme (string "[|"))
-         exprs <- sepEndBy parseExpr whiteSpace
+         exprs <- sepEndBy parseArrayElementExpr whiteSpace
          (lexeme (string "|]"))
          return (ArrayExpr exprs)
   <|> angles (do cons <- lexeme identifier
@@ -472,6 +481,10 @@ parseExpr =
                  loopExpr <- lexeme parseExpr
                  tailExpr <- lexeme parseExpr
                  return (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)
+          <|> do try (string "array-map" >> many1 space)
+                 fnExpr <- lexeme parseExpr
+                 arrExpr <- lexeme parseExpr
+                 return (ArrayMapExpr fnExpr arrExpr)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return (ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs))))

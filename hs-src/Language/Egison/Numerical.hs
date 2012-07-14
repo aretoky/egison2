@@ -166,59 +166,29 @@ unpackFloat notFloat = throwError $ TypeMismatch "float" [notFloat]
 ---------------------------------------------------
 
 arrayDimension :: [EgisonVal] -> ThrowsError EgisonVal
-arrayDimension [val] = helper 0 val
- where helper d (Array arr) =
-         let xs = elems arr in
-         case xs of
-           [] -> return $ Number (d + 1)
-           (e:_) -> case e of
-                      Array _ -> helper (d + 1) e
-                      _ -> return $ Number (d + 1)
-       helper d _ = return $ Number d
+arrayDimension [(Array d _ _)] = return $ Number d
+arrayDimension [x] = throwError $ TypeMismatch "array" [x]
 arrayDimension badArgList = throwError $ NumArgs 1 badArgList
 
 arraySize :: [EgisonVal] -> ThrowsError EgisonVal
-arraySize [(Number n), val@(Array _)] = helper n val
- where helper 1 (Array arr) = return $ Number $ fromIntegral $ length $ indices arr
-       helper n2 (Array arr) =
-         if n2 > 1
-           then let xs = elems arr in
-                  case xs of
-                    (e:_) -> case e of
-                               Array _ -> helper (n2 - 1) e
-                               _ -> throwError $ Default "arraySize: larger dimention size than actual"
-                    _ -> throwError $ Default "arraySize: larger dimention size than actual"
-           else throwError $ Default "arraySize: dimention size must be more than 1"
-       helper _ _ = throwError $ Default "arraySize: type mismatch"
+arraySize [(Number m), (Array _ ns _)] = return $ Number $ nth m ns
 arraySize [x, y] = throwError $ TypeMismatch "number, array" [x, y]
 arraySize badArgList = throwError $ NumArgs 2 badArgList
 
 arrayRef :: [EgisonVal] -> ThrowsError EgisonVal
-arrayRef [tuple, val@(Array _)] = do ns <- mapM unpackNum $ tupleToList tuple
-                                     helper ns val
- where helper [n] (Array arr) = return (arr ! (fromIntegral n))
-       helper (n:ns) (Array arr) =
-         if n > 0
-           then let e = arr ! (fromIntegral n) in
-                  case e of
-                    Array _ -> helper ns e
-                    _ -> throwError $ Default "arraySize: larger dimention size than actual"
-           else throwError $ Default "arrayRef: index number should be more than 0"
-       helper _ _ = throwError $ Default "arraySize: type mismatch"
+arrayRef [tuple, (Array _ ms arr)] = do
+  ns <- mapM unpackNum $ tupleToList tuple
+  let i = integersToInteger ms ns
+  return $ (arr ! i)
 arrayRef [x, y] = throwError $ TypeMismatch "tuple of number, array" [x, y]
 arrayRef badArgList = throwError $ NumArgs 2 badArgList
 
-arrayToCollection :: [EgisonVal] -> ThrowsError EgisonVal
-arrayToCollection [val@(Array _)] = helper val
- where helper (Array arr) = do es <- mapM helper $ elems arr
-                               return $ Collection (map Element es)
-       helper val2 = return val2
-arrayToCollection [x] = throwError $ TypeMismatch "array" [x]
-arrayToCollection badArgList = throwError $ NumArgs 1 badArgList
+nth :: Integer -> [a] -> a
+nth 1 (x:xs) = x
+nth n (x:xs) = nth (n - 1) xs
 
-collectionToArray :: [EgisonVal] -> ThrowsError EgisonVal
-collectionToArray [(Collection innerVals)] =
-  let vals = innerValsToList innerVals in
-    return $ Array $ listArray (1, (length vals)) vals
-collectionToArray [x] = throwError $ TypeMismatch "collection" [x]
-collectionToArray badArgList = throwError $ NumArgs 1 badArgList
+integersToInteger :: [Integer] -> [Integer] -> Integer
+integersToInteger [_] [n] = n
+integersToInteger (_:ms) (n:ns) = (n - 1) * (multiplyList ms) + integersToInteger ms ns
+ where multiplyList [n] = n
+       multiplyList (n:ns) = n * (multiplyList ns)

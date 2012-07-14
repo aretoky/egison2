@@ -1,7 +1,7 @@
-(define $ass [|[|1 2 3|]
-               [|4 5 6|]
-               [|7 8 9|]
-               [|10 11 12|]|])
+(define $ass [|[~1 2 3~]
+               [~4 5 6~]
+               [~7 8 9~]
+               [~10 11 12~]|])
 
 (test (array-dimension ass))
 
@@ -13,6 +13,8 @@
 
 (test (array-ref [2 3] ass))
 
-(test (array-to-collection ass))
+(test (array-map (lambda [$i1 $i2] (* (array-ref [i1 i2] ass) 2)) ass))
 
-(test (collection-to-array {1 2 3}))
+(define $bss (array-map (lambda [$i1 $i2] (* (array-ref [i1 i2] ass) 2)) ass))
+
+(test (array-ref [2 3] bss))
