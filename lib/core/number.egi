@@ -1,6 +1,12 @@
 (define $Integer
   (type
     {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[,$n []
+          {[$tgt (if (= tgt n)
+                     {[]}
+                     {})]}]})]
      [$= (lambda [$val $tgt] (eq-n? val tgt))]}))
 
 (define $compare-integer
@@ -14,6 +20,12 @@
 (define $Double
   (type
     {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[,$d []
+          {[$tgt (if (= tgt d)
+                     {[]}
+                     {})]}]})]
      [$= (lambda [$val $tgt] (eq-f? val tgt))]}))
 
 (define $compare-float
@@ -29,10 +41,10 @@
     {[$var-match (lambda [$tgt] {tgt})]
      [$inductive-match
       (destructor
-        {[o []
+        {[<o> []
           {[0 {[]}]
            [_ {}]}]
-         [s Nat
+         [<s> Nat
           {[$tgt (match (compare-integer tgt 0) Order
                    {[<greater> {(- tgt 1)}]
                     [_ {}]})]}]})]

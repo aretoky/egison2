@@ -5,7 +5,11 @@
     {[$var-match (lambda [$tgt] {tgt})]
      [$inductive-match
       (destructor
-        {[node [Node (Multiset Node) (Multiset Node)]
+        {[,$val []
+            {[$tgt (if (= tgt val)
+                       {[]}
+                       {})]}]
+         [<node _ _ _> [Node (Multiset Node) (Multiset Node)]
           {[<node $n $in $out> {[n in out]}]}]})]
      [$= (lambda [$val $tgt]
            (match [val tgt] [NodeInfo NodeInfo]

@@ -9,20 +9,14 @@
     {[$var-match (lambda [$tgt] {tgt})]
      [$inductive-match
       (destructor
-        {[true []
+        {[<true> []
           {[<true> {[]}]
            [#t {[]}]
            [_ {}]}]
-         [false []
+         [<false> []
           {[<false> {[]}]
            [#f {[]}]
-           [_ {}]}]})]
-     [$=
-      (lambda [$val $tgt]
-        (match [val tgt] [Bool Bool]
-          {[[<true> <true>] #t]
-           [[<false> <false>] #t]
-           [[_ _] #f]}))]}))
+           [_ {}]}]})]}))
 
 (define $or
   (lambda [$b1 $b2]
@@ -57,19 +51,12 @@
     {[$var-match (lambda [$tgt] {tgt})]
      [$inductive-match
       (destructor
-        {[less []
+        {[<less> []
           {[<less> {[]}]
            [_ {}]}]
-         [equal []
+         [<equal> []
           {[<equal> {[]}]
            [_ {}]}]
-         [greater []
+         [<greater> []
           {[<greater> {[]}]
-           [_ {}]}]})]
-     [$=
-      (lambda [$val $tgt]
-        (match [val tgt] [Order Order]
-          {[[<less> <less>] #t]
-           [[<equal> <equal>] #t]
-           [[<greater> <greater>] #t]
-           [[_ _] #f]}))]}))
+           [_ {}]}]})]}))

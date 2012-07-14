@@ -89,6 +89,7 @@ data EgisonExpr = CharExpr Char
   | VarOmitExpr EgisonExpr
   | PatVarExpr String [EgisonExpr]
   | WildCardExpr
+  | ValuePatExpr EgisonExpr
   | CutPatExpr EgisonExpr
   | NotPatExpr EgisonExpr
   | AndPatExpr [EgisonExpr]
@@ -117,6 +118,11 @@ type ArgsExpr = Args
                
 type MatchClause = (EgisonExpr, EgisonExpr)
 
+data PrimitivePatPattern = PPWildCard
+  | PPValuePat String
+  | PPInductivePat String [PrimitivePatPattern]
+ deriving (Show)
+
 data PrimitivePattern = PWildCard
   | PPatVar String
   | PInductivePat String [PrimitivePattern]
@@ -137,7 +143,7 @@ type Bindings = [(Args, EgisonExpr)]
 
 type RecursiveBindings = [(String, EgisonExpr)]
   
-type DestructInfoExpr = [(String, EgisonExpr, [(PrimitivePattern, EgisonExpr)])]
+type DestructInfoExpr = [(PrimitivePatPattern, EgisonExpr, [(PrimitivePattern, EgisonExpr)])]
 
 --
 -- Value
@@ -157,6 +163,7 @@ data EgisonVal = World [Action]
   | Float Double
   | WildCard
   | PatVar String [Integer]
+  | ValuePat ObjectRef
   | PredPat String [ObjectRef]
   | CutPat ObjectRef
   | NotPat ObjectRef
@@ -216,7 +223,7 @@ makeCollectionFromValList vals = Collection $ map Element vals
 data InnerValRef = IElement ObjectRef
   | ISubCollection ObjectRef
 
-type DestructInfo = [(String, ObjectRef, [(Env, PrimitivePattern, EgisonExpr)])]
+type DestructInfo = [(PrimitivePatPattern, ObjectRef, [(Env, PrimitivePattern, EgisonExpr)])]
 
 --
 -- Internal Data
@@ -311,6 +318,7 @@ showExpr (VarExpr name nums) = name ++ unwordsNumExprs nums
 showExpr (MacroVarExpr name nums) = "%" ++ name ++ unwordsNumExprs nums
 showExpr (PatVarExpr name nums) = "$" ++ name ++ unwordsNumExprs nums
 showExpr WildCardExpr = "_"
+showExpr (ValuePatExpr expr) = "," ++ showExpr expr
 showExpr (PatVarOmitExpr pvar) = "$~" ++ showExpr pvar
 showExpr (VarOmitExpr pvar) = "~" ++ showExpr pvar
 showExpr (CutPatExpr _) = "#<cut-pat>"
@@ -399,6 +407,7 @@ showVal (Number contents) = show contents
 showVal (Float contents) = show contents
 showVal WildCard = "_"
 showVal (PatVar name nums) =  "$" ++ name ++ unwordsNums nums
+showVal (ValuePat _) = "#<value-pat>"
 showVal (CutPat _) = "#<cut-pat>"
 showVal (NotPat _) = "#<not-pat>"
 showVal (AndPat _) = "#<and-pat>"
@@ -411,6 +420,7 @@ showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
 showVal (Type _) = "#<type>"
 showVal (Destructor _) = "#<destructor>"
 showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"
+showVal (Macro _ _ ) = "(macro [" ++ "..." ++ "] ...)"
 showVal (PrimitiveFunc _) = "#<primitive>"
 showVal (IOFunc _) = "#<IO primitive>"
 showVal (Port _ _) = "#<IO port>"

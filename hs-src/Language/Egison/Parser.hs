@@ -291,7 +291,7 @@ parseNotPat = do char '^'
 parseValuePat :: Parser EgisonExpr
 parseValuePat = do char ','
                    expr <- parseExpr
-                   return $ PredPatExpr "=" [expr]
+                   return $ ValuePatExpr expr
 
 parseInnerExpr :: Parser InnerExpr
 parseInnerExpr = do expr <- parseExpr
@@ -322,17 +322,29 @@ parsePattern =
 parseDestructInfoExpr :: Parser DestructInfoExpr
 parseDestructInfoExpr = braces (sepEndBy parseDestructClause whiteSpace)
 
-parseDestructClause :: Parser (String, EgisonExpr, [(PrimitivePattern, EgisonExpr)])
-parseDestructClause = brackets (do patCons <- lexeme identifier
+parseDestructClause :: Parser (PrimitivePatPattern, EgisonExpr, [(PrimitivePattern, EgisonExpr)])
+parseDestructClause = brackets (do pppat <- lexeme parsePrimitivePatPattern
                                    typExpr <- lexeme parseExpr
                                    dc2s <- lexeme (braces (sepEndBy parseDestructClause2 whiteSpace))
-                                   return (patCons, typExpr, dc2s))
+                                   return (pppat, typExpr, dc2s))
 
 parseDestructClause2 :: Parser (PrimitivePattern, EgisonExpr)
 parseDestructClause2 = brackets (do datPat <- lexeme parsePrimitivePattern
                                     expr <- lexeme parseExpr
                                     return (datPat, expr))
 
+parsePrimitivePatPattern :: Parser PrimitivePatPattern
+parsePrimitivePatPattern =
+      do char '_'
+         return PPWildCard
+  <|> do char ','
+         char '$'
+         name <- lexeme identifier
+         return (PPValuePat name)
+  <|> angles (do c <- lexeme identifier
+                 ps <- sepEndBy parsePrimitivePatPattern whiteSpace
+                 return (PPInductivePat c ps))
+                                    
 parsePrimitivePattern :: Parser PrimitivePattern
 parsePrimitivePattern =
       do char '_'

@@ -3,16 +3,20 @@
     {[$var-match (lambda [$tgt] {tgt})]
      [$inductive-match
       (destructor
-        {[spade []
+        {[,$suit []
+          {[$tgt (if (= tgt suit)
+                     {[]}
+                     {})]}]
+         [<spade> []
           {[<spade> {[]}]
            [_ {}]}]
-         [heart []
+         [<heart> []
           {[<heart> {[]}]
            [_ {}]}]
-         [club []
+         [<club> []
           {[<club> {[]}]
            [_ {}]}]
-         [diamond []
+         [<diamond> []
           {[<diamond> {[]}]
            [_ {}]}]})]
      [$=
@@ -28,6 +32,12 @@
   (lambda [$m]
     (type
       {[$var-match (lambda [$tgt] {(mod tgt m)})]
+       [$inductive-match
+        (destructor
+          {[,$n []
+            {[$tgt (if (= tgt n)
+                       {[]}
+                       {})]}]})]
        [$= (lambda [$val $tgt] (eq? (mod val m) (mod tgt m)))]})))
 
 (define $Card
@@ -35,7 +45,11 @@
     {[$var-match (lambda [$tgt] {tgt})]
      [$inductive-match
       (destructor
-        {[card [Suit (Mod 13)]
+        {[,$card []
+            {[$tgt (if (= tgt card)
+                       {[]}
+                       {})]}]
+         [<card _ _> [Suit (Mod 13)]
           {[<card $s $n> {[s n]}]}]})]
      [$= (lambda [$val $tgt]
            (match [val tgt] [Card Card]

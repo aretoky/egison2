@@ -8,16 +8,20 @@
       {[$var-match (lambda [$tgt] {tgt})]
        [$inductive-match
         (destructor
-          {[nil []
+          {[,$val []
+            {[$tgt (if (= tgt val)
+                       {[]}
+                       {})]}]
+           [<nil> []
             {[{} {[]}]
              [_ {}]}]
-           [cons [a (List a)]
+           [<cons _ _> [a (List a)]
             {[{$x .$xs} {[x xs]}]
              [_ {}]}]
-           [snoc [a (List a)]
+           [<snoc _ _> [a (List a)]
             {[{.$xs $x} {[x xs]}]
              [_ {}]}]
-           [join [(List a) (List a)]
+           [<join _ _> [(List a) (List a)]
             {[$tgt (letrec {[$loop-fn
                              (lambda [$ts]
                                (match ts (List a)
@@ -27,7 +31,7 @@
                                     @(map (lambda [$as $bs] [{x @as} bs])
                                           (loop-fn xs))}]}))]}
                      (loop-fn tgt))]}]
-           [nioj [(List a) (List a)]
+           [<nioj _ _> [(List a) (List a)]
             {[$tgt (letrec {[$loop-fn
                              (lambda [$ts]
                                (match ts (List a)
@@ -193,13 +197,17 @@
       {[$var-match (lambda [$tgt] {tgt})]
        [$inductive-match
         (destructor
-          {[nil []
+          {[,$val []
+            {[$tgt (if (= tgt val)
+                       {[]}
+                       {})]}]
+           [<nil> []
             {[{} {[]}]
              [_ {}]}]
-           [cons [a (Multiset a)]
+           [<cons _ _> [a (Multiset a)]
             {[$tgt (map (lambda [$t] [t ((remove a) tgt t)])
                         ((unique a) tgt))]}]
-           [join [(Multiset a) (Multiset a)]
+           [<join _ _> [(Multiset a) (Multiset a)]
             {[$tgt (map (lambda [$ts] [ts ((remove-collection a) tgt ts)])
                         (subcollections tgt))]}]})]
        [$= (lambda [$val $tgt]
@@ -214,14 +222,18 @@
       {[$var-match (lambda [$tgt] {tgt})]
        [$inductive-match
         (destructor
-          {[nil []
+          {[,$val []
+            {[$tgt (if (= tgt val)
+                       {[]}
+                       {})]}]
+           [<nil> []
             {[{} {[]}]
              [_ {}]}]
-           [cons [a (Set a)]
+           [<cons _ _> [a (Set a)]
             {[$tgt (let {[$tgt2 ((unique a) tgt)]}
                      {@(match-all tgt2 (Multiset a) [<cons $x $xs> [x xs]])
                       @(match-all tgt2 (Multiset a) [<cons $x $xs> [x {@xs x}]])})]}]
-           [join [(Set a) (Set a)]
+           [<join _ _> [(Set a) (Set a)]
             {[$tgt (let {[$tgt2 ((unique a) tgt)]}
                      (concat (map (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
                                                          (subcollections xs)))

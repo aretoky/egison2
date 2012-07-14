@@ -177,6 +177,9 @@ cEval1 (Closure env (PatVarExpr name numExprs)) = do
                            _ -> throwError $ Default "cEval1: cannot reach here!")
                numVals
   return $ Value $ PatVar name nums
+cEval1 (Closure env (ValuePatExpr expr)) = do
+  objRef <- liftIO $ makeClosure env expr
+  return $ Value $ ValuePat objRef
 cEval1 (Closure env (PredPatExpr predName argExprs)) = do
   argObjRefs <- liftIO $ mapM (makeClosure env) argExprs
   return $ Value $ PredPat predName argObjRefs
@@ -226,11 +229,11 @@ cEval1 (Closure env (DestructorExpr destructInfoExpr)) = do
   destructInfo <- liftIO $ makeDestructInfo destructInfoExpr
   return $ Value $ Destructor destructInfo
  where makeDestructInfo [] = return []
-       makeDestructInfo ((cons, typExpr, pmcs):rest) = do
+       makeDestructInfo ((pppat, typExpr, pmcs):rest) = do
          typObjRef <- liftIO $ makeClosure env typExpr
          let epmcs = map (\(ppat, body) -> (env, ppat, body)) pmcs
          retRest <- makeDestructInfo rest
-         return ((cons, typObjRef, epmcs):retRest)
+         return ((pppat, typObjRef, epmcs):retRest)
 cEval1 (Closure env (MatchAllExpr tgtExpr typExpr (patExpr, body))) = do
   patObjRef <- liftIO $ makeClosure env patExpr
   tgtObjRef <- liftIO $ makeClosure env tgtExpr
@@ -410,7 +413,7 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                                                                          atoms)))
                                                 objRefs) ++ states
         _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
-    Intermidiate (IInductiveData con patObjRefs) -> do
+    Value (ValuePat _) -> do
       typObj <- cRefEval1 typObjRef
       case typObj of
         Value (Type tf) ->
@@ -421,18 +424,15 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                 do fnObj <- cRefEval1 fnObjRef
                    case fnObj of
                      Value (Destructor deconInfo) -> do
-                       indRet <- inductiveMatch deconInfo con tgtObjRef
+                       indRet <- inductiveMatch deconInfo patObjRef tgtObjRef
                        case indRet of
-                         (nTypObjRef, nTgtsObjRef) -> do
-                           inTypObjRefs <- tupleToObjRefList nTypObjRef
-                           inTgtsRefs <- collectionToObjRefList nTgtsObjRef
-                           inTgtObjRefss <- mapM tupleToObjRefList inTgtsRefs
+                         (inTypObjRefs, inPatObjRefs, inTgtObjRefss) -> do
                            patternMatch flag ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
-                                                                                         (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
+                                                                                         (zip3 inPatObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
                                                    inTgtObjRefss) ++ states)
+                     _ -> throwError $ Default "patternMatch: inductive-match is not destructor"
         _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
-    Value (InductiveData con pats) -> do
-      patObjRefs <- liftIO $ mapM (newIORef . Value) pats
+    Value (InductiveData _ _) -> do -- same with ValuePat
       typObj <- cRefEval1 typObjRef
       case typObj of
         Value (Type tf) ->
@@ -443,15 +443,32 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                 do fnObj <- cRefEval1 fnObjRef
                    case fnObj of
                      Value (Destructor deconInfo) -> do
-                       indRet <- inductiveMatch deconInfo con tgtObjRef
+                       indRet <- inductiveMatch deconInfo patObjRef tgtObjRef
                        case indRet of
-                         (nTypObjRef, nTgtsObjRef) -> do
-                           inTypObjRefs <- tupleToObjRefList nTypObjRef
-                           inTgtsRefs <- collectionToObjRefList nTgtsObjRef
-                           inTgtObjRefss <- mapM tupleToObjRefList inTgtsRefs
-                           patternMatch flag $ (map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> MAtom (PClosure bf pat) inTgtObjRef inTypObjRef)
-                                                                                          (zip3 patObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
-                                                    inTgtObjRefss) ++ states
+                         (inTypObjRefs, inPatObjRefs, inTgtObjRefss) -> do
+                           patternMatch flag ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
+                                                                                         (zip3 inPatObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
+                                                   inTgtObjRefss) ++ states)
+                     _ -> throwError $ Default "patternMatch: inductive-match is not destructor"
+        _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
+    Intermidiate (IInductiveData _ _) -> do -- same with ValuePat
+      typObj <- cRefEval1 typObjRef
+      case typObj of
+        Value (Type tf) ->
+          let mObjRef = Data.Map.lookup ("inductive-match",[]) tf in
+            case mObjRef of
+              Nothing -> throwError (Default "no method in type: inductive-match")
+              Just fnObjRef ->
+                do fnObj <- cRefEval1 fnObjRef
+                   case fnObj of
+                     Value (Destructor deconInfo) -> do
+                       indRet <- inductiveMatch deconInfo patObjRef tgtObjRef
+                       case indRet of
+                         (inTypObjRefs, inPatObjRefs, inTgtObjRefss) -> do
+                           patternMatch flag ((map (\inTgtObjRefs -> (MState frame ((map (\(pat,inTgtObjRef,inTypObjRef) -> (MAtom (PClosure bf pat) inTgtObjRef inTypObjRef))
+                                                                                         (zip3 inPatObjRefs inTgtObjRefs inTypObjRefs)) ++ atoms)))
+                                                   inTgtObjRefss) ++ states)
+                     _ -> throwError $ Default "patternMatch: inductive-match is not destructor"
         _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
     Intermidiate (ITuple pats) -> do
       patObjRefs <- innerRefsToObjRefList pats
@@ -498,25 +515,64 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                MOne -> return retFrames
     _ -> throwError $ Default $ "invalid pattern: " ++ show patObj
         
-inductiveMatch :: DestructInfo -> String -> ObjectRef -> IOThrowsError (ObjectRef,ObjectRef)
-inductiveMatch [] _ _ = throwError (Default "inductiveMatch: not matched any clauses")
-inductiveMatch ((con,_,[]):rest) pcon tgtObjRefRef =
-  if (con == pcon)
-    then throwError (Default "inductiveMatch: not matched any clauses")
-    else inductiveMatch rest pcon tgtObjRefRef
-inductiveMatch ((con,typObjRef,((env,ppat,expr):cls)):rest) pcon tgtObjRefRef = do
-  if (con == pcon)
-    then do mPpmRet <- primitivePatternMatch ppat tgtObjRefRef
-            
-            case mPpmRet of
-              Nothing -> inductiveMatch ((con,typObjRef,cls):rest) pcon tgtObjRefRef
-              Just ppmRet -> do
-                newEnv <- liftIO $ extendEnv env ppmRet
-                ret <- liftIO $ makeClosure newEnv expr
-                return (typObjRef,ret)
-    else inductiveMatch rest pcon tgtObjRefRef
+inductiveMatch :: DestructInfo -> ObjectRef -> ObjectRef -> IOThrowsError ([ObjectRef], [ObjectRef], [[ObjectRef]])
+inductiveMatch [] _ _ = throwError $ Default "inductiveMatch: not matched any primitive pattern clauses"
+inductiveMatch ((pppat, typObjRef, pclss):rest) patObjRef tgtObjRef = do
+  mRet <- primitivePatPatternMatch pppat patObjRef
+  case mRet of
+    Nothing -> inductiveMatch rest patObjRef tgtObjRef
+    Just (patObjRefs, frame) -> do
+      mPpmRet <- helper pclss
+      case mPpmRet of
+        Nothing -> throwError $ Default "inductiveMatch: not matched any primitive clauses"
+        Just tgtObjRefs -> do
+          typObjRefs <- tupleToObjRefList typObjRef
+          return (typObjRefs, patObjRefs, tgtObjRefs)
+     where helper [] = return Nothing
+           helper ((env, ppat, expr):pclss2) = do
+             mPpmRet <- primitivePatternMatch ppat tgtObjRef
+             case mPpmRet of
+               Nothing -> helper pclss2
+               Just ppmRet -> do
+                 newEnv <- liftIO $ extendEnv env (ppmRet ++ frame)
+                 retObjRef <- liftIO $ makeClosure newEnv expr
+                 tgtObjRefs <- collectionToObjRefList retObjRef
+                 tgtObjRefss <- mapM tupleToObjRefList tgtObjRefs
+                 return $ Just tgtObjRefss
 
+primitivePatPatternMatch :: PrimitivePatPattern -> ObjectRef -> IOThrowsError (Maybe ([ObjectRef], FrameList))
+primitivePatPatternMatch PPWildCard patObjRef = return $ Just ([patObjRef], [])
+primitivePatPatternMatch (PPValuePat name) patObjRef = do
+  patObj <- cRefEval1 patObjRef
+  case patObj of
+    Value (ValuePat objRef) -> return $ Just ([], [((name, []), objRef)])
+    _ -> return $ Nothing
+primitivePatPatternMatch (PPInductivePat ppcons pppats) patObjRef = do
+  patObj <- cRefEval1 patObjRef
+  case patObj of
+    Intermidiate (IInductiveData pcon patObjRefs) ->
+      if ppcons == pcon
+        then primitivePatPatternMatchList pppats patObjRefs
+        else return Nothing
+    Value (InductiveData pcon patVals) -> do
+      patObjRefs <- liftIO $ mapM (newIORef . Value) patVals
+      if ppcons == pcon
+        then primitivePatPatternMatchList pppats patObjRefs
+        else return Nothing
+    _ -> return $ Nothing
 
+primitivePatPatternMatchList :: [PrimitivePatPattern] -> [ObjectRef] -> IOThrowsError (Maybe ([ObjectRef], FrameList))
+primitivePatPatternMatchList [] [] = return $ Just ([], [])
+primitivePatPatternMatchList (pppat:pppats) (patObjRef:patObjRefs) = do
+  mRet <- primitivePatPatternMatch pppat patObjRef
+  case mRet of
+    Nothing -> return Nothing
+    Just (retPatObjRefs, retFrame) -> do
+      mRetRest <- primitivePatPatternMatchList pppats patObjRefs
+      case mRetRest of
+        Nothing -> return Nothing
+        Just (retRestPatObjRefs, retRestFrame) -> return $ Just (retPatObjRefs ++ retRestPatObjRefs, retFrame ++ retRestFrame)
+    
 primitivePatternMatch :: PrimitivePattern -> ObjectRef -> IOThrowsError (Maybe FrameList)
 primitivePatternMatch (PPatBool bool) objRef = do
   val <- cRefEval objRef
