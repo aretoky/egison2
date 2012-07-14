@@ -15,6 +15,7 @@
      "\\<letrec\\>"
      "\\<type\\>"
      "\\<type-ref\\>"
+     "\\<of\\>"
      "\\<destructor\\>"
      "\\<loop\\>"
      "\\<match\\>"

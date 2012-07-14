@@ -269,6 +269,13 @@ parseRecursiveBindings = do
                                     return (name, expr)))
                       whiteSpace)
 
+--parseTypeRefExpr :: Parser EgisonExpr
+--parseTypeRefExpr = do
+--  typExpr <- parseExpr
+--  char '.'
+--  name <- lexeme identifier
+--  return $ TypeRefExpr typExpr name
+
 parseVar :: Parser EgisonExpr
 parseVar = do name <- identifier
               nums <- lexeme parseIndexNums
@@ -433,6 +440,10 @@ parseExpr =
           <|> do try (string "type-ref" >> many1 space)
                  typExpr <- lexeme parseExpr
                  name <- lexeme identifier
+                 return (TypeRefExpr typExpr name)
+          <|> do try (string "of" >> many1 space)
+                 name <- lexeme identifier
+                 typExpr <- lexeme parseExpr
                  return (TypeRefExpr typExpr name)
           <|> do try (string "type" >> many1 space)
                  bindings <- lexeme parseRecursiveBindings
