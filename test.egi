@@ -332,6 +332,7 @@
 (test (n-queen 8))
 
 
+
 (define $eight-queen
   (match-all {1 2 3 4 5 6 7 8} (Multiset Integer)
     [<cons $a_1
@@ -415,3 +416,6 @@
 (define $pair (macro [$s $pat] <cons $~s <cons ,~s pat>>))
 
 (test (match-all {1 2 3 1 2} (Multiset Integer) [(pair %k _) k]))
+
+
+(test (match-all {1 2 3 4 5} (List Integer) [<join ,{1 2} $xs> xs]))

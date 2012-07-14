@@ -21,6 +21,13 @@
            [<snoc _ _> [a (List a)]
             {[{.$xs $x} {[x xs]}]
              [_ {}]}]
+           [<join ,$pxs _> [(List a)]
+            {[$tgt (letrec {[$helper (lambda [$pxs $tgt]
+                                       (match [pxs tgt] [(List a) (List a)]
+                                         {[[<nil> _] {tgt}]
+                                          [[<cons $x $xs> <cons ,x $ys>] (helper xs ys)]
+                                          [[_ _] {}]}))]}
+                     (helper pxs tgt))]}]
            [<join _ _> [(List a) (List a)]
             {[$tgt (letrec {[$loop-fn
                              (lambda [$ts]
@@ -204,9 +211,13 @@
            [<nil> []
             {[{} {[]}]
              [_ {}]}]
+           [<cons ,$px _> [(Multiset a)]
+            {[$tgt {((remove a) tgt px)}]}]
            [<cons _ _> [a (Multiset a)]
             {[$tgt (map (lambda [$t] [t ((remove a) tgt t)])
                         ((unique a) tgt))]}]
+           [<join ,$pxs _> [(Multiset a)]
+            {[$tgt {((remove-collection a) tgt pxs)}]}]
            [<join _ _> [(Multiset a) (Multiset a)]
             {[$tgt (map (lambda [$ts] [ts ((remove-collection a) tgt ts)])
                         (subcollections tgt))]}]})]
