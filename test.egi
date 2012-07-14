@@ -419,3 +419,9 @@
 
 
 (test (match-all {1 2 3 4 5} (List Integer) [<join ,{1 2} $xs> xs]))
+
+
+
+(test (match-all (between 1 2000) (List Integer) [<join ,(between 1 1000) <cons $x _>> x]))
+
+(test ((type-ref (List Integer) =) (between 1 1000) (between 1 1000)))

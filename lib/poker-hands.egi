@@ -19,14 +19,7 @@
          [<diamond> []
           {[<diamond> {[]}]
            [_ {}]}]})]
-     [$=
-      (lambda [$val $tgt]
-        (match [val tgt] [Suit Suit]
-          {[[<spade> <spade>] #t]
-           [[<heart> <heart>] #t]
-           [[<club> <club>] #t]
-           [[<diamond> <diamond>] #t]
-           [[_ _] #f]}))]}))
+     [$= eq?]}))
 
 (define $Mod
   (lambda [$m]
@@ -38,7 +31,7 @@
             {[$tgt (if (= tgt n)
                        {[]}
                        {})]}]})]
-       [$= (lambda [$val $tgt] (eq? (mod val m) (mod tgt m)))]})))
+       [$= (lambda [$val $tgt] (eq-n? (mod val m) (mod tgt m)))]})))
 
 (define $Card
   (type
