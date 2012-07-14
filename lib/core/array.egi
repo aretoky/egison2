@@ -1,0 +1,14 @@
+;;
+;; Array.egi
+;;
+
+(define $Array
+  (lambda [$a]
+    (type
+      {[$var-match (lambda [$tgt] {tgt})]
+       [$inductive-match
+        (destructor
+          {[<cons ,$key _ _> [a (Array a)]
+            {[$arr {[(array-ref key arr) arr]}]}]})]})))
+
+

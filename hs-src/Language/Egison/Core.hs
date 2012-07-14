@@ -38,6 +38,7 @@ loadLibraries env = do
   _ <- evalString env $ "(load \"lib/core/base.egi\")"
   _ <- evalString env $ "(load \"lib/core/number.egi\")"
   _ <- evalString env $ "(load \"lib/core/collection.egi\")"
+  _ <- evalString env $ "(load \"lib/core/array.egi\")"
   return ()
 
   
