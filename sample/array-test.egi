@@ -1,5 +1,18 @@
 (define $ass [|[|1 2 3|]
                [|4 5 6|]
-               [|7 8 9|]|])
+               [|7 8 9|]
+               [|10 11 12|]|])
 
 (test (array-dimension ass))
+
+(test (array-size 1 ass))
+
+(test (array-size 2 ass))
+
+(test (array-ref [2 2] ass))
+
+(test (array-ref [2 3] ass))
+
+(test (array-to-collection ass))
+
+(test (collection-to-array {1 2 3}))

@@ -67,42 +67,42 @@ foldl1M _ _ = error "Unexpected error in foldl1M"
 
 floatRound, floatFloor, floatCeiling, floatTruncate :: [EgisonVal] -> ThrowsError EgisonVal
 floatRound [(Float n)] = return $ Float $ fromInteger $ round n
-floatRound [x] = throwError $ TypeMismatch "floatber" x
+floatRound [x] = throwError $ TypeMismatch "floatber" [x]
 floatRound badArgList = throwError $ NumArgs 1 badArgList
 
 floatFloor [(Float n)] = return $ Float $ fromInteger $ floor n
-floatFloor [x] = throwError $ TypeMismatch "number" x
+floatFloor [x] = throwError $ TypeMismatch "number" [x]
 floatFloor badArgList = throwError $ NumArgs 1 badArgList
 
 floatCeiling [(Float n)] = return $ Float $ fromInteger $ ceiling n
-floatCeiling [x] = throwError $ TypeMismatch "number" x
+floatCeiling [x] = throwError $ TypeMismatch "number" [x]
 floatCeiling badArgList = throwError $ NumArgs 1 badArgList
 
 floatTruncate [(Float n)] = return $ Float $ fromInteger $ truncate n
-floatTruncate [x] = throwError $ TypeMismatch "number" x
+floatTruncate [x] = throwError $ TypeMismatch "number" [x]
 floatTruncate badArgList = throwError $ NumArgs 1 badArgList
 
 numSqrt, numExpt :: [EgisonVal] -> ThrowsError EgisonVal
 numSqrt [(Float n)] = if n >= 0 then return $ Float $ sqrt n
                                 else throwError $ Default "negative number to sqrt"
-numSqrt [x] = throwError $ TypeMismatch "number" x
+numSqrt [x] = throwError $ TypeMismatch "number" [x]
 numSqrt badArgList = throwError $ NumArgs 1 badArgList
 
 numExpt [(Number n), (Number p)] = return $ Float $ (fromInteger n) ^ p
 numExpt [(Float n), (Number p)] = return $ Float $ n ^ p
-numExpt [_, y] = throwError $ TypeMismatch "integer" y
+numExpt [_, y] = throwError $ TypeMismatch "integer" [y]
 numExpt badArgList = throwError $ NumArgs 2 badArgList
 
 numExp :: [EgisonVal] -> ThrowsError EgisonVal
 numExp [(Number n)] = return $ Float $ exp $ fromInteger n
 numExp [(Float n)] = return $ Float $ exp n
-numExp [x] = throwError $ TypeMismatch "number" x
+numExp [x] = throwError $ TypeMismatch "number" [x]
 numExp badArgList = throwError $ NumArgs 1 badArgList
 
 numLog :: [EgisonVal] -> ThrowsError EgisonVal
 numLog [(Number n)] = return $ Float $ log $ fromInteger n
 numLog [(Float n)] = return $ Float $ log n
-numLog [x] = throwError $ TypeMismatch "number" x
+numLog [x] = throwError $ TypeMismatch "number" [x]
 numLog badArgList = throwError $ NumArgs 1 badArgList
 
 -- |Convert a number to a string; radix is optional, defaults to base 10
@@ -134,31 +134,32 @@ isEgisonEOF badArgList = throwError $ NumArgs 1 badArgList
 --  the wrong type is passed.
 unpackBool :: EgisonVal -> ThrowsError Bool
 unpackBool (Bool b) = return b
-unpackBool notBool = throwError $ TypeMismatch "bool" notBool
+unpackBool notBool = throwError $ TypeMismatch "bool" [notBool]
 
 -- |Extract an char from the given value, throwing a type error if
 --  the wrong type is passed.
 unpackChar :: EgisonVal -> ThrowsError Char
 unpackChar (Char c) = return c
-unpackChar notChar = throwError $ TypeMismatch "char" notChar
+unpackChar notChar = throwError $ TypeMismatch "char" [notChar]
 
 -- |Extract an char from the given value, throwing a type error if
 --  the wrong type is passed.
 unpackString :: EgisonVal -> ThrowsError String
 unpackString (String str) = return str
-unpackString notString = throwError $ TypeMismatch "string" notString
+unpackString notString = throwError $ TypeMismatch "string" [notString]
 
 -- |Extract an integer from the given value, throwing a type error if
 --  the wrong type is passed.
 unpackNum :: EgisonVal -> ThrowsError Integer
 unpackNum (Number n) = return n
-unpackNum notNum = throwError $ TypeMismatch "number" notNum
+unpackNum notNum = throwError $ TypeMismatch "number" [notNum]
 
 -- |Extract an double from the given value, throwing a type error if
 --  the wrong type is passed.
 unpackFloat :: EgisonVal -> ThrowsError Double
 unpackFloat (Float n) = return n
-unpackFloat notFloat = throwError $ TypeMismatch "float" notFloat
+unpackFloat notFloat = throwError $ TypeMismatch "float" [notFloat]
+
 
 ---------------------------------------------------
 -- Array
@@ -175,3 +176,49 @@ arrayDimension [val] = helper 0 val
                       _ -> return $ Number (d + 1)
        helper d _ = return $ Number d
 arrayDimension badArgList = throwError $ NumArgs 1 badArgList
+
+arraySize :: [EgisonVal] -> ThrowsError EgisonVal
+arraySize [(Number n), val@(Array _)] = helper n val
+ where helper 1 (Array arr) = return $ Number $ fromIntegral $ length $ indices arr
+       helper n2 (Array arr) =
+         if n2 > 1
+           then let xs = elems arr in
+                  case xs of
+                    (e:_) -> case e of
+                               Array _ -> helper (n2 - 1) e
+                               _ -> throwError $ Default "arraySize: larger dimention size than actual"
+                    _ -> throwError $ Default "arraySize: larger dimention size than actual"
+           else throwError $ Default "arraySize: dimention size must be more than 1"
+       helper _ _ = throwError $ Default "arraySize: type mismatch"
+arraySize [x, y] = throwError $ TypeMismatch "number, array" [x, y]
+arraySize badArgList = throwError $ NumArgs 2 badArgList
+
+arrayRef :: [EgisonVal] -> ThrowsError EgisonVal
+arrayRef [tuple, val@(Array _)] = do ns <- mapM unpackNum $ tupleToList tuple
+                                     helper ns val
+ where helper [n] (Array arr) = return (arr ! (fromIntegral n))
+       helper (n:ns) (Array arr) =
+         if n > 0
+           then let e = arr ! (fromIntegral n) in
+                  case e of
+                    Array _ -> helper ns e
+                    _ -> throwError $ Default "arraySize: larger dimention size than actual"
+           else throwError $ Default "arrayRef: index number should be more than 0"
+       helper _ _ = throwError $ Default "arraySize: type mismatch"
+arrayRef [x, y] = throwError $ TypeMismatch "tuple of number, array" [x, y]
+arrayRef badArgList = throwError $ NumArgs 2 badArgList
+
+arrayToCollection :: [EgisonVal] -> ThrowsError EgisonVal
+arrayToCollection [val@(Array _)] = helper val
+ where helper (Array arr) = do es <- mapM helper $ elems arr
+                               return $ Collection (map Element es)
+       helper val2 = return val2
+arrayToCollection [x] = throwError $ TypeMismatch "array" [x]
+arrayToCollection badArgList = throwError $ NumArgs 1 badArgList
+
+collectionToArray :: [EgisonVal] -> ThrowsError EgisonVal
+collectionToArray [(Collection innerVals)] =
+  let vals = innerValsToList innerVals in
+    return $ Array $ listArray (1, (length vals)) vals
+collectionToArray [x] = throwError $ TypeMismatch "collection" [x]
+collectionToArray badArgList = throwError $ NumArgs 1 badArgList

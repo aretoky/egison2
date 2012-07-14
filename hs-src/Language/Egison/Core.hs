@@ -951,14 +951,14 @@ primitives = [("+", numericBinop (+)),
 
               ("eof?", isEgisonEOF),
 
-              ("array-dimension", arrayDimension)
---              ("array-size", arraySize),
+              ("array-dimension", arrayDimension),
+              ("array-size", arraySize),
 
---              ("array-ref", arrayRef),
+              ("array-ref", arrayRef),
 --              ("array-sub-ref", arrayRef),
               
---              ("array-to-collection", arrayToCollection),
---              ("collection-to-array", collectionToArray)
+              ("array-to-collection", arrayToCollection),
+              ("collection-to-array", collectionToArray)
 
               ]
 

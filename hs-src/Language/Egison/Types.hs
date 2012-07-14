@@ -14,7 +14,7 @@ import Text.ParserCombinators.Parsec hiding (spaces)
 -- Error
 --
 data EgisonError = NumArgs Integer [EgisonVal]
-  | TypeMismatch String EgisonVal
+  | TypeMismatch String [EgisonVal]
   | Parser ParseError
   | BadSpecialForm String [EgisonVal]
   | NotFunction String String
@@ -28,7 +28,7 @@ showError :: EgisonError -> String
 showError (NumArgs expected found) = "Expected " ++ show expected
                                   ++ " args; found values " ++ unwordsList found
 showError (TypeMismatch expected found) = "Invalid type: expected " ++ expected
-                                  ++ ", found " ++ show found
+                                  ++ ", found " ++ unwordsList found
 showError (Parser parseErr) = "Parse error at " ++ ": " ++ show parseErr
 showError (BadSpecialForm message args) = message ++ ": " ++ unwordsList args
 showError (NotFunction message func) = message ++ ": " ++ show func
