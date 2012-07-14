@@ -175,6 +175,11 @@ arraySize [(Number m), (Array _ ns _)] = return $ Number $ nth m ns
 arraySize [x, y] = throwError $ TypeMismatch "number, array" [x, y]
 arraySize badArgList = throwError $ NumArgs 2 badArgList
 
+arrayKeys :: [EgisonVal] -> ThrowsError EgisonVal
+arrayKeys [(Array _ ms _)] = return $ Collection $ map (\iss -> (Element . Tuple) $ map (Element . Number) iss) $ indexList ms
+arrayKeys [x] = throwError $ TypeMismatch "array" [x]
+arrayKeys badArgList = throwError $ NumArgs 2 badArgList
+
 arrayRef :: [EgisonVal] -> ThrowsError EgisonVal
 arrayRef [tuple, (Array _ ms arr)] = do
   ns <- mapM unpackNum $ tupleToList tuple
@@ -192,3 +197,14 @@ integersToInteger [_] [n] = n
 integersToInteger (_:ms) (n:ns) = (n - 1) * (multiplyList ms) + integersToInteger ms ns
  where multiplyList [n] = n
        multiplyList (n:ns) = n * (multiplyList ns)
+
+indexList :: [Integer] -> [[Integer]]
+indexList [m] = map (\i -> [i]) $ between 1 m
+indexList (m:ms) = concat $ map (\n -> map (\is -> n:is) $ indexList ms)
+                                (between 1 m)
+
+between :: Integer -> Integer -> [Integer]
+between m n = if m == n
+               then [n]
+               else (m:(between (m + 1) n))
+       

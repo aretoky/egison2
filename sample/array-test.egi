@@ -9,6 +9,8 @@
 
 (test (array-size 2 ass))
 
+(test (array-range ass))
+
 (test (array-ref [2 2] ass))
 
 (test (array-ref [2 3] ass))

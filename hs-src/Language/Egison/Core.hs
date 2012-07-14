@@ -296,12 +296,6 @@ cEval1 (Closure env (ArrayMapExpr fnExpr arrExpr)) = do
       vals <- mapM (cApply fnObjRef) isRefs
       return $ Value $ Array d ms $ listArray (1, (fromIntegral (length vals))) vals
     _ -> throwError $ Default "array-map: not array"
- where indexList [m] = map (\i -> [i]) $ between 1 m
-       indexList (m:ms) = concat $ map (\n -> map (\is -> n:is) $ indexList ms)
-                                       (between 1 m)
-       between m n = if m == n
-                       then [n]
-                       else (m:(between (m + 1) n))
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
@@ -1000,16 +994,17 @@ primitives = [("+", numericBinop (+)),
               ("&&", boolBinop (&&)),
               ("||", boolBinop (||)),
 
-              ("eof?", isEgisonEOF),
-
               ("array-dimension", arrayDimension),
               ("array-size", arraySize),
+              ("array-keys", arrayKeys),
 
-              ("array-ref", arrayRef)
+              ("array-ref", arrayRef),
 --              ("array-sub-ref", arrayRef),
               
 --              ("array-to-collection", arrayToCollection),
---              ("collection-to-array", collectionToArray)
+--              ("collection-to-array", collectionToArray),
+
+              ("eof?", isEgisonEOF)
 
               ]
 
