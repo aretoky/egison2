@@ -5,6 +5,7 @@ import Control.Monad.Error
 --import Data.Fixed
 --import Numeric
 --import Text.Printf
+import Data.Array
 
 boolBinop :: (Bool -> Bool -> Bool) -> [EgisonVal] -> ThrowsError EgisonVal
 boolBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
@@ -158,3 +159,19 @@ unpackNum notNum = throwError $ TypeMismatch "number" notNum
 unpackFloat :: EgisonVal -> ThrowsError Double
 unpackFloat (Float n) = return n
 unpackFloat notFloat = throwError $ TypeMismatch "float" notFloat
+
+---------------------------------------------------
+-- Array
+---------------------------------------------------
+
+arrayDimension :: [EgisonVal] -> ThrowsError EgisonVal
+arrayDimension [val] = helper 0 val
+ where helper d (Array arr) =
+         let xs = elems arr in
+         case xs of
+           [] -> return $ Number (d + 1)
+           (e:_) -> case e of
+                      Array _ -> helper (d + 1) e
+                      _ -> return $ Number (d + 1)
+       helper d _ = return $ Number d
+arrayDimension badArgList = throwError $ NumArgs 1 badArgList

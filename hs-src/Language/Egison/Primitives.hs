@@ -236,3 +236,4 @@ exprToVal _ = throwError $ Default "read: invalid value"
 innerExprToInnerVal :: InnerExpr -> ThrowsError InnerVal
 innerExprToInnerVal (ElementExpr expr) = exprToVal expr >>= return . Element
 innerExprToInnerVal (SubCollectionExpr expr) = exprToVal expr >>= return . SubCollection
+

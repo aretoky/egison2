@@ -2,7 +2,7 @@ module Language.Egison.Types where
 
 import Control.Monad.Error
 import Data.Complex()
-import Data.Array()
+import Data.Array
 import Data.Dynamic()
 import Data.IORef
 import qualified Data.Map
@@ -98,6 +98,7 @@ data EgisonExpr = CharExpr Char
   | InductiveDataExpr String [EgisonExpr]
   | TupleExpr [InnerExpr]
   | CollectionExpr [InnerExpr]
+  | ArrayExpr [EgisonExpr]
   | FuncExpr Args EgisonExpr
   | MacroExpr [String] EgisonExpr
   | LoopExpr String String EgisonExpr EgisonExpr EgisonExpr
@@ -172,6 +173,7 @@ data EgisonVal = World [Action]
   | InductiveData String [EgisonVal]
   | Tuple [InnerVal]
   | Collection [InnerVal]
+  | Array (Array Int EgisonVal)
   | Type Frame
   | Destructor DestructInfo
   | Func Args EgisonExpr Env
@@ -417,6 +419,7 @@ showVal (InductiveData cons []) = "<" ++ cons ++ ">"
 showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">"
 showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
 showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
+showVal (Array _) = "#<array>"
 showVal (Type _) = "#<type>"
 showVal (Destructor _) = "#<destructor>"
 showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"

@@ -135,6 +135,7 @@ cEval :: Object -> IOThrowsError EgisonVal
 cEval (Closure env expr) = eval env expr
 cEval (Value val) = return val
 cEval (Intermidiate iVal) = iEval iVal
+cEval (Loop _ _ _ _ _) = throwError $ Default "cEval: cannot reach here: loop object cannot be evaluated"
 
 cEval1 :: Object -> IOThrowsError Object
 cEval1 (Closure _ (BoolExpr contents)) = return $ Value (Bool contents)
@@ -169,6 +170,9 @@ cEval1 (Closure env (TupleExpr innerExprs)) = do
 cEval1 (Closure env (CollectionExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   return $ Intermidiate $ ICollection innerRefs
+cEval1 (Closure env (ArrayExpr exprs)) = do
+  vals <- mapM (eval env) exprs
+  return $ Value $ Array $ listArray (1, (length vals)) vals
 cEval1 (Closure _ WildCardExpr) = return $ Value WildCard
 cEval1 (Closure env (PatVarExpr name numExprs)) = do
   numVals <- mapM (eval env) numExprs
@@ -945,7 +949,16 @@ primitives = [("+", numericBinop (+)),
               ("&&", boolBinop (&&)),
               ("||", boolBinop (||)),
 
-              ("eof?", isEgisonEOF)
+              ("eof?", isEgisonEOF),
+
+              ("array-dimension", arrayDimension)
+--              ("array-size", arraySize),
+
+--              ("array-ref", arrayRef),
+--              ("array-sub-ref", arrayRef),
+              
+--              ("array-to-collection", arrayToCollection),
+--              ("collection-to-array", collectionToArray)
 
               ]
 

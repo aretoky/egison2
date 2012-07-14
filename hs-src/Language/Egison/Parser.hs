@@ -51,7 +51,7 @@ lexeme = P.lexeme lexer
 
 symbol :: Parser Char
 --symbol = oneOf "!$%&|*+-/:<=>?@^_~."
-symbol = oneOf "%&|*+-/:="
+symbol = oneOf "&*+-/:="
 
 symbol2 :: Parser Char
 --symbol = oneOf "!$%&|*+-/:<=>?@^_~."
@@ -403,6 +403,10 @@ parseExpr =
   <|> lexeme parsePatVarOmitExpr
   <|> lexeme parseVarOmitExpr
   <|> lexeme parseVar
+  <|> do try (lexeme (string "[|"))
+         exprs <- sepEndBy parseExpr whiteSpace
+         (lexeme (string "|]"))
+         return (ArrayExpr exprs)
   <|> angles (do cons <- lexeme identifier
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return $ InductiveDataExpr cons argExprs)
