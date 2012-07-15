@@ -481,10 +481,10 @@ parseExpr =
                  loopExpr <- lexeme parseExpr
                  tailExpr <- lexeme parseExpr
                  return (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)
-          <|> do try (string "array-map" >> many1 space)
+          <|> do try (string "generate-array" >> many1 space)
                  fnExpr <- lexeme parseExpr
                  arrExpr <- lexeme parseExpr
-                 return (ArrayMapExpr fnExpr arrExpr)
+                 return (GenerateArrayExpr fnExpr arrExpr)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
                  return (ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs))))

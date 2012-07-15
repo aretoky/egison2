@@ -110,7 +110,7 @@ data EgisonExpr = CharExpr Char
   | DestructorExpr DestructInfoExpr
   | MatchExpr EgisonExpr EgisonExpr [MatchClause]
   | MatchAllExpr EgisonExpr EgisonExpr MatchClause
-  | ArrayMapExpr EgisonExpr EgisonExpr
+  | GenerateArrayExpr EgisonExpr EgisonExpr
   | ApplyExpr EgisonExpr EgisonExpr
  deriving (Show)
 
@@ -361,8 +361,8 @@ showExpr (MatchExpr tgtExpr typExpr _) =
   "(match " ++ showExpr tgtExpr ++ " " ++ showExpr typExpr ++ " ...)"
 showExpr (MatchAllExpr tgtExpr typExpr _) =
   "(match-all " ++ showExpr tgtExpr ++ " " ++ showExpr typExpr ++ " ...)"
-showExpr (ArrayMapExpr fnExpr arrExpr) =
-  "(array-map " ++ showExpr fnExpr ++ " " ++ showExpr arrExpr ++ " )"
+showExpr (GenerateArrayExpr fnExpr arrExpr) =
+  "(generate-array " ++ showExpr fnExpr ++ " " ++ showExpr arrExpr ++ " )"
 showExpr (ApplyExpr opExpr argExpr) =
   "(" ++ showExpr opExpr ++ " " ++ showExpr argExpr ++ ")"
   

@@ -31,6 +31,10 @@ floatBinop :: (Double -> Double -> Double) -> [EgisonVal] -> ThrowsError EgisonV
 floatBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
 floatBinop op aparams = mapM unpackFloat aparams >>= return . Float . foldl1 op
 
+stringBinop :: (String -> String -> String) -> [EgisonVal] -> ThrowsError EgisonVal
+stringBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
+stringBinop op aparams = mapM unpackString aparams >>= return . String . foldl1 op
+
 charBoolBinop :: (Char -> Char -> Bool) -> [EgisonVal] -> ThrowsError EgisonVal
 charBoolBinop _ singleVal@[_] = throwError $ NumArgs 2 singleVal
 charBoolBinop op aparams = mapM unpackChar aparams >>= doOp
@@ -129,7 +133,6 @@ isEgisonEOF badArgList = throwError $ NumArgs 1 badArgList
 
 -- - end Numeric operations section
 
-
 -- |Extract an bool from the given value, throwing a type error if
 --  the wrong type is passed.
 unpackBool :: EgisonVal -> ThrowsError Bool
@@ -161,6 +164,34 @@ unpackFloat (Float n) = return n
 unpackFloat notFloat = throwError $ TypeMismatch "float" [notFloat]
 
 
+tupleToCollection :: [EgisonVal] -> ThrowsError EgisonVal
+tupleToCollection vals = return $ Collection $ map Element vals
+
+collectionToTuple :: [EgisonVal] -> ThrowsError EgisonVal
+collectionToTuple [(Collection innerVals)] = do
+  let vals = innerValsToList innerVals
+  case vals of
+    [val] -> return val
+    _ -> return $ Tuple $ map Element vals
+collectionToTuple [x] = throwError $ TypeMismatch "collection" [x]
+collectionToTuple badArgList = throwError $ NumArgs 1 badArgList
+
+stringToChars :: [EgisonVal] -> ThrowsError EgisonVal
+stringToChars [(String str)] = return $ Collection $ map (\c -> Element $ Char c) str
+stringToChars [x] = throwError $ TypeMismatch "string" [x]
+stringToChars badArgList = throwError $ NumArgs 1 badArgList
+
+charsToString :: [EgisonVal] -> ThrowsError EgisonVal
+charsToString [(Collection innerVals)] = do
+  let chars = innerValsToList innerVals
+  cs <- mapM (\char -> case char of
+                         Char c -> return c
+                         _ -> throwError $ TypeMismatch "chars" [char])
+             chars
+  return $ String cs
+charsToString [x] = throwError $ TypeMismatch "collection of chars" [x]
+charsToString badArgList = throwError $ NumArgs 1 badArgList
+
 ---------------------------------------------------
 -- Array
 ---------------------------------------------------
@@ -169,6 +200,11 @@ arrayDimension :: [EgisonVal] -> ThrowsError EgisonVal
 arrayDimension [(Array d _ _)] = return $ Number d
 arrayDimension [x] = throwError $ TypeMismatch "array" [x]
 arrayDimension badArgList = throwError $ NumArgs 1 badArgList
+
+arrayRange :: [EgisonVal] -> ThrowsError EgisonVal
+arrayRange [(Array _ ns _)] = return $ Tuple $ map (Element . Number) ns
+arrayRange [x] = throwError $ TypeMismatch "array" [x]
+arrayRange badArgList = throwError $ NumArgs 1 badArgList
 
 arraySize :: [EgisonVal] -> ThrowsError EgisonVal
 arraySize [(Number m), (Array _ ns _)] = return $ Number $ nth m ns
@@ -191,7 +227,6 @@ arrayIsRange [key, (Array _ ms _)] = do
        helper (n:ns) (m:ms) = if (n > 0 && n <= m)
                                 then helper ns ms
                                 else False
-
 arrayIsRange [x, y] = throwError $ TypeMismatch "key, array" [x, y]
 arrayIsRange badArgList = throwError $ NumArgs 2 badArgList
 

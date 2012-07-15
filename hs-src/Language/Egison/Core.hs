@@ -287,16 +287,15 @@ cEval1 (Closure env (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)) = d
   rangeObjRef <- liftIO $ makeClosure env rangeExpr
   let loopObj = Loop loopVar indexVar rangeObjRef loopExpr tailExpr
   expandLoop env loopObj
-cEval1 (Closure env (ArrayMapExpr fnExpr arrExpr)) = do
+cEval1 (Closure env (GenerateArrayExpr fnExpr rangeExpr)) = do
   fnObjRef <- liftIO $ makeClosure env fnExpr
-  arrObj <- cEval1 (Closure env arrExpr)
-  case arrObj of
-    Value (Array d ms _) -> do
-      let is = map (\iss -> (Value . Tuple) $ map (Element . Number) iss) $ indexList ms
-      isRefs <- liftIO $ mapM newIORef is
-      vals <- mapM (cApply fnObjRef) isRefs
-      return $ Value $ Array d ms $ listArray (1, (fromIntegral (length vals))) vals
-    _ -> throwError $ Default "array-map: not array"
+  rangeVal <- eval env rangeExpr
+  ms <- liftThrows $ mapM unpackNum $ tupleToList rangeVal
+  let d = fromIntegral $ length ms
+  let is = map (\iss -> (Value . Tuple) $ map (Element . Number) iss) $ indexList ms
+  isRefs <- liftIO $ mapM newIORef is
+  vals <- mapM (cApply fnObjRef) isRefs
+  return $ Value $ Array d ms $ listArray (1, (fromIntegral (length vals))) vals
 cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
   op <- cEval1 (Closure env opExpr)
   case op of
@@ -991,11 +990,20 @@ primitives = [("+", numericBinop (+)),
 
               ("eq-c?", charBoolBinop (==)),
               ("eq-s?", strBoolBinop (==)),
+
+              ("string-append", stringBinop (++)),
+              
+              ("string-to-chars", stringToChars),
+              ("chars-to-string", charsToString),
               
               ("&&", boolBinop (&&)),
               ("||", boolBinop (||)),
 
+              ("tuple-to-collection", tupleToCollection),
+              ("collection-to-tuple", collectionToTuple),
+
               ("array-dimension", arrayDimension),
+              ("array-range", arrayRange),
               ("array-size", arraySize),
               ("array-keys", arrayKeys),
 
