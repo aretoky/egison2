@@ -1,25 +1,24 @@
 (define $Suit
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[,$suit []
-          {[$tgt (if (= tgt suit)
-                     {[]}
-                     {})]}]
-         [<spade> []
-          {[<spade> {[]}]
-           [_ {}]}]
-         [<heart> []
-          {[<heart> {[]}]
-           [_ {}]}]
-         [<club> []
-          {[<club> {[]}]
-           [_ {}]}]
-         [<diamond> []
-          {[<diamond> {[]}]
-           [_ {}]}]})]
-     [$= eq?]}))
+    {[,$suit []
+      {[$tgt (if (eq? tgt suit)
+                 {[]}
+                 {})]}]
+     [<spade> []
+      {[<spade> {[]}]
+       [_ {}]}]
+     [<heart> []
+      {[<heart> {[]}]
+       [_ {}]}]
+     [<club> []
+      {[<club> {[]}]
+       [_ {}]}]
+     [<diamond> []
+      {[<diamond> {[]}]
+       [_ {}]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $Mod
   (lambda [$m]
@@ -35,19 +34,15 @@
 
 (define $Card
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[,$card []
-            {[$tgt (if (= tgt card)
-                       {[]}
-                       {})]}]
-         [<card _ _> [Suit (Mod 13)]
-          {[<card $s $n> {[s n]}]}]})]
-     [$= (lambda [$val $tgt]
-           (match [val tgt] [Card Card]
-             {[[<card $s $n> <card ,s ,n>] #t]
-              [[_ _] #f]}))]}))
+    {[,$card []
+      {[$tgt (match [val tgt] [Card Card]
+               {[[<card $s $n> <card ,s ,n>] {[]}]
+                [[_ _] {}]})]}]
+     [<card _ _> [Suit (Mod 13)]
+      {[<card $s $n> {[s n]}]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $poker-hands
   (lambda [$Cs]

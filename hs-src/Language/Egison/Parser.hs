@@ -404,9 +404,9 @@ parseExpr =
   <|> lexeme parseMacroVarExpr
   <|> lexeme parsePatVarOmitExpr
   <|> lexeme parseVarOmitExpr
-  <|> lexeme parseVar
   <|> try (lexeme (do string "Something"
                       return SomethingExpr))
+  <|> lexeme parseVar
   <|> do try (lexeme (string "[|"))
          exprs <- sepEndBy parseArrayElementExpr whiteSpace
          (lexeme (string "|]"))

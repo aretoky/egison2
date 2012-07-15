@@ -206,12 +206,16 @@
         {[{} {[]}]
          [_ {}]}]
        [<cons ,$px _> [(Multiset a)]
-        {[$tgt {((remove a) tgt px)}]}]
+        {[$tgt (if ((member? a) px tgt)
+                   {((remove a) tgt px)}
+                   {})]}]
        [<cons _ _> [a (Multiset a)]
         {[$tgt (map (lambda [$t] [t ((remove a) tgt t)])
                     ((unique a) tgt))]}]
        [<join ,$pxs _> [(Multiset a)]
-        {[$tgt {((remove-collection a) tgt pxs)}]}]
+        {[$tgt (if ((subcollection? a) pxs tgt)
+                   {((remove-collection a) tgt pxs)}
+                   {})]}]
        [<join _ _> [(Multiset a) (Multiset a)]
         {[$tgt (map (lambda [$ts] [ts ((remove-collection a) tgt ts)])
                     (subcollections tgt))]}]

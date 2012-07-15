@@ -1,20 +1,20 @@
+;;;
+;;; graph.egi
+;;;
+
 (define $Node Integer)
 
 (define $NodeInfo
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[,$val []
-            {[$tgt (if (= tgt val)
-                       {[]}
-                       {})]}]
-         [<node _ _ _> [Node (Multiset Node) (Multiset Node)]
-          {[<node $n $in $out> {[n in out]}]}]})]
-     [$= (lambda [$val $tgt]
-           (match [val tgt] [NodeInfo NodeInfo]
-             {[[<node $n $in $out> <node ,n ,in ,out>] #t]
-              [[_ _] #f]}))]}))
+    {[,$val []
+      {[$tgt (match [val tgt] [NodeInfo NodeInfo]
+               {[[<node $n $in $out> <node ,n ,in ,out>] {[]}]
+                [[_ _] {}]})]}]
+     [<node _ _ _> [Node (Multiset Node) (Multiset Node)]
+      {[<node $n $in $out> {[n in out]}]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $Graph (Multiset NodeInfo))
 
