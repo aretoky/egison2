@@ -1,9 +1,7 @@
 module Language.Egison.Types where
 
 import Control.Monad.Error
-import Data.Complex()
 import Data.Array
-import Data.Dynamic()
 import Data.IORef
 import qualified Data.Map
 -- import Data.Maybe
@@ -407,6 +405,22 @@ eqVal a b = do
 instance Eq EgisonVal where
   x == y = eqVal x y
 
+showArray :: [Integer] -> [EgisonVal] -> String
+showArray ns vals = "[|" ++ helper ns vals ++ "|]"
+ where helper [_] vals2 = unwordsList vals2
+       helper (_:ns2) vals2 = let xss = divideList (multiplyList ns2) vals2 in
+                                concat $ map (\xs -> "[~" ++ helper ns2 xs ++ "~]") xss
+         where divideList :: Integer -> [a] -> [[a]]
+               divideList n ls = helper2 n [] ls
+                where helper2 _ ret [] = ret
+                      helper2 n2 ret xs = let (hs, ts) = divideList2 n2 xs in
+                                           helper2 n2 (ret ++ [hs]) ts
+               divideList2 :: Integer -> [a] -> ([a], [a])
+               divideList2 n xs = helper2 n [] xs
+                where helper2 0 hs ts = (hs, ts)
+                      helper2 n2 hs (x:ts) = helper2 (n2 - 1) (hs ++ [x]) ts
+
+
 showVal :: EgisonVal -> String
 showVal (World _) = "#<world>"
 showVal (Bool True) = "#t"
@@ -427,7 +441,7 @@ showVal (InductiveData cons []) = "<" ++ cons ++ ">"
 showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">"
 showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
 showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
-showVal (Array d ns _) = "#<array " ++ show d ++ " " ++ show ns ++ ">"
+showVal (Array _ ns arr) = showArray ns $ elems arr
 showVal (Type _) = "#<type>"
 showVal (Destructor _) = "#<destructor>"
 showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"
@@ -480,3 +494,33 @@ showFrameList (((name,nums),_):rest) = "{[" ++ name ++ unwordsNums nums ++ ": _]
 -- - utility
 stringToCharCollection :: String -> IO EgisonVal
 stringToCharCollection = undefined
+
+
+
+
+
+
+--- extra
+
+nth :: Integer -> [a] -> a
+nth 1 (x:xs) = x
+nth n (x:xs) = nth (n - 1) xs
+
+integersToInteger :: [Integer] -> [Integer] -> Integer
+integersToInteger [_] [n] = n
+integersToInteger (_:ms) (n:ns) = (n - 1) * (multiplyList ms) + integersToInteger ms ns
+
+multiplyList :: [Integer] -> Integer
+multiplyList [n] = n
+multiplyList (n:ns) = n * (multiplyList ns)
+
+indexList :: [Integer] -> [[Integer]]
+indexList [m] = map (\i -> [i]) $ betweenNumbers 1 m
+indexList (m:ms) = concat $ map (\n -> map (\is -> n:is) $ indexList ms)
+                                (betweenNumbers 1 m)
+
+betweenNumbers :: Integer -> Integer -> [Integer]
+betweenNumbers m n = if m == n
+                       then [n]
+                       else (m:(betweenNumbers (m + 1) n))
+       

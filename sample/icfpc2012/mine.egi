@@ -1,0 +1,84 @@
+(define $Tile
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[<robot> []
+          {[<robot> {[]}]
+           [_ {}]}]
+         [<rock> []
+          {[<rock> {[]}]
+           [_ {}]}]
+         [<wall> []
+          {[<wall> {[]}]
+           [_ {}]}]
+         [<lambda-stone> []
+          {[<lambda-stone> {[]}]
+           [_ {}]}]
+         [<earth> []
+          {[<earth> {[]}]
+           [_ {}]}]
+         [<empty> []
+          {[<empty> {[]}]
+           [_ {}]}]
+         [<open-lift> []
+          {[<open-lift> {[]}]
+           [_ {}]}]
+         [<closed-lift> []
+          {[<closed-lift> {[]}]
+           [_ {}]}]})]
+     [$= eq?]}))
+
+(define $Mine (Array Tile))
+
+(define $mine [|[~<rock> <wall> <wall>~]
+                [~<empty> <rock> <empty>~]
+                [~<empty> <empty> <earth>~]
+                [~<robot> <earth> <rock>~]|])
+
+(define $update-map
+  (lambda [$mine]
+    (array-map (lambda [$x $y]
+                 (match mine Mine
+                   {
+                    [<cons ,[x y] <empty>
+                           <cons ,[x (+ y 1)] <rock>
+                                 _>>
+                     <rock>]
+                    [<cons ,[x y] <rock>
+                           <cons ,[x (- y 1)] <empty>
+                                 _>>
+                     <empty>]
+                    [<cons ,[x y] <empty>
+                           <cons ,[(- x 1) y] (| <rock> <lambda-stone>)
+                                 <cons ,[(- x 1) (+ y 1)] <rock>
+                                       <cons ,[x (+ y 1)] <empty>
+                                             _>>>>
+                     <rock>]
+                    [<cons ,[x y] <rock>
+                           <cons ,[(+ x 1) y] <empty>
+                                 <cons ,[(+ x 1) (- y 1)] <empty>
+                                       <cons ,[x (- y 1)] (| <rock> <lambda-stone>)
+                                             _>>>>
+                     <empty>]
+                    [<cons ,[x y] <empty>
+                           <cons ,[(+ x 1) y] <rock>
+                                 <cons ,[(+ x 1) (+ y 1)] <rock>
+                                       <cons ,[(+ x 2) y] ^<empty>
+                                             <cons ,[(+ x 2) (+ y 1)] ^<empty>
+                                                   <cons ,[x (+ y 1)] <empty>
+                                                         _>>>>>>
+                     <rock>]
+                    [<cons ,[x y] <rock>
+                           <cons ,[x (- y 1)] <rock>
+                                 <cons ,[(+ x 1) y] ^<empty>
+                                       <cons ,[(+ x 1) (+ y 1)] ^<empty>
+                                             <cons ,[(- x 1) (+ y 1)] <empty>
+                                                   <cons ,[(- x 1) y] <empty>
+                                                         _>>>>>>
+                     <empty>]
+                    [<cons ,[x y] $tile _> tile]
+                    }))
+               mine)))
+
+

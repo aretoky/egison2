@@ -178,7 +178,22 @@ arraySize badArgList = throwError $ NumArgs 2 badArgList
 arrayKeys :: [EgisonVal] -> ThrowsError EgisonVal
 arrayKeys [(Array _ ms _)] = return $ Collection $ map (\iss -> (Element . Tuple) $ map (Element . Number) iss) $ indexList ms
 arrayKeys [x] = throwError $ TypeMismatch "array" [x]
-arrayKeys badArgList = throwError $ NumArgs 2 badArgList
+arrayKeys badArgList = throwError $ NumArgs 1 badArgList
+
+arrayIsRange :: [EgisonVal] -> ThrowsError EgisonVal
+arrayIsRange [key, (Array _ ms _)] = do
+  ns <- mapM (\val -> case val of
+                        Number n -> return n
+                        _ -> throwError $ TypeMismatch "number" [val])
+             (tupleToList key)
+  return $ Bool $ helper ns ms
+ where helper [] [] = True
+       helper (n:ns) (m:ms) = if (n > 0 && n <= m)
+                                then helper ns ms
+                                else False
+
+arrayIsRange [x, y] = throwError $ TypeMismatch "key, array" [x, y]
+arrayIsRange badArgList = throwError $ NumArgs 2 badArgList
 
 arrayRef :: [EgisonVal] -> ThrowsError EgisonVal
 arrayRef [tuple, (Array _ ms arr)] = do
@@ -188,23 +203,3 @@ arrayRef [tuple, (Array _ ms arr)] = do
 arrayRef [x, y] = throwError $ TypeMismatch "tuple of number, array" [x, y]
 arrayRef badArgList = throwError $ NumArgs 2 badArgList
 
-nth :: Integer -> [a] -> a
-nth 1 (x:xs) = x
-nth n (x:xs) = nth (n - 1) xs
-
-integersToInteger :: [Integer] -> [Integer] -> Integer
-integersToInteger [_] [n] = n
-integersToInteger (_:ms) (n:ns) = (n - 1) * (multiplyList ms) + integersToInteger ms ns
- where multiplyList [n] = n
-       multiplyList (n:ns) = n * (multiplyList ns)
-
-indexList :: [Integer] -> [[Integer]]
-indexList [m] = map (\i -> [i]) $ between 1 m
-indexList (m:ms) = concat $ map (\n -> map (\is -> n:is) $ indexList ms)
-                                (between 1 m)
-
-between :: Integer -> Integer -> [Integer]
-between m n = if m == n
-               then [n]
-               else (m:(between (m + 1) n))
-       

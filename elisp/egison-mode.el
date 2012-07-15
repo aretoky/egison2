@@ -95,7 +95,8 @@
                     ((eq (string-to-char (thing-at-point 'char)) 91)
                      (forward-char)
                      (if (eq (string-to-char (thing-at-point 'char)) 124)
-                       (+ 2 cp)))
+                         (+ 2 cp)
+                       (+ 1 cp)))
                     (t (+ 1 cp)))))
         0))))
 

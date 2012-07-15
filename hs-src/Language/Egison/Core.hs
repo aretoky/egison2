@@ -999,6 +999,8 @@ primitives = [("+", numericBinop (+)),
               ("array-size", arraySize),
               ("array-keys", arrayKeys),
 
+              ("array-range?", arrayIsRange),
+
               ("array-ref", arrayRef),
 --              ("array-sub-ref", arrayRef),
               

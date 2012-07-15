@@ -9,6 +9,7 @@
        [$inductive-match
         (destructor
           {[<cons ,$key _ _> [a (Array a)]
-            {[$arr {[(array-ref key arr) arr]}]}]})]})))
-
+            {[$arr (if (array-range? key arr)
+                       {[(array-ref key arr) arr]}
+                       {})]}]})]})))
 

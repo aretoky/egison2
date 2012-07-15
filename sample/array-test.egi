@@ -15,6 +15,10 @@
 
 (test (array-ref [2 3] ass))
 
+(test (array-range? [2 3] ass))
+
+(test (array-range? [2 4] ass))
+
 (test (array-map (lambda [$i1 $i2] (* (array-ref [i1 i2] ass) 2)) ass))
 
 (define $bss (array-map (lambda [$i1 $i2] (* (array-ref [i1 i2] ass) 2)) ass))

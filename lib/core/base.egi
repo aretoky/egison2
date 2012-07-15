@@ -39,6 +39,12 @@
 (define $Char
   (type
     {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[,$c []
+          {[$tgt (if (= tgt c)
+                     {[]}
+                     {})]}]})]
      [$= eq-c?]}))
 
 (define $String
