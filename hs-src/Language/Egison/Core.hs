@@ -583,6 +583,7 @@ primitivePatPatternMatchList (pppat:pppats) (patObjRef:patObjRefs) = do
       case mRetRest of
         Nothing -> return Nothing
         Just (retRestPatObjRefs, retRestFrame) -> return $ Just (retPatObjRefs ++ retRestPatObjRefs, retFrame ++ retRestFrame)
+primitivePatPatternMatchList pppats _ = throwError $ Default $ "primitivePatPatternMatch: number of pppat and pat are different: " ++ show pppats
     
 primitivePatternMatch :: PrimitivePattern -> ObjectRef -> IOThrowsError (Maybe FrameList)
 primitivePatternMatch (PPatBool bool) objRef = do

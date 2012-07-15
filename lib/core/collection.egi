@@ -150,6 +150,12 @@
     (match xs (List Something)
       {[<snoc _ $ys> ys]})))
 
+(define $nth
+  (lambda [$n $ls]
+    (if (eq-n? n 1)
+        (car ls)
+        (nth (- n 1) (cdr ls)))))
+
 (define $reverse
   (lambda [$xs]
     (match xs (List Something)

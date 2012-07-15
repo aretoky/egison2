@@ -5,13 +5,18 @@
 (define $Array
   (lambda [$a]
     (type
-      {[$var-match (lambda [$tgt] {tgt})]
-       [$inductive-match
-        (destructor
-          {[<cons ,$key _ _> [a (Array a)]
-            {[$arr (if (array-range? key arr)
-                       {[(array-ref key arr) arr]}
-                       {})]}]})]})))
+      {[<cons ,$key ,$val _> [(Array a)]
+        {[$arr (if (and (array-range? key arr)
+                        ((= a) (array-ref key arr) val))
+                   {[arr]}
+                   {})]}]
+       [<cons ,$key _ _> [a (Array a)]
+        {[$arr (if (array-range? key arr)
+                   {[(array-ref key arr) arr]}
+                   {})]}]
+       [_ []
+        {[_ {[]}]}]
+       })))
 
 (define $range-to-keys
   (lambda $ms
@@ -35,3 +40,49 @@
              (map (lambda [$x] [x y])
                   xs))
            ys))))
+
+(define $find-from-value
+  (lambda [$a]
+    (lambda [$val $arr]
+      (let {[$keys (array-keys arr)]}
+        (letrec {[$helper (lambda [$keys]
+                            (if ((= a) (array-ref (car keys) arr) val)
+                                (car key)
+                                (helper (cdr keys))))]}
+          (helper keys))))))
+
+(define $find-all-from-value
+  (lambda [$a]
+    (lambda [$val $arr]
+      (let {[$keys (array-keys arr)]}
+        (letrec {[$helper (lambda [$keys $ret]
+                            (match keys (List Something)
+                              {[<nil> ret]
+                               [<cons $key $rest>
+                                (if ((= a) (array-ref key arr) val)
+                                    (helper rest {@ret val})
+                                    (helper rest ret))]}))]}
+          (helper keys {}))))))
+
+(define $find-from-value-with-pattern
+  (lambda [$a]
+    (lambda [$pat $arr]
+      (let {[$keys (array-keys arr)]}
+        (letrec {[$helper (lambda [$keys]
+                            (match (array-ref (car keys) arr)
+                              {[pat (car key)]
+                               [_ (helper (cdr keys))]}))]}
+          (helper keys))))))
+
+(define $find-all-from-value-with-pattern
+  (lambda [$a]
+    (lambda [$pat $arr]
+      (let {[$keys (array-keys arr)]}
+        (letrec {[$helper (lambda [$keys $ret]
+                            (match keys (List Something)
+                              {[<nil> ret]
+                               [<cons $key $rest>
+                                (match (array-ref key arr)
+                                  {[pat (helper rest {@ret val})]
+                                   [_ (helper rest ret)]})]}))]}
+          (helper keys {}))))))
