@@ -31,9 +31,10 @@ expandMacro frame (TupleExpr innerExprs) = do
 expandMacro frame (CollectionExpr innerExprs) = do
   newInnerExprs <- mapM (expandMacroInnerExpr frame) innerExprs
   return $ CollectionExpr newInnerExprs
-expandMacro frame (PredPatExpr predName argExprs) = do
+expandMacro frame (PredPatExpr predExpr argExprs) = do
+  newPredExpr <- expandMacro frame predExpr
   newArgExprs <- mapM (expandMacro frame) argExprs
-  return $ PredPatExpr predName newArgExprs
+  return $ PredPatExpr newPredExpr newArgExprs
 expandMacro frame (CutPatExpr patExpr) = do
   newPatExpr <- expandMacro frame patExpr
   return $ CutPatExpr newPatExpr

@@ -14,14 +14,13 @@
      "\\<let\\>"
      "\\<letrec\\>"
      "\\<type\\>"
-     "\\<type-ref\\>"
-     "\\<of\\>"
-     "\\<destructor\\>"
      "\\<loop\\>"
      "\\<match\\>"
      "\\<match-all\\>"
      "\\<generate-array\\>"
 
+     "\\<Something\\>"
+     
      "\\\."
      "\\\,"
      "\\\!"

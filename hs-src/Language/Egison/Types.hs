@@ -92,7 +92,7 @@ data EgisonExpr = CharExpr Char
   | NotPatExpr EgisonExpr
   | AndPatExpr [EgisonExpr]
   | OrPatExpr [EgisonExpr]
-  | PredPatExpr String [EgisonExpr]
+  | PredPatExpr EgisonExpr [EgisonExpr]
   | InductiveDataExpr String [EgisonExpr]
   | TupleExpr [InnerExpr]
   | CollectionExpr [InnerExpr]
@@ -105,13 +105,12 @@ data EgisonExpr = CharExpr Char
   | LetExpr Bindings EgisonExpr
   | LetRecExpr RecursiveBindings EgisonExpr
   | DoExpr Bindings EgisonExpr
-  | TypeExpr RecursiveBindings
-  | TypeRefExpr EgisonExpr String
-  | DestructorExpr DestructInfoExpr
+  | TypeExpr DestructInfoExpr
   | MatchExpr EgisonExpr EgisonExpr [MatchClause]
   | MatchAllExpr EgisonExpr EgisonExpr MatchClause
   | GenerateArrayExpr EgisonExpr EgisonExpr
   | ApplyExpr EgisonExpr EgisonExpr
+  | SomethingExpr
  deriving (Show)
 
 data ArrayElementExpr = AElementExpr EgisonExpr
@@ -168,7 +167,7 @@ data EgisonVal = World [Action]
   | WildCard
   | PatVar String [Integer]
   | ValuePat ObjectRef
-  | PredPat String [ObjectRef]
+  | PredPat ObjectRef [ObjectRef]
   | CutPat ObjectRef
   | NotPat ObjectRef
   | AndPat [ObjectRef]
@@ -177,13 +176,13 @@ data EgisonVal = World [Action]
   | Tuple [InnerVal]
   | Collection [InnerVal]
   | Array Integer [Integer] (Array Integer EgisonVal)
-  | Type Frame
-  | Destructor DestructInfo
+  | Type DestructInfo
   | Func Args EgisonExpr Env
   | Macro [String] EgisonExpr
   | PrimitiveFunc ([EgisonVal] -> ThrowsError EgisonVal)
   | IOFunc ([EgisonVal] -> IOThrowsError EgisonVal)
   | Port String Handle
+  | Something
   | EOF
 
 data IntermidiateVal = IInductiveData String [ObjectRef]
@@ -352,11 +351,8 @@ showExpr (LetRecExpr bindings body) =
   "(letrec " ++ showRecursiveBindings bindings ++ " " ++ showExpr body ++ ")"
 showExpr (DoExpr bindings body) =
   "(do " ++ showBindings bindings ++ " " ++ showExpr body ++ ")"
-showExpr (TypeExpr bindings) =
-  "(type " ++ showRecursiveBindings bindings ++ ")"
-showExpr (TypeRefExpr typExpr name) =
-  "(type-ref " ++ showExpr typExpr ++ " " ++ name ++ ")"
-showExpr (DestructorExpr _) = "(destructor ...)"
+showExpr (TypeExpr destructor) =
+  "(type " ++ "..." ++ ")"
 showExpr (MatchExpr tgtExpr typExpr _) =
   "(match " ++ showExpr tgtExpr ++ " " ++ showExpr typExpr ++ " ...)"
 showExpr (MatchAllExpr tgtExpr typExpr _) =
@@ -365,7 +361,8 @@ showExpr (GenerateArrayExpr fnExpr arrExpr) =
   "(generate-array " ++ showExpr fnExpr ++ " " ++ showExpr arrExpr ++ " )"
 showExpr (ApplyExpr opExpr argExpr) =
   "(" ++ showExpr opExpr ++ " " ++ showExpr argExpr ++ ")"
-  
+showExpr SomethingExpr = "Something"
+
 ---- |Allow conversion of egisonexpr instances to strings
 --instance Show EgisonExpr where show = showExpr
                       
@@ -443,13 +440,13 @@ showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
 showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
 showVal (Array _ ns arr) = showArray ns $ elems arr
 showVal (Type _) = "#<type>"
-showVal (Destructor _) = "#<destructor>"
 showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"
 showVal (Macro _ _ ) = "(macro [" ++ "..." ++ "] ...)"
 showVal (PrimitiveFunc _) = "#<primitive>"
 showVal (IOFunc _) = "#<IO primitive>"
 showVal (Port _ _) = "#<IO port>"
 showVal EOF = "#!EOF"
+showVal Something = "Something"
 
 -- |Allow conversion of egisonval instances to strings
 instance Show EgisonVal where show = showVal

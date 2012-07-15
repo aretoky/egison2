@@ -1,13 +1,12 @@
 (define $Integer
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[,$n []
-          {[$tgt (if (= tgt n)
-                     {[]}
-                     {})]}]})]
-     [$= (lambda [$val $tgt] (eq-n? val tgt))]}))
+    {[,$n []
+      {[$tgt (if (eq-n? tgt n)
+                 {[]}
+                 {})]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $compare-integer
   (lambda [$m $n]
@@ -19,14 +18,13 @@
 
 (define $Double
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[,$d []
-          {[$tgt (if (= tgt d)
-                     {[]}
-                     {})]}]})]
-     [$= (lambda [$val $tgt] (eq-f? val tgt))]}))
+    {[,$d []
+      {[$tgt (if (eq-f? tgt d)
+                 {[]}
+                 {})]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $compare-float
   (lambda [$d1 $d2]
@@ -38,17 +36,20 @@
 
 (define $Nat
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[<o> []
-          {[0 {[]}]
-           [_ {}]}]
-         [<s> Nat
-          {[$tgt (match (compare-integer tgt 0) Order
-                   {[<greater> {(- tgt 1)}]
-                    [_ {}]})]}]})]
-     [$= (lambda [$val $tgt] (eq-n? val tgt))]}))
+    {[,$n []
+      {[$tgt (if (eq-n? tgt n)
+                 {[]}
+                 {})]}]
+     [<o> []
+      {[0 {[]}]
+       [_ {}]}]
+     [<s> Nat
+      {[$tgt (match (compare-integer tgt 0) Order
+               {[<greater> {(- tgt 1)}]
+                [_ {}]})]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $between
   (lambda [$m $n]

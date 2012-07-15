@@ -269,13 +269,6 @@ parseRecursiveBindings = do
                                     return (name, expr)))
                       whiteSpace)
 
---parseTypeRefExpr :: Parser EgisonExpr
---parseTypeRefExpr = do
---  typExpr <- parseExpr
---  char '.'
---  name <- lexeme identifier
---  return $ TypeRefExpr typExpr name
-
 parseVar :: Parser EgisonExpr
 parseVar = do name <- identifier
               nums <- lexeme parseIndexNums
@@ -315,9 +308,9 @@ parsePattern =
   <|> parseNotPat
   <|> parseValuePat
   <|> parens (do try (char '?' >> many1 space)
-                 predName <- lexeme identifier
+                 predExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
-                 return (PredPatExpr predName argExprs)
+                 return (PredPatExpr predExpr argExprs)
           <|> do try (char '|' >> many1 space)
                  pats <- sepEndBy parseExpr whiteSpace
                  return (OrPatExpr pats)
@@ -412,6 +405,8 @@ parseExpr =
   <|> lexeme parsePatVarOmitExpr
   <|> lexeme parseVarOmitExpr
   <|> lexeme parseVar
+  <|> try (lexeme (do string "Something"
+                      return SomethingExpr))
   <|> do try (lexeme (string "[|"))
          exprs <- sepEndBy parseArrayElementExpr whiteSpace
          (lexeme (string "|]"))
@@ -450,20 +445,9 @@ parseExpr =
                  bindings <- lexeme parseBindings
                  body <- lexeme parseExpr
                  return (DoExpr bindings body)
-          <|> do try (string "type-ref" >> many1 space)
-                 typExpr <- lexeme parseExpr
-                 name <- lexeme identifier
-                 return (TypeRefExpr typExpr name)
-          <|> do try (string "of" >> many1 space)
-                 name <- lexeme identifier
-                 typExpr <- lexeme parseExpr
-                 return (TypeRefExpr typExpr name)
           <|> do try (string "type" >> many1 space)
-                 bindings <- lexeme parseRecursiveBindings
-                 return (TypeExpr bindings)
-          <|> do try (string "destructor" >> many1 space)
                  deconsInfo <- lexeme parseDestructInfoExpr
-                 return (DestructorExpr deconsInfo)
+                 return (TypeExpr deconsInfo)
           <|> do try (string "match-all" >> many1 space)
                  tgtExpr <- lexeme parseExpr
                  typExpr <- lexeme parseExpr

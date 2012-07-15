@@ -5,55 +5,51 @@
 (define $List
   (lambda [$a]
     (type
-      {[$var-match (lambda [$tgt] {tgt})]
-       [$inductive-match
-        (destructor
-          {[,$val []
-            {[$tgt (if (= tgt val)
-                       {[]}
-                       {})]}]
-           [<nil> []
-            {[{} {[]}]
-             [_ {}]}]
-           [<cons _ _> [a (List a)]
-            {[{$x .$xs} {[x xs]}]
-             [_ {}]}]
-           [<snoc _ _> [a (List a)]
-            {[{.$xs $x} {[x xs]}]
-             [_ {}]}]
-           [<join ,$pxs _> [(List a)]
-            {[$tgt (letrec {[$helper (lambda [$pxs $tgt]
-                                       (match [pxs tgt] [(List a) (List a)]
-                                         {[[<nil> _] {tgt}]
-                                          [[<cons $x $xs> <cons ,x $ys>] (helper xs ys)]
-                                          [[_ _] {}]}))]}
-                     (helper pxs tgt))]}]
-           [<join _ _> [(List a) (List a)]
-            {[$tgt (letrec {[$loop-fn
-                             (lambda [$ts]
-                               (match ts (List a)
-                                 {[<nil> {[{} {}]}]
-                                  [<cons $x $xs>
-                                   {[{} ts]
-                                    @(map (lambda [$as $bs] [{x @as} bs])
-                                          (loop-fn xs))}]}))]}
-                     (loop-fn tgt))]}]
-           [<nioj _ _> [(List a) (List a)]
-            {[$tgt (letrec {[$loop-fn
-                             (lambda [$ts]
-                               (match ts (List a)
-                                 {[<nil> {[{} {}]}]
-                                  [<snoc $x $xs>
-                                   {[{} ts]
-                                    @(map (lambda [$as $bs] [{@as x} bs])
-                                          (loop-fn xs))}]}))]}
-                     (loop-fn tgt))]}]})]
-       [$= (lambda [$val $tgt]
-             (match [val tgt] [(List a) (List a)]
-               {[[<nil> <nil>] #t]
-                [[<cons $x $xs> <cons ,x ,xs>] #t]
-                [[_ _] #f]}))]})))
-
+      {[,$val []
+        {[$tgt (match [val tgt] [(List a) (List a)]
+                 {[[<nil> <nil>] {[]}]
+                  [[<cons $x $xs> <cons ,x ,xs>] {[]}]
+                  [[_ _] {}]})]}]
+       [<nil> []
+        {[{} {[]}]
+         [_ {}]}]
+       [<cons _ _> [a (List a)]
+        {[{$x .$xs} {[x xs]}]
+         [_ {}]}]
+       [<snoc _ _> [a (List a)]
+        {[{.$xs $x} {[x xs]}]
+         [_ {}]}]
+       [<join ,$pxs _> [(List a)]
+        {[$tgt (letrec {[$helper (lambda [$pxs $tgt]
+                                   (match [pxs tgt] [(List a) (List a)]
+                                     {[[<nil> _] {tgt}]
+                                      [[<cons $x $xs> <cons ,x $ys>] (helper xs ys)]
+                                      [[_ _] {}]}))]}
+                 (helper pxs tgt))]}]
+       [<join _ _> [(List a) (List a)]
+        {[$tgt (letrec {[$loop-fn
+                         (lambda [$ts]
+                           (match ts (List a)
+                             {[<nil> {[{} {}]}]
+                              [<cons $x $xs>
+                               {[{} ts]
+                                @(map (lambda [$as $bs] [{x @as} bs])
+                                      (loop-fn xs))}]}))]}
+                 (loop-fn tgt))]}]
+       [<nioj _ _> [(List a) (List a)]
+        {[$tgt (letrec {[$loop-fn
+                         (lambda [$ts]
+                           (match ts (List a)
+                             {[<nil> {[{} {}]}]
+                              [<snoc $x $xs>
+                               {[{} ts]
+                                @(map (lambda [$as $bs] [{@as x} bs])
+                                      (loop-fn xs))}]}))]}
+                 (loop-fn tgt))]}]
+       [_ [Something]
+        {[$tgt {tgt}]}]
+       })))
+  
 (define $map
   (lambda [$fn $ls]
     (match ls (List Something)
@@ -201,53 +197,48 @@
 (define $Multiset
   (lambda [$a]
     (type
-      {[$var-match (lambda [$tgt] {tgt})]
-       [$inductive-match
-        (destructor
-          {[,$val []
-            {[$tgt (if (= tgt val)
-                       {[]}
-                       {})]}]
-           [<nil> []
-            {[{} {[]}]
-             [_ {}]}]
-           [<cons ,$px _> [(Multiset a)]
-            {[$tgt {((remove a) tgt px)}]}]
-           [<cons _ _> [a (Multiset a)]
-            {[$tgt (map (lambda [$t] [t ((remove a) tgt t)])
-                        ((unique a) tgt))]}]
-           [<join ,$pxs _> [(Multiset a)]
-            {[$tgt {((remove-collection a) tgt pxs)}]}]
-           [<join _ _> [(Multiset a) (Multiset a)]
-            {[$tgt (map (lambda [$ts] [ts ((remove-collection a) tgt ts)])
-                        (subcollections tgt))]}]})]
-       [$= (lambda [$val $tgt]
-             (match [val tgt] [(Multiset a) (Multiset a)]
-               {[[<nil> <nil>] #t]
-                [[<cons $x $xs> <cons ,x ,xs>] #t]
-                [[_ _] #f]}))]})))
+      {[,$val []
+        {[$tgt (match [val tgt] [(Multiset a) (Multiset a)]
+                 {[[<nil> <nil>] {[]}]
+                  [[<cons $x $xs> <cons ,x ,xs>] {[]}]
+                  [[_ _] {}]})]}]
+       [<nil> []
+        {[{} {[]}]
+         [_ {}]}]
+       [<cons ,$px _> [(Multiset a)]
+        {[$tgt {((remove a) tgt px)}]}]
+       [<cons _ _> [a (Multiset a)]
+        {[$tgt (map (lambda [$t] [t ((remove a) tgt t)])
+                    ((unique a) tgt))]}]
+       [<join ,$pxs _> [(Multiset a)]
+        {[$tgt {((remove-collection a) tgt pxs)}]}]
+       [<join _ _> [(Multiset a) (Multiset a)]
+        {[$tgt (map (lambda [$ts] [ts ((remove-collection a) tgt ts)])
+                    (subcollections tgt))]}]
+       [_ [Something]
+        {[$tgt {tgt}]}]
+       })))
 
 (define $Set
   (lambda [$a]
     (type
-      {[$var-match (lambda [$tgt] {tgt})]
-       [$inductive-match
-        (destructor
-          {[,$val []
-            {[$tgt (if (= tgt val)
-                       {[]}
-                       {})]}]
-           [<nil> []
-            {[{} {[]}]
-             [_ {}]}]
-           [<cons _ _> [a (Set a)]
-            {[$tgt (let {[$tgt2 ((unique a) tgt)]}
-                     {@(match-all tgt2 (Multiset a) [<cons $x $xs> [x xs]])
-                      @(match-all tgt2 (Multiset a) [<cons $x $xs> [x {@xs x}]])})]}]
-           [<join _ _> [(Set a) (Set a)]
-            {[$tgt (let {[$tgt2 ((unique a) tgt)]}
-                     (concat (map (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
-                                                         (subcollections xs)))
-                                  (match-all tgt2 (Multiset a) [<join $xs $ys> [xs ys]]))))]}]})]
-       [$= (lambda [$val $tgt]
-             (and ((subcollection? a) val tgt) ((subcollection? a) tgt val)))]})))
+      {[,$val []
+        {[$tgt (if (and ((subcollection? a) val tgt)
+                        ((subcollection? a) tgt val))
+                   {[]}
+                   {})]}]
+       [<nil> []
+        {[{} {[]}]
+         [_ {}]}]
+       [<cons _ _> [a (Set a)]
+        {[$tgt (let {[$tgt2 ((unique a) tgt)]}
+                 {@(match-all tgt2 (Multiset a) [<cons $x $xs> [x xs]])
+                  @(match-all tgt2 (Multiset a) [<cons $x $xs> [x {@xs x}]])})]}]
+       [<join _ _> [(Set a) (Set a)]
+        {[$tgt (let {[$tgt2 ((unique a) tgt)]}
+                 (concat (map (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
+                                                     (subcollections xs)))
+                              (match-all tgt2 (Multiset a) [<join $xs $ys> [xs ys]]))))]}]
+       [_ [Something]
+        {[$tgt {tgt}]}]
+       })))

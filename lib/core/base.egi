@@ -2,21 +2,23 @@
 ;; Base.egi
 ;;
 
-(define $Something (type {[$var-match (lambda [$tgt] {tgt})]}))
-
 (define $Bool
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[<true> []
-          {[<true> {[]}]
-           [#t {[]}]
-           [_ {}]}]
-         [<false> []
-          {[<false> {[]}]
-           [#f {[]}]
-           [_ {}]}]})]}))
+    {[,$val []
+      {[$tgt (if (eq? val tgt)
+                 {[]}
+                 {})]}]
+     [<true> []
+      {[<true> {[]}]
+       [#t {[]}]
+       [_ {}]}]
+     [<false> []
+      {[<false> {[]}]
+       [#f {[]}]
+       [_ {}]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $or
   (lambda [$b1 $b2]
@@ -38,31 +40,51 @@
 
 (define $Char
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[,$c []
-          {[$tgt (if (= tgt c)
-                     {[]}
-                     {})]}]})]
-     [$= eq-c?]}))
+    {[,$c []
+      {[$tgt (if (eq-c? tgt c)
+                 {[]}
+                 {})]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $String
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$= eq-s?]}))
+    {[,$s []
+      {[$tgt (if (eq-s? tgt s)
+                 {[]}
+                 {})]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
 (define $Order
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[<less> []
-          {[<less> {[]}]
-           [_ {}]}]
-         [<equal> []
-          {[<equal> {[]}]
-           [_ {}]}]
-         [<greater> []
-          {[<greater> {[]}]
-           [_ {}]}]})]}))
+    {[,$val []
+      {[$tgt (if (eq? val tgt)
+                 {[]}
+                 {})]}]
+     [<less> []
+      {[<less> {[]}]
+       [_ {}]}]
+     [<equal> []
+      {[<equal> {[]}]
+       [_ {}]}]
+     [<greater> []
+      {[<greater> {[]}]
+       [_ {}]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
+
+(define $match?
+  (lambda [$a]
+    (lambda [$x $y]
+      (match x a
+        {[,y #t]
+         [_ #f]}))))
+
+(define $=
+  (lambda [$a]
+    (lambda [$x $y]
+      (and (match? x y) (match? y x)))))
