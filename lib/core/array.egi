@@ -13,3 +13,25 @@
                        {[(array-ref key arr) arr]}
                        {})]}]})]})))
 
+(define $range-to-keys
+  (lambda $ms
+    (letrec {[$range-to-keys2
+              (lambda [$ms]
+                (match ms (List Integer)
+                  {[<nil> {{}}]
+                   [<cons $n $ns>
+                    (let {[$iss (range-to-keys2 ns)]}
+                      (concat (map (lambda [$i]
+                                     (map (lambda [$is] {i @is})
+                                          iss))
+                                   (between 1 n))))]}))]}
+      (map collection-to-tuple (range-to-keys2 (tuple-to-collection ms))))))
+
+(define $keys-for-display
+  (lambda [$mx $my]
+    (let {[$xs (between 1 mx)]
+          [$ys (reverse (between 1 my))]}
+      (map (lambda [$y]
+             (map (lambda [$x] [x y])
+                  xs))
+           ys))))

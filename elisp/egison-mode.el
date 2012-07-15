@@ -20,6 +20,7 @@
      "\\<loop\\>"
      "\\<match\\>"
      "\\<match-all\\>"
+     "\\<generate-array\\>"
 
      "\\\."
      "\\\,"
@@ -110,6 +111,7 @@
         ((equal "match-all" name) 2)
         ((equal "type" name) 2)
         ((equal "destructor" name) 2)
+        ((equal "generate-array" name) 2)
         ))
 
 (defun egison-indent-line ()
