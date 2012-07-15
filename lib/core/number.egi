@@ -1,6 +1,7 @@
 (define $Integer
   (type
-    {[,$n []
+    {
+     [,$n []
       {[$tgt (if (eq-n? tgt n)
                  {[]}
                  {})]}]

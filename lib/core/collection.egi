@@ -204,7 +204,7 @@
   (lambda [$a]
     (type
       {[,$val []
-        {[$tgt (match [val tgt] [(Multiset a) (Multiset a)]
+        {[$tgt (match [val tgt] [(List a) (Multiset a)]
                  {[[<nil> <nil>] {[]}]
                   [[<cons $x $xs> <cons ,x ,xs>] {[]}]
                   [[_ _] {}]})]}]
