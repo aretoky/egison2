@@ -19,12 +19,11 @@
 
 (test (array-range? [2 4] ass))
 
-(test (array-map (lambda [$i1 $i2] (* (array-ref [i1 i2] ass) 2)) ass))
+(test (generate-array (lambda [$i1 $i2] (* (array-ref [i1 i2] ass) 2)) (array-range ass)))
 
-(define $bss (array-map (lambda [$i1 $i2] (* (array-ref [i1 i2] ass) 2)) ass))
+(define $bss (generate-array (lambda [$i1 $i2] (* (array-ref [i1 i2] ass) 2)) (array-range ass)))
 
 (test (array-ref [2 3] bss))
-
 
 (test (match ass (Array Integer)
         {[<cons ,[2 2] $n <cons ,[2 3] ,(+ n 1) _>> <ok>]
