@@ -14,8 +14,8 @@
         {[$arr (if (array-range? key arr)
                    {[(array-ref key arr) arr]}
                    {})]}]
-       [_ []
-        {[_ {[]}]}]
+       [_ [Something]
+        {[$tgt {[tgt]}]}]
        })))
 
 (define $range-to-keys
@@ -69,8 +69,8 @@
     (lambda [$pat $arr]
       (let {[$keys (array-keys arr)]}
         (letrec {[$helper (lambda [$keys]
-                            (match (array-ref (car keys) arr)
-                              {[pat (car key)]
+                            (match (array-ref (car keys) arr) a
+                              {[pat (car keys)]
                                [_ (helper (cdr keys))]}))]}
           (helper keys))))))
 
@@ -82,7 +82,7 @@
                             (match keys (List Something)
                               {[<nil> ret]
                                [<cons $key $rest>
-                                (match (array-ref key arr)
+                                (match (array-ref key arr) a
                                   {[pat (helper rest {@ret val})]
                                    [_ (helper rest ret)]})]}))]}
           (helper keys {}))))))

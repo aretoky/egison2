@@ -43,7 +43,7 @@
      [<o> []
       {[0 {[]}]
        [_ {}]}]
-     [<s> Nat
+     [<s _> Nat
       {[$tgt (match (compare-integer tgt 0) Order
                {[<greater> {(- tgt 1)}]
                 [_ {}]})]}]
@@ -100,3 +100,15 @@
                     (map (lambda [$r] (mod r m))
                          rs)
                     0)})]})))
+
+(define $Mod
+  (lambda [$m]
+    (type
+      {[,$n []
+        {[$tgt (if (eq-n (mod tgt m) (mod n m))
+                   {[]}
+                   {})]}]
+       [_ [Something]
+	{[$tgt {(mod tgt m)}]}]
+       })))
+

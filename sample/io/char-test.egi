@@ -3,7 +3,7 @@
     (do {[$: (write-string : "input char : ")]
          [$: (flush :)]
          [[$: $c] (read-char :)]
-         [$: (write-char : '\n')]}
+         [$: (write-char : '\n')]
          [$: (write-string : "output : ")]
          [$: (write-char : c)]
          [$: (write-char : '\n')]}

@@ -20,21 +20,9 @@
       {[$tgt {tgt}]}]
      }))
 
-(define $Mod
-  (lambda [$m]
-    (type
-      {[$var-match (lambda [$tgt] {(mod tgt m)})]
-       [$inductive-match
-        (destructor
-          {[,$n []
-            {[$tgt (if (= tgt n)
-                       {[]}
-                       {})]}]})]
-       [$= (lambda [$val $tgt] (eq-n? (mod val m) (mod tgt m)))]})))
-
 (define $Card
   (type
-    {[,$card []
+    {[,$val []
       {[$tgt (match [val tgt] [Card Card]
                {[[<card $s $n> <card ,s ,n>] {[]}]
                 [[_ _] {}]})]}]

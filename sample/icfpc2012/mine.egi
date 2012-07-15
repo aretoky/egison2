@@ -19,6 +19,8 @@
      [<goal> []
       {[<goal> {[]}]
        [_ {}]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
      }))
 
 (define $Tile
@@ -130,8 +132,7 @@
   (type
     {[<game-state _ _ _> [Mine Integer Integer]
       {[<game-state $mine $step $lambda-count>
-        {[state mine step lambda-count]
-         [_ {}]}]}]
+        {[mine step lambda-count]}]}]
      [_ [Something]
       {[$tgt {tgt}]}]
      }))
@@ -154,7 +155,7 @@
 
 (define $get-robot-state
   (lambda [$mine]
-    (let {[rp (find-from-value-with-pattern <robot _> mine)]}
+    (let {[$rp ((find-from-value-with-pattern Tile) <robot _> mine)]}
       (match (array-ref rp mine) Tile
         {[<robot $state> state]
          [_ <error>]}))))
@@ -308,7 +309,7 @@
       (lambda [$x $y]
         (match mine Mine
           {[<cons ,[x y] <robot <normal>>
-                  <cons ,[x (+ y 1)] <rock #t>
+                  <cons ,[x (+ y 1)] <rock ,#t>
                         _>>
             <robot <broke>>]
            [<cons ,[x y] $tile _> tile]
@@ -366,35 +367,45 @@
               (letrec {[$interactive
                         (lambda [$: $game-state]
                           (match game-state GameState
-                            {[<game-state mine step lambda-count>
-                              (do {[$: (write-string : "command: ")]
+                            {[<game-state $mine $step $lambda-count>
+                              (do {
+                                   [$: (write-string : (show-mine mine))]
+                                   [$: (write-char : '\n')]
+                                   [$: (write-string : "command: ")]
                                    [$: (flush :)]
                                    [[$: $cmd] (read-char :)]
-                                   [$: (write-char '\n')]
+                                   [$: (write-char : '\n')]
                                    [$: (flush :)]
                                    [$move (char-to-move cmd)]
                                    [$mine2 (ending-update (update-map (move-robot mine move)))]
                                    [$game-state2 <game-state mine2 (+ 1 step)
-                                                             (if ((= RobotState) <on-lambda> (get-robot-state mine2))
-                                                                 (+ 1 lambda-count)
-                                                                 lambda-count)>]
-                                   [$: (write-string : (show-mine mine))]
-                                   [$: (write-char : '\n')]
+;                                                             (if ((= RobotState) <on-lambda> (get-robot-state mine2))
+;                                                                 (+ 1 lambda-count)
+;                                                                 lambda-count)
+                                                             2
+                                                             >]
                                    }
                                 (if (ending? mine)
-                                    (do {[$: (write-string : "score: ")]
+                                    (do {[$: (write-string : (show-mine mine))]
+                                         [$: (write-char : '\n')]
+                                         [$: (write-string : "score: ")]
                                          [$: (write (calc-score game-state2))]
                                          [$: (write-char : '\n')]
-                                         })
-                                    (interacive : game-state2)))]}))]}
-                (interacive : init-state)))))]
+                                         }
+                                      :)
+                                    (interactive : game-state2)))]}))]}
+                (interactive : init-state)))))]
        [_ <argv-error>]})))
 
 ;;
 ;; for debug
 ;;
 
-(define $mine [|[~<rock #f> <wall> <wall>~]
-                [~<empty> <rock #f> <empty>~]
-                [~<empty> <empty> <earth>~]
-                [~<robot <normal>> <earth> <rock #f>~]|])
+(define $test-mine [|[~<rock #f> <wall> <wall>~]
+                     [~<empty> <rock #f> <empty>~]
+                     [~<empty> <empty> <earth>~]
+                     [~<robot <normal>> <earth> <rock #f>~]|])
+
+;(test (match <game-state test-mine 0 0> GameState
+;        {[<game-state $mine $step $lambda-count>
+;          (show-mine mine)]}))

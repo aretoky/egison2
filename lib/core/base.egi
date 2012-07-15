@@ -87,4 +87,4 @@
 (define $=
   (lambda [$a]
     (lambda [$x $y]
-      (and (match? x y) (match? y x)))))
+      (and ((match? a) x y) ((match? a) y x)))))

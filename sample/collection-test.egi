@@ -103,28 +103,30 @@
           <ok>]
          [_ <ko>]}))
 
-(test (let {[$f (lambda [$x] (+ (g x) 10))]
-            [$g (lambda [$x] (+ x 1))]}
+(test (letrec {[$f (lambda [$x] (+ (g x) 10))]
+               [$g (lambda [$x] (+ x 1))]}
         (f 0)))
 
 
 (define $Stick
   (lambda [$a]
     (type
-      {[$var-match (lambda [$tgt] {tgt})]
-       [$inductive-match
-        (destructor
-          {[nil []
-            {[$tgt (match-all tgt (List a) [<nil> []])]}]
-           [cons [a (List a)]
-            {[$tgt {@(match-all tgt (List a) [<cons $x $xs> [x xs]])
-                    @(match-all (reverse tgt) (List a) [<cons $x $xs> [x xs]])}]}]
-           [join [(List a) (List a)]
-            {[$tgt {@(match-all tgt (List a) [<join $xs $ys> [xs ys]])
-                    @(match-all (reverse tgt) (List a) [<join $xs $ys> [xs ys]])}]}]})]
-       [$equal? (lambda [$val $tgt]
-                  (or ((type-ref (List a) equal?) val tgt)
-                      ((type-ref (List a) equal?) val (reverse tgt))))]})))
+      {[,$val []
+	{[$tgt (if (or ((= (List a)) val tgt)
+		       ((= (List a)) val (reverse tgt)))
+		   {[]}
+		   {})]}]
+       [<nil> []
+        {[$tgt (match-all tgt (List a) [<nil> []])]}]
+       [<cons _ _> [a (List a)]
+        {[$tgt {@(match-all tgt (List a) [<cons $x $xs> [x xs]])
+                @(match-all (reverse tgt) (List a) [<cons $x $xs> [x xs]])}]}]
+       [<join _ _> [(List a) (List a)]
+        {[$tgt {@(match-all tgt (List a) [<join $xs $ys> [xs ys]])
+                @(match-all (reverse tgt) (List a) [<join $xs $ys> [xs ys]])}]}]
+       [_ [Something]
+	{[$tgt {tgt}]}]
+       })))
 
 (test (match-all {1 2 3} (Stick Integer) [<cons $x $xs> [x xs]]))
 (test (match-all {1 2 3} (Stick Integer) [<join $xs $ys> [xs ys]]))
