@@ -4,7 +4,11 @@
 
 (define $RobotState
   (type
-    {[<normal> []
+    {[,$val []
+      {[$tgt (if (eq? tgt val)
+                 {[]}
+                 {})]}]
+     [<normal> []
       {[<normal> {[]}]
        [_ {}]}]
      [<on-lambda> []
@@ -13,8 +17,8 @@
      [<abort> []
       {[<abort> {[]}]
        [_ {}]}]
-     [<broke> []
-      {[<broke> {[]}]
+     [<broken> []
+      {[<broken> {[]}]
        [_ {}]}]
      [<goal> []
       {[<goal> {[]}]
@@ -123,16 +127,19 @@
        [,'D' <down>]
        [,'W' <wait>]
        [,'A' <abort>]
-       [,'_' <error>]
+       [,'h' <left>]
+       [,'l' <right>]
+       [,'k' <up>]
+       [,'j' <down>]
        })))
 
 (define $Point [Integer Integer])
 
 (define $GameState
   (type
-    {[<game-state _ _ _> [Mine Integer Integer]
-      {[<game-state $mine $step $lambda-count>
-        {[mine step lambda-count]}]}]
+    {[<game-state _ _ _ _> [Mine Integer Integer Integer]
+      {[<game-state $mine $step $score $lambda-count>
+        {[mine step score lambda-count]}]}]
      [_ [Something]
       {[$tgt {tgt}]}]
      }))
@@ -140,7 +147,7 @@
 (define $get-mine
   (lambda [$game-state]
     (match game-state GameState
-      {[<game-state $mine _ _> mine]})))
+      {[<game-state $mine _ _ _> mine]})))
 
 (define $show-mine
   (lambda [$mine]
@@ -157,8 +164,7 @@
   (lambda [$mine]
     (let {[$rp ((find-from-value-with-pattern Tile) <robot _> mine)]}
       (match (array-ref rp mine) Tile
-        {[<robot $state> state]
-         [_ <error>]}))))
+        {[<robot $state> state]}))))
 
 (define $move-robot
   (lambda [$mine $move]
@@ -167,7 +173,24 @@
         (match move Move
           {[<left>
             (match mine Mine
-              {[<cons ,[x y] <robot _>
+              {
+               [<cons ,[x y] <robot _>
+                      <cons ,[(- x 1) y] <open-lift>
+                            _>>
+                <empty>]
+               [<cons ,[x y] <open-lift>
+                      <cons ,[(+ x 1) y] <robot _>
+                            _>>
+                <robot <goal>>]
+               [<cons ,[x y] <robot _>
+                      <cons ,[(- x 1) y] <lambda-stone>
+                            _>>
+                <empty>]
+               [<cons ,[x y] <lambda-stone>
+                      <cons ,[(+ x 1) y] <robot _>
+                            _>>
+                <robot <on-lambda>>]
+               [<cons ,[x y] <robot _>
                       (| ^<cons ,[(- x 1) y] (| <wall> <rock _>) _>
                          <cons ,[(- x 1) y] <rock _>
                                <cons ,[(- x 2) y] <empty> _>>)>
@@ -183,17 +206,29 @@
                                   _>>>
                 <rock #f>]
                [<cons ,[x y] <robot _>
-                      <cons ,[(- x 1) y] <open-lift>
-                            _>>
-                <empty>]
-               [<cons ,[x y] <open-lift>
-                      <cons ,[(+ x 1) y] <robot _>
-                            _>>
-                <robot <goal>>]
+                      _>
+                <robot <normal>>]
                [<cons ,[x y] $tile _> tile]})]
            [<right>
             (match mine Mine
-              {[<cons ,[x y] <robot _>
+              {
+               [<cons ,[x y] <robot _>
+                      <cons ,[(+ x 1) y] <open-lift>
+                            _>>
+                <empty>]
+               [<cons ,[x y] <open-lift>
+                      <cons ,[(- x 1) y] <robot _>
+                            _>>
+                <robot <goal>>]
+               [<cons ,[x y] <robot _>
+                      <cons ,[(+ x 1) y] <lambda-stone>
+                            _>>
+                <empty>]
+               [<cons ,[x y] <lambda-stone>
+                      <cons ,[(- x 1) y] <robot _>
+                            _>>
+                <robot <on-lambda>>]
+               [<cons ,[x y] <robot _>
                       (| ^<cons ,[(+ x 1) y] (| <wall> <rock _>) _>
                          <cons ,[(+ x 1) y] <rock _>
                                <cons ,[(+ x 2) y] <empty> _>>)>
@@ -209,30 +244,65 @@
                                   _>>>
                 <rock #f>]
                [<cons ,[x y] <robot _>
-                      <cons ,[(+ x 1) y] <open-lift>
-                            _>>
-                <empty>]
-               [<cons ,[x y] <open-lift>
-                      <cons ,[(- x 1) y] <robot _>
-                            _>>
-                <robot <goal>>]
+                      _>
+                <robot <normal>>]
                [<cons ,[x y] $tile _> tile]})]
            [<up>
             (match mine Mine
-              {[<cons ,[x y] <robot _>
+              {
+               [<cons ,[x y] <robot _>
+                      <cons ,[x (+ y 1)] <open-lift>
+                            _>>
+                <empty>]
+               [<cons ,[x y] <open-lift>
+                      <cons ,[x (- y 1)] <robot _>
+                            _>>
+                <robot <goal>>]
+               [<cons ,[x y] <robot _>
+                      <cons ,[x (+ y 1)] <lambda-stone>
+                            _>>
+                <empty>]
+               [<cons ,[x y] <lambda-stone>
+                      <cons ,[x (- y 1)] <robot _>
+                            _>>
+                <robot <on-lambda>>]
+               [<cons ,[x y] <robot _>
                       ^<cons ,[x (+ y 1)] (| <wall> <rock _>) _>>
                 <empty>]
                [<cons ,[x (- y 1)] <robot _>
                       ^<cons ,[x y] (| <wall> <rock _>) _>>
                 <robot <normal>>]
+               [<cons ,[x y] <robot _>
+                      _>
+                <robot <normal>>]
                [<cons ,[x y] $tile _> tile]})]
            [<down>
             (match mine Mine
-              {[<cons ,[x y] <robot _>
+              {
+               [<cons ,[x y] <robot _>
+                      <cons ,[x (- y 1)] <open-lift>
+                            _>>
+                <empty>]
+               [<cons ,[x y] <open-lift>
+                      <cons ,[x (+ y 1)] <robot _>
+                            _>>
+                <robot <goal>>]
+               [<cons ,[x y] <robot _>
+                      <cons ,[x (- y 1)] <lambda-stone>
+                            _>>
+                <empty>]
+               [<cons ,[x y] <lambda-stone>
+                      <cons ,[x (+ y 1)] <robot _>
+                            _>>
+                <robot <on-lambda>>]
+               [<cons ,[x y] <robot _>
                       ^<cons ,[x (- y 1)] (| <wall> <rock _>) _>>
                 <empty>]
                [<cons ,[x (+ y 1)] <robot _>
                       ^<cons ,[x y] (| <wall> <rock _>) _>>
+                <robot <normal>>]
+               [<cons ,[x y] <robot _>
+                      _>
                 <robot <normal>>]
                [<cons ,[x y] $tile _> tile]})]
            [<abort>
@@ -242,7 +312,9 @@
                [<cons ,[x y] $tile _> tile]})]
            [<wait>
             (match mine Mine
-              {[<cons ,[x y] $tile _> tile]})]
+              {[<cons ,[x y] <robot _> _>
+                <robot <normal>>]
+               [<cons ,[x y] $tile _> tile]})]
            }))
       (array-range mine))))
                            
@@ -271,26 +343,28 @@
                               <cons ,[(+ x 1) y] <empty>
                                     _>>>>
             <empty>]
-           [<cons ,[x y] <empty>
-                  <cons ,[(+ x 1) y] <rock _>
-                        <cons ,[(+ x 1) (+ y 1)] <rock _>
-                              <cons ,[(+ x 2) y] ^<empty>
-                                    <cons ,[(+ x 2) (+ y 1)] ^<empty>
-                                          <cons ,[x (+ y 1)] <empty>
-                                                _>>>>>>
-            <rock #t>]
            [<cons ,[x y] <rock _>
                   <cons ,[x (- y 1)] <rock _>
-                        <cons ,[(+ x 1) y] ^<empty>
-                              <cons ,[(+ x 1) (+ y 1)] ^<empty>
-                                    <cons ,[(- x 1) (+ y 1)] <empty>
-                                          <cons ,[(- x 1) y] <empty>
-                                                _>>>>>>
+                        (& (| <cons ,[(+ x 1) y] ^<empty> _>
+                              <cons ,[(+ x 1) (- y 1)] ^<empty> _>)
+                           <cons ,[(- x 1) (- y 1)] <empty>
+                                 <cons ,[(- x 1) y] <empty>
+                                       _>>)>>
             <empty>]
+           [<cons ,[(+ x 1) (+ y 1)] <rock _>
+                  <cons ,[(+ x 1) y] <rock _>
+                        (& (| <cons ,[(+ x 2) y] ^<empty> _>
+                              <cons ,[(+ x 2) (+ y 1)] ^<empty> _>)
+                           <cons ,[x (+ y 1)] <empty>
+                                 <cons ,[x y] <empty>
+                                       _>>)>>
+            <rock #t>]
            [<cons ,[x y] <closed-lift> _>
             (if (eq? 0 (size (lambda-stones mine)))
                 <open-lift>
                 <closed-lift>)]
+           [<cons ,[x y] <rock _> _>
+                <rock #f>]
            [<cons ,[x y] $tile _> tile]
            }))
       (array-range mine))))
@@ -311,7 +385,7 @@
           {[<cons ,[x y] <robot <normal>>
                   <cons ,[x (+ y 1)] <rock ,#t>
                         _>>
-            <robot <broke>>]
+            <robot <broken>>]
            [<cons ,[x y] $tile _> tile]
            }))
       (array-range mine))))
@@ -319,17 +393,17 @@
 (define $ending?
   (lambda [$mine]
     (match (get-robot-state mine) RobotState
-      {[(| <abort> <broke> <goal>) #t]
+      {[(| <abort> <broken> <goal>) #t]
        [_ #f]})))
 
 (define $calc-score
   (lambda [$game-state]
     (match game-state GameState
-      {[<game-state mine step lambda-count>
+      {[<game-state $mine $step $score $lambda-count>
         (match (get-robot-state mine) RobotState
-          {[<goal> (- (* lambda-count 50) step)]
-           [<abort> (- (* lambda-count 25) step)]
-           [<broke> 0]})]})))
+          {[<goal> (+ score (* 25 lambda-count))]
+           [<abort> score]
+           [<broken> 0]})]})))
 
 (define $generate-mine
   (lambda [$lines]
@@ -337,16 +411,20 @@
                       (map char-to-tile
                            (string-to-chars line)))
                     (reverse lines))]
-         [$mx (size (car tss))]
-         [$my (size tss)]}
+         [$mx (max (map size tss))]
+         [$my (size tss)]
+         [$tss2 (map (lambda [$cs]
+                       {@cs @(loop $l $i (between 1 (- mx (size cs))) {<wall> @l} {})})
+                     tss)]
+         }
       (letrec {[$rotate
                 (lambda [$tss]
                   (match (car tss) (List Something)
                     {[<nil> {}]
                      [_ {(map car tss) @(rotate (map cdr tss))}]}))]}
-        (let {[$tss2 (rotate tss)]}
+        (let {[$tss3 (rotate tss2)]}
           (generate-array
-            (lambda [$x $y] (nth y (nth x tss2)))
+            (lambda [$x $y] (nth y (nth x tss3)))
             [mx my]))))))
 
 (define $main
@@ -363,13 +441,22 @@
                    }
             (do {[[$: $lines] (readMapLoop : {})]
                  [$init-mine (generate-mine lines)]
-                 [$init-state <game-state init-mine 0 0>]}
+                 [$init-state <game-state init-mine 0 0 0>]}
               (letrec {[$interactive
                         (lambda [$: $game-state]
                           (match game-state GameState
-                            {[<game-state $mine $step $lambda-count>
+                            {[<game-state $mine $step $score $lambda-count>
                               (do {
                                    [$: (write-string : (show-mine mine))]
+                                   [$: (write-char : '\n')]
+                                   [$: (write-string : "robot-state: ")]
+                                   [$: (write : (get-robot-state mine))]
+                                   [$: (write-char : '\n')]
+                                   [$: (write-string : "lambda-count: ")]
+                                   [$: (write : lambda-count)]
+                                   [$: (write-char : '\n')]
+                                   [$: (write-string : "score: ")]
+                                   [$: (write : score)]
                                    [$: (write-char : '\n')]
                                    [$: (write-string : "command: ")]
                                    [$: (flush :)]
@@ -379,33 +466,30 @@
                                    [$move (char-to-move cmd)]
                                    [$mine2 (ending-update (update-map (move-robot mine move)))]
                                    [$game-state2 <game-state mine2 (+ 1 step)
-;                                                             (if ((= RobotState) <on-lambda> (get-robot-state mine2))
-;                                                                 (+ 1 lambda-count)
-;                                                                 lambda-count)
-                                                             2
+                                                             (if ((= RobotState) <on-lambda> (get-robot-state mine2))
+                                                                 (- (+ 50 score) 1)
+                                                                 (- score 1))
+                                                             (if ((= RobotState) <on-lambda> (get-robot-state mine2))
+                                                                 (+ 1 lambda-count)
+                                                                 lambda-count)
                                                              >]
                                    }
-                                (if (ending? mine)
-                                    (do {[$: (write-string : (show-mine mine))]
+                                (if (ending? mine2)
+                                    (do {
+                                         [$: (write-string : (show-mine mine2))]
+                                         [$: (write-char : '\n')]
+                                         [$: (write-string : "robot-state: ")]
+                                         [$: (write : (get-robot-state mine2))]
                                          [$: (write-char : '\n')]
                                          [$: (write-string : "score: ")]
-                                         [$: (write (calc-score game-state2))]
+                                         [$: (write : (calc-score game-state2))]
                                          [$: (write-char : '\n')]
                                          }
                                       :)
                                     (interactive : game-state2)))]}))]}
                 (interactive : init-state)))))]
-       [_ <argv-error>]})))
+       [_ (do {
+               [$: (write-string : "usage: mine FILENAME (specify map file)\n")]
+               }
+            :)]})))
 
-;;
-;; for debug
-;;
-
-(define $test-mine [|[~<rock #f> <wall> <wall>~]
-                     [~<empty> <rock #f> <empty>~]
-                     [~<empty> <empty> <earth>~]
-                     [~<robot <normal>> <earth> <rock #f>~]|])
-
-;(test (match <game-state test-mine 0 0> GameState
-;        {[<game-state $mine $step $lambda-count>
-;          (show-mine mine)]}))
