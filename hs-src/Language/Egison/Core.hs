@@ -107,16 +107,26 @@ iEval :: IntermidiateVal -> IOThrowsError EgisonVal
 iEval (IInductiveData cons argRefs) = do
   args <- mapM cRefEval argRefs
   return $ InductiveData cons args
-iEval (ICollection innerValRefs) = do
-  innerVals <- mapM innerValRefEval innerValRefs
-  return $ Collection innerVals
-iEval (ITuple innerValRefs) = do
-  innerVals <- mapM innerValRefEval innerValRefs
+iEval (ICollection innerRefs) = do
+  vals <- innerRefsEval innerRefs
+  return $ Collection vals
+iEval (ITuple innerRefs) = do
+  innerVals <- innerRefsEval innerRefs
   return $ Tuple innerVals
 
-innerValRefEval :: InnerValRef -> IOThrowsError InnerVal
-innerValRefEval (IElement objRef) = liftM Element $ cRefEval objRef
-innerValRefEval (ISubCollection objRef) = liftM SubCollection $ cRefEval objRef
+innerRefsEval :: [InnerValRef] -> IOThrowsError [EgisonVal]
+innerRefsEval [] = return []
+innerRefsEval ((IElement objRef):rest) = do
+  val <- cRefEval objRef
+  vals <- innerRefsEval rest
+  return (val:vals)
+innerRefsEval ((ISubCollection subObjRef):rest) = do
+  subVal <- cRefEval subObjRef
+  case subVal of
+    Collection vals -> do
+      retRest <- innerRefsEval rest
+      return $ vals ++ retRest
+    _ -> throwError $ Default "innerRefsEval: not collection for subcollection"
 
 cRefEval :: ObjectRef -> IOThrowsError EgisonVal
 cRefEval objRef = do
@@ -287,7 +297,7 @@ cEval1 (Closure env (GenerateArrayExpr fnExpr rangeExpr)) = do
   rangeVal <- eval env rangeExpr
   ms <- liftThrows $ mapM unpackNum $ tupleToList rangeVal
   let d = fromIntegral $ length ms
-  let is = map (\iss -> (Value . Tuple) $ map (Element . Number) iss) $ indexList ms
+  let is = map (\iss -> (Value . Tuple) $ map Number iss) $ indexList ms
   isRefs <- liftIO $ mapM newIORef is
   vals <- mapM (cApply fnObjRef) isRefs
   return $ Value $ Array d ms $ listArray (1, (fromIntegral (length vals))) vals
@@ -370,8 +380,8 @@ extendLet env abindings = do
            Intermidiate (ITuple innerRefs) -> do
              objRefs <- innerValRefsToObjRefs innerRefs
              liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
-           Value (Tuple innerVals) -> do
-             objRefs <- liftIO $ mapM (newIORef . Value) $ innerValsToList innerVals
+           Value (Tuple vals) -> do
+             objRefs <- liftIO $ mapM (newIORef . Value) vals
              liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
            _ -> liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss [objRef]
 
@@ -386,9 +396,8 @@ makeFrame (ATuple fArgs) objRef = do
       objRefs <- innerValRefsToObjRefs innerRefs
       frames <- mapM (\(fArg,objRef3) -> makeFrame fArg objRef3) $ zip fArgs objRefs
       return $ concat frames
-    Value (Tuple innerVals) -> do
-      let vals = innerValsToList innerVals
-      objRefs <- liftIO $ valsToObjRefList vals
+    Value (Tuple vals) -> do
+      objRefs <- liftIO $ mapM (newIORef . Value) vals
       frames <- mapM (\(fArg,objRef3) -> makeFrame fArg objRef3) $ zip fArgs objRefs
       return $ concat frames
     _ -> throwError $ Default "makeFrame: not tuple"
@@ -415,8 +424,8 @@ innerValRefsToObjRefs (innerRef:rest) = do
         Intermidiate (ICollection innerRefs) -> do
           objRefs <- innerValRefsToObjRefs innerRefs
           return $ objRefs ++ restRet
-        Value (Collection innerVals) -> do
-          objRefs <- liftIO $ mapM newIORef $ map Value $ innerValsToList innerVals
+        Value (Collection vals) -> do
+          objRefs <- liftIO $ mapM newIORef $ map Value vals
           return $ objRefs ++ restRet
         _ -> throwError $ Default "innerValRefsToObjRefs: not collection"
 
@@ -498,7 +507,7 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
       typObjRefs <- tupleToObjRefs typObjRef
       patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
     Value (Tuple pats) -> do
-      patObjRefs <- innerValsToObjRefs pats
+      patObjRefs <- liftIO $ mapM (newIORef . Value) pats
       tgtObjRefs <- tupleToObjRefs tgtObjRef
       typObjRefs <- tupleToObjRefs typObjRef
       patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
@@ -680,8 +689,8 @@ objectRefToInnerRefs objRef = do
   obj <- cRefEval1 objRef
   case obj of
     Intermidiate (ICollection innerRefs) -> return innerRefs
-    Value (Collection innerVals) -> do
-      objRefs <- innerValsToObjRefs innerVals
+    Value (Collection val) -> do
+      objRefs <- liftIO $ mapM (newIORef . Value) val
       return $ map IElement objRefs
 
 isEmptyCollection :: ObjectRef -> IOThrowsError Bool
@@ -695,24 +704,13 @@ isEmptyCollection objRef = do
       liftIO $ writeIORef objRef $ Intermidiate $ ICollection $ innerRefs ++ rest
       isEmptyCollection objRef
     Value (Collection []) -> return True
-    Value (Collection innerVals) -> isEmptyInnerVals innerVals
+    Value (Collection _) -> return False
     _ -> throwError $ Default $ "isEmptyCollection: not collection:" ++ show obj
-
-isEmptyInnerVals :: [InnerVal] -> IOThrowsError Bool
-isEmptyInnerVals [] = return True
-isEmptyInnerVals ((Element _):_) = return False
-isEmptyInnerVals ((SubCollection val):rest) = do
-  objRef <- liftIO $ newIORef $ Value val
-  b <- isEmptyCollection objRef
-  if b
-    then isEmptyInnerVals rest
-    else return False
 
 isEmptyCollectionForSnoc :: ObjectRef -> IOThrowsError Bool
 isEmptyCollectionForSnoc objRef = do
   obj <- cRefEval1 objRef
   case obj of
-    Intermidiate (ICollection ((IElement _):_)) -> return False
     Intermidiate (ICollection innerRefs) -> do
       case reverse innerRefs of
         [] -> return True
@@ -722,112 +720,56 @@ isEmptyCollectionForSnoc objRef = do
           liftIO $ writeIORef objRef $ Intermidiate $ ICollection $ reverse rest ++ reverse subInnerRefs
           isEmptyCollectionForSnoc objRef
     Value (Collection []) -> return True
-    Value (Collection innerVals) -> isEmptyInnerValsForSnoc innerVals
+    Value (Collection _) -> return False
     _ -> throwError $ Default $ "isEmptyCollectionForSnoc: not collection:" ++ show obj
-
-isEmptyInnerValsForSnoc :: [InnerVal] -> IOThrowsError Bool
-isEmptyInnerValsForSnoc innerVals =
-  case reverse innerVals of
-    [] -> return True
-    ((Element _):_) -> return False
-    ((SubCollection val):rest) -> do
-      objRef <- liftIO $ newIORef $ Value val
-      b <- isEmptyCollectionForSnoc objRef
-      if b
-        then isEmptyInnerValsForSnoc $ reverse rest
-        else return False
 
 consDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
 consDestruct objRef = do
   obj <- cRefEval1 objRef
   case obj of
-    Intermidiate (ICollection innerRefs) -> consDestructInnerRefs innerRefs
-    Value (Collection innerVals) -> consDestructInnerVals innerVals
+    Intermidiate (ICollection []) -> throwError $ Default "consDestructInnerRefs: empty collection"
+    Intermidiate (ICollection ((IElement carObjRef):rest)) -> do
+      cdrObjRef <- liftIO $ newIORef $ Intermidiate $ ICollection rest
+      return (carObjRef, cdrObjRef)
+    Intermidiate (ICollection ((ISubCollection subObjRef):rest)) -> do
+      innerRefs <- objectRefToInnerRefs subObjRef
+      liftIO $ writeIORef objRef $ Intermidiate $ ICollection $ innerRefs ++ rest
+      consDestruct objRef
+    Value (Collection (val:vals)) -> do
+      carObjRef <- liftIO $ newIORef $ Value val
+      cdrObjRef <- liftIO $ newIORef $ Value $ Collection vals
+      return (carObjRef, cdrObjRef)
     _ -> throwError $ Default "consDestruct: not collection"
-
-consDestructInnerRefs :: [InnerValRef] -> IOThrowsError (ObjectRef, ObjectRef)
-consDestructInnerRefs [] = throwError $ Default "consDestructInnerRefs: empty collection"
-consDestructInnerRefs ((IElement objRef):rest) = do
-  cdrObjRef <- liftIO $ newIORef $ Intermidiate $ ICollection rest
-  return (objRef, cdrObjRef)
-consDestructInnerRefs ((ISubCollection objRef):rest) = do
-  b <- isEmptyCollection objRef
-  if b
-    then consDestructInnerRefs rest
-    else do (carObjRef, cdrObjRef) <- consDestruct objRef
-            cdrObjRef2 <- liftIO $ newIORef $ Intermidiate $ ICollection $ (ISubCollection cdrObjRef):rest
-            return (carObjRef, cdrObjRef2)
-    
-consDestructInnerVals :: [InnerVal] -> IOThrowsError (ObjectRef, ObjectRef)
-consDestructInnerVals [] = throwError $ Default "consDestructInnerVals: empty collection"
-consDestructInnerVals ((Element val):rest) = do
-  carObjRef <- liftIO $ newIORef $ Value val
-  cdrObjRef <- liftIO $ newIORef $ Value $ Collection rest
-  return (carObjRef, cdrObjRef)
-consDestructInnerVals ((SubCollection val):rest) = do
-  objRef <- liftIO $ newIORef $ Value val
-  b <- isEmptyCollection objRef
-  if b
-    then consDestructInnerVals rest
-    else do (carObjRef, cdrObjRef) <- consDestruct objRef
-            cdrObj <- liftIO $ readIORef cdrObjRef
-            case cdrObj of
-              Value (Collection innerVals) -> do
-                cdrObjRef2 <- liftIO $ newIORef $ Value $ Collection $ (SubCollection (Collection innerVals)):rest
-                return (carObjRef, cdrObjRef2)
-              _ -> throwError $ Default "consDestructInnerVals: cannot reach here!"
-
 
 snocDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
 snocDestruct objRef = do
   obj <- cRefEval1 objRef
   case obj of
-    Intermidiate (ICollection innerRefs) -> snocDestructInnerRefs innerRefs
-    Value (Collection innerVals) -> snocDestructInnerVals innerVals
+    Intermidiate (ICollection innerRefs) -> do
+      case reverse innerRefs of
+        [] -> throwError $ Default "snocDestructInnerRefs: empty collection"
+        ((IElement racObjRef):rest) -> do
+          rdcObjRef <- liftIO $ newIORef $ Intermidiate $ ICollection $ reverse rest
+          return (racObjRef, rdcObjRef)
+        ((ISubCollection subObjRef):rest) -> do
+          subInnerRefs <- objectRefToInnerRefs subObjRef
+          liftIO $ writeIORef objRef $ Intermidiate $ ICollection $ reverse rest ++ reverse subInnerRefs
+          snocDestruct objRef
+    Value (Collection vals) -> do
+      case reverse vals of
+        (val:rest) -> do
+          racObjRef <- liftIO $ newIORef $ Value val
+          rdcObjRef <- liftIO $ newIORef $ Value $ Collection rest
+          return (racObjRef, rdcObjRef)
+        _ -> throwError $ Default "snocDestruct: not collection"
     _ -> throwError $ Default "snocDestruct: not collection"
-
-snocDestructInnerRefs :: [InnerValRef] -> IOThrowsError (ObjectRef, ObjectRef)
-snocDestructInnerRefs innerRefs =
-  case reverse innerRefs of
-    [] -> throwError $ Default "snocDestructInnerRefs: empty collection"
-    ((IElement objRef):rest) -> do
-      rdcObjRef <- liftIO $ newIORef $ Intermidiate $ ICollection $ reverse rest
-      return (objRef, rdcObjRef)
-    ((ISubCollection objRef):rest) -> do
-      b <- isEmptyCollectionForSnoc objRef
-      if b
-        then snocDestructInnerRefs $ reverse rest
-        else do (racObjRef, rdcObjRef) <- snocDestruct objRef
-                rdcObjRef2 <- liftIO $ newIORef $ Intermidiate $ ICollection $ (reverse rest) ++ [(ISubCollection rdcObjRef)]
-                return (racObjRef, rdcObjRef2)
     
-snocDestructInnerVals :: [InnerVal] -> IOThrowsError (ObjectRef, ObjectRef)
-snocDestructInnerVals innerVals =
-  case reverse innerVals of
-    [] -> throwError $ Default "snocDestructInnerVals: empty collection"
-    ((Element val):rest) -> do
-      racObjRef <- liftIO $ newIORef $ Value val
-      rdcObjRef <- liftIO $ newIORef $ Value $ Collection $ reverse rest
-      return (racObjRef, rdcObjRef)
-    ((SubCollection val):rest) -> do
-      objRef <- liftIO $ newIORef $ Value val
-      b <- isEmptyCollectionForSnoc objRef
-      if b
-        then snocDestructInnerVals $ reverse rest
-        else do (racObjRef, rdcObjRef) <- snocDestruct objRef
-                rdcObj <- liftIO $ readIORef rdcObjRef
-                case rdcObj of
-                  Value (Collection innerVals2) -> do
-                    rdcObjRef2 <- liftIO $ newIORef $ Value $ Collection $ (reverse rest) ++ [(SubCollection (Collection innerVals2))]
-                    return (racObjRef, rdcObjRef2)
-                  _ -> throwError $ Default "snocDestructInnerVals: cannot reach here!"
-
 collectionToObjRefs :: ObjectRef -> IOThrowsError [ObjectRef]
 collectionToObjRefs objRef = do
   obj <- cRefEval1 objRef
   case obj of
     Intermidiate (ICollection innerRefs) -> innerRefsToObjRefs innerRefs
-    Value (Collection innerVals) -> innerValsToObjRefs innerVals
+    Value (Collection vals) -> liftIO $ mapM (newIORef . Value) vals
     _ -> throwError $ Default "collectionToObjRefs: not collection"
 
 tupleToObjRefs :: ObjectRef -> IOThrowsError [ObjectRef]
@@ -835,7 +777,7 @@ tupleToObjRefs objRef = do
   obj <- cRefEval1 objRef
   case obj of
     Intermidiate (ITuple innerRefs) -> innerRefsToObjRefs innerRefs
-    Value (Tuple innerVals) -> innerValsToObjRefs innerVals
+    Value (Tuple vals) -> liftIO $ mapM (newIORef . Value) vals
     _ -> return [objRef]
 
 innerRefsToObjRefs :: [InnerValRef] -> IOThrowsError [ObjectRef]
@@ -847,18 +789,6 @@ innerRefsToObjRefs ((ISubCollection objRef):rest) = do
   retObj <- collectionToObjRefs objRef
   retRest <- innerRefsToObjRefs rest
   return $ retObj ++ retRest
-
-innerValsToObjRefs :: [InnerVal] -> IOThrowsError [ObjectRef]
-innerValsToObjRefs [] = return []
-innerValsToObjRefs ((Element val):rest) = do
-  valRef <- liftIO $ newIORef $ Value val
-  retRest <- innerValsToObjRefs rest
-  return $ valRef:retRest
-innerValsToObjRefs ((SubCollection val):rest) = do
-  valRef <- liftIO $ newIORef $ Value val
-  retVal <- collectionToObjRefs valRef
-  retRest <- innerValsToObjRefs rest
-  return $ retVal ++ retRest
 
   
 primitiveBindings :: IO Env

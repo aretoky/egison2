@@ -173,8 +173,8 @@ data EgisonVal = World [Action]
   | AndPat [ObjectRef]
   | OrPat [ObjectRef]
   | InductiveData String [EgisonVal]
-  | Tuple [InnerVal]
-  | Collection [InnerVal]
+  | Tuple [EgisonVal]
+  | Collection [EgisonVal]
   | Array Integer [Integer] (Array Integer EgisonVal)
   | Type DestructInfo
   | Func Args EgisonExpr Env
@@ -200,30 +200,6 @@ data Args = AVar String
   | ATuple [Args]
  deriving (Show)
   
-data InnerVal = Element EgisonVal
-  | SubCollection EgisonVal
-
-innerValsToList :: [InnerVal] -> [EgisonVal]
-innerValsToList [] = []
-innerValsToList ((Element val):rest) = val:(innerValsToList rest)
-innerValsToList ((SubCollection (Collection iVals)):rest) = (innerValsToList iVals) ++ (innerValsToList rest)
-
-tupleToList :: EgisonVal -> [EgisonVal]
-tupleToList (Tuple innerVals) = innerValsToList innerVals
-tupleToList val = [val]
-  
-collectionToList :: EgisonVal -> [EgisonVal]
-collectionToList (Collection innerVals) = innerValsToList innerVals
-
-valsToObjRefList :: [EgisonVal] -> IO [ObjectRef]
-valsToObjRefList vals = mapM newIORef (map Value vals)
-
-makeTupleFromValList :: [EgisonVal] -> EgisonVal
-makeTupleFromValList vals = Tuple $ map Element vals
-
-makeCollectionFromValList :: [EgisonVal] -> EgisonVal
-makeCollectionFromValList vals = Collection $ map Element vals
-
 data InnerValRef = IElement ObjectRef
   | ISubCollection ObjectRef
 
@@ -376,10 +352,10 @@ eqv [(InductiveData cons1 args1), (InductiveData cons2 args2)] =
   if (cons1 == cons2)
     then return $ Bool $ eqValList args1 args2
     else return $ Bool False
-eqv [(Tuple innerVals1), (Tuple innerVals2)] =
-  return $ Bool $ eqValList (innerValsToList innerVals1) (innerValsToList innerVals2)
-eqv [(Collection innerVals1), (Collection innerVals2)] =
-  return $ Bool $ eqValList (innerValsToList innerVals1) (innerValsToList innerVals2)
+eqv [(Tuple vals1), (Tuple vals2)] = -- TODO use fold?
+  return $ Bool $ eqValList vals1 vals2
+eqv [(Collection vals1), (Collection vals2)] =
+  return $ Bool $ eqValList vals1 vals2
 eqv [_, _] = return $ Bool False
 eqv badArgList = throwError $ NumArgs 2 badArgList
 
@@ -436,8 +412,8 @@ showVal (OrPat _) = "#<or-pat>"
 showVal (PredPat _ _) = "#<pred-pat>"
 showVal (InductiveData cons []) = "<" ++ cons ++ ">"
 showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">"
-showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
-showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
+showVal (Tuple vals) = "[" ++ unwordsList vals ++ "]"
+showVal (Collection vals) = "{" ++ unwordsList vals ++ "}"
 showVal (Array _ ns arr) = showArray ns $ elems arr
 showVal (Type _) = "#<type>"
 showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"
@@ -460,9 +436,6 @@ instance Show EgisonVal where show = showVal
 --showInnerVals' [] = ""
 --showInnerVals' ((Element val):rest) = " " ++ show val ++ showInnerVals' rest
 --showInnerVals' ((SubCollection val):rest) = " @" ++ show val ++ showInnerVals' rest
-
-showInnerVals :: [InnerVal] -> String
-showInnerVals iVals = unwordsList $ innerValsToList iVals
 
 showIVal :: IntermidiateVal -> String
 showIVal (IInductiveData cons []) = "<" ++ cons ++ ">"
@@ -520,4 +493,8 @@ betweenNumbers :: Integer -> Integer -> [Integer]
 betweenNumbers m n = if m == n
                        then [n]
                        else (m:(betweenNumbers (m + 1) n))
-       
+
+
+tupleToList :: EgisonVal -> [EgisonVal]
+tupleToList (Tuple vals) = vals
+tupleToList val = [val]

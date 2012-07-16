@@ -165,25 +165,23 @@ unpackFloat notFloat = throwError $ TypeMismatch "float" [notFloat]
 
 
 tupleToCollection :: [EgisonVal] -> ThrowsError EgisonVal
-tupleToCollection vals = return $ Collection $ map Element vals
+tupleToCollection vals = return $ Collection $ vals
 
 collectionToTuple :: [EgisonVal] -> ThrowsError EgisonVal
-collectionToTuple [(Collection innerVals)] = do
-  let vals = innerValsToList innerVals
+collectionToTuple [(Collection vals)] = do
   case vals of
     [val] -> return val
-    _ -> return $ Tuple $ map Element vals
+    _ -> return $ Tuple vals
 collectionToTuple [x] = throwError $ TypeMismatch "collection" [x]
 collectionToTuple badArgList = throwError $ NumArgs 1 badArgList
 
 stringToChars :: [EgisonVal] -> ThrowsError EgisonVal
-stringToChars [(String str)] = return $ Collection $ map (\c -> Element $ Char c) str
+stringToChars [(String str)] = return $ Collection $ map Char str
 stringToChars [x] = throwError $ TypeMismatch "string" [x]
 stringToChars badArgList = throwError $ NumArgs 1 badArgList
 
 charsToString :: [EgisonVal] -> ThrowsError EgisonVal
-charsToString [(Collection innerVals)] = do
-  let chars = innerValsToList innerVals
+charsToString [(Collection chars)] = do
   cs <- mapM (\char -> case char of
                          Char c -> return c
                          _ -> throwError $ TypeMismatch "chars" [char])
@@ -202,7 +200,7 @@ arrayDimension [x] = throwError $ TypeMismatch "array" [x]
 arrayDimension badArgList = throwError $ NumArgs 1 badArgList
 
 arrayRange :: [EgisonVal] -> ThrowsError EgisonVal
-arrayRange [(Array _ ns _)] = return $ Tuple $ map (Element . Number) ns
+arrayRange [(Array _ ns _)] = return $ Tuple $ map Number ns
 arrayRange [x] = throwError $ TypeMismatch "array" [x]
 arrayRange badArgList = throwError $ NumArgs 1 badArgList
 
@@ -212,16 +210,16 @@ arraySize [x, y] = throwError $ TypeMismatch "number, array" [x, y]
 arraySize badArgList = throwError $ NumArgs 2 badArgList
 
 arrayKeys :: [EgisonVal] -> ThrowsError EgisonVal
-arrayKeys [(Array _ ms _)] = return $ Collection $ map (\iss -> (Element . Tuple) $ map (Element . Number) iss) $ indexList ms
+arrayKeys [(Array _ ms _)] = return $ Collection $ map (\iss -> Tuple $ map Number iss) $ indexList ms
 arrayKeys [x] = throwError $ TypeMismatch "array" [x]
 arrayKeys badArgList = throwError $ NumArgs 1 badArgList
 
 arrayIsRange :: [EgisonVal] -> ThrowsError EgisonVal
-arrayIsRange [key, (Array _ ms _)] = do
+arrayIsRange [(Tuple key), (Array _ ms _)] = do
   ns <- mapM (\val -> case val of
                         Number n -> return n
                         _ -> throwError $ TypeMismatch "number" [val])
-             (tupleToList key)
+             key
   return $ Bool $ helper ns ms
  where helper [] [] = True
        helper (n:ns) (m:ms) = if (n > 0 && n <= m)
@@ -231,8 +229,8 @@ arrayIsRange [x, y] = throwError $ TypeMismatch "key, array" [x, y]
 arrayIsRange badArgList = throwError $ NumArgs 2 badArgList
 
 arrayRef :: [EgisonVal] -> ThrowsError EgisonVal
-arrayRef [tuple, (Array _ ms arr)] = do
-  ns <- mapM unpackNum $ tupleToList tuple
+arrayRef [(Tuple nums), (Array _ ms arr)] = do
+  ns <- mapM unpackNum nums
   let i = integersToInteger ms ns
   return $ (arr ! i)
 arrayRef [x, y] = throwError $ TypeMismatch "tuple of number, array" [x, y]

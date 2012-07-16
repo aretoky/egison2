@@ -20,7 +20,7 @@ makePort mode [(World actions), (String filename)] = do
   let newWorld = case mode of
                    ReadMode -> World $ (OpenInputPort filename):actions
                    WriteMode -> World $ (OpenOutputPort filename):actions
-  return $ makeTupleFromValList [newWorld, port]
+  return $ Tuple [newWorld, port]
 makePort _ [] = throwError $ NumArgs 2 []
 makePort _ [arg] = throwError $ NumArgs 2 [arg]
 makePort _ args@(_:_:_:_) = throwError $ NumArgs 2 args
@@ -78,11 +78,11 @@ readChar [World actions] = do
     Left e -> if isEOFError e
                 then do
                   let newWorld = World $ (ReadFromPort "stdin" "EOF"):actions
-                  return $ makeTupleFromValList [newWorld, EOF]
+                  return $ Tuple [newWorld, EOF]
                 else throwError $ Default "I/O error read-char"
     Right inpChr -> do
       let newWorld = World $ (ReadFromPort "stdin" [inpChr]):actions
-      return $ makeTupleFromValList [newWorld, Char inpChr]
+      return $ Tuple [newWorld, Char inpChr]
 readChar _ = throwError $ Default $ "readChar: invalid arguments"
 
 readLine :: [EgisonVal] -> IOThrowsError EgisonVal
@@ -92,11 +92,11 @@ readLine [World actions] = do
     Left e -> if isEOFError e
                 then do
                   let newWorld = World $ (ReadFromPort "stdin" "EOF"):actions
-                  return $ makeTupleFromValList [newWorld, EOF]
+                  return $ Tuple [newWorld, EOF]
                 else throwError $ Default "I/O error read-line"
     Right inpStr -> do
       let newWorld = World $ (ReadFromPort "stdin" inpStr):actions
-      return $ makeTupleFromValList [newWorld, String inpStr]
+      return $ Tuple [newWorld, String inpStr]
 readLine _ = throwError $ Default $ "readLine: invalid arguments"
 
 readFromStdin :: [EgisonVal] -> IOThrowsError EgisonVal
@@ -105,7 +105,7 @@ readFromStdin [World actions] = do
   let newWorld = World $ (ReadFromPort "stdin" str):actions
   expr <- liftThrows $ readExpr str
   val <- liftThrows $ exprToVal expr
-  return $ makeTupleFromValList [newWorld, val]
+  return $ Tuple [newWorld, val]
 readFromStdin _ = throwError $ Default $ "read: invalid arguments"
 
 
@@ -154,11 +154,11 @@ readCharFromPort [World actions, Port filename port] = do
     Left e -> if isEOFError e
                 then do
                   let newWorld = World $ (ReadFromPort filename "EOF"):actions
-                  return $ makeTupleFromValList [newWorld, EOF]
+                  return $ Tuple [newWorld, EOF]
                 else throwError $ Default "I/O error read-char-from-port"
     Right inpChr -> do
       let newWorld = World $ (ReadFromPort filename [inpChr]):actions
-      return $ makeTupleFromValList [newWorld, Char inpChr]
+      return $ Tuple [newWorld, Char inpChr]
 readCharFromPort _ = throwError $ Default $ "readCharFromPort: invalid arguments"
 
 readLineFromPort :: [EgisonVal] -> IOThrowsError EgisonVal
@@ -168,11 +168,11 @@ readLineFromPort [World actions, Port filename port] = do
     Left e -> if isEOFError e
                 then do
                   let newWorld = World $ (ReadFromPort filename "EOF"):actions
-                  return $ makeTupleFromValList [newWorld, EOF]
+                  return $ Tuple [newWorld, EOF]
                 else throwError $ Default "I/O error read-line-from-port"
     Right inpStr -> do
       let newWorld = World $ (ReadFromPort filename inpStr):actions
-      return $ makeTupleFromValList [newWorld, String inpStr]
+      return $ Tuple [newWorld, String inpStr]
 readLineFromPort _ = throwError $ Default $ "readLineFromPort: invalid arguments"
 
 readFromPort :: [EgisonVal] -> IOThrowsError EgisonVal
@@ -181,7 +181,7 @@ readFromPort [World actions, Port filename port] = do
   let newWorld = World $ (ReadFromPort filename str):actions
   expr <- liftThrows $ readExpr str
   val <- liftThrows $ exprToVal expr
-  return $ makeTupleFromValList [newWorld, val]
+  return $ Tuple [newWorld, val]
 readFromPort _ = throwError $ Default $ "read: invalid arguments"
 
 
@@ -226,14 +226,24 @@ exprToVal (InductiveDataExpr cons argExprs) = do
   args <- mapM exprToVal argExprs
   return $ InductiveData cons args
 exprToVal (CollectionExpr innerExprs) = do
-  innerVals <- mapM innerExprToInnerVal innerExprs
-  return $ Collection innerVals
+  vals <- innerExprsToVals innerExprs
+  return $ Collection vals
 exprToVal (TupleExpr innerExprs) = do
-  innerVals <- mapM innerExprToInnerVal innerExprs
-  return $ Tuple innerVals
+  vals <- innerExprsToVals innerExprs
+  return $ Tuple vals
 exprToVal _ = throwError $ Default "read: invalid value"
 
-innerExprToInnerVal :: InnerExpr -> ThrowsError InnerVal
-innerExprToInnerVal (ElementExpr expr) = exprToVal expr >>= return . Element
-innerExprToInnerVal (SubCollectionExpr expr) = exprToVal expr >>= return . SubCollection
+innerExprsToVals :: [InnerExpr] -> ThrowsError [EgisonVal]
+innerExprsToVals [] = return []
+innerExprsToVals ((ElementExpr expr):rest) = do
+  retRest <- innerExprsToVals rest
+  val <- exprToVal expr
+  return (val:retRest)
+innerExprsToVals ((SubCollectionExpr expr):rest) = do
+  val <- exprToVal expr
+  case val of
+    Collection vals -> do
+      retRest <- innerExprsToVals rest
+      return $ vals ++ retRest
+    _ -> throwError $ Default "innerExprToVals: not collection after @"
 
