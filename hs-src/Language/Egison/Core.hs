@@ -354,6 +354,7 @@ cApply1 fnObjRef argObjRef = do
 
 expandLoop :: Env -> Object -> IOThrowsError Object
 expandLoop env (Loop loopVar indexVar rangeObjRef loopExpr tailExpr) = do
+  cRefEval1 rangeObjRef
   b <- isEmptyCollection rangeObjRef
   if b
     then cEval1 $ Closure env tailExpr
@@ -642,11 +643,13 @@ primitivePatternMatch (PInductivePat pCons pPats) objRef =  do
         else return Nothing
     _ -> return Nothing
 primitivePatternMatch PEmptyPat objRef = do
+  cRefEval1 objRef
   b <- isEmptyCollection objRef
   if b
     then return (Just [])
     else return Nothing
 primitivePatternMatch (PConsPat carPat cdrPat) objRef = do
+  cRefEval1 objRef
   b <- isEmptyCollection objRef
   if b
     then return Nothing
@@ -659,6 +662,7 @@ primitivePatternMatch (PConsPat carPat cdrPat) objRef = do
                                     Nothing -> return Nothing
                                     Just cdrFrame -> return (Just (carFrame ++ cdrFrame))
 primitivePatternMatch (PSnocPat rdcPat racPat) objRef = do
+  cRefEval1 objRef
   b <- isEmptyCollectionForSnoc objRef
   if b
     then return Nothing
@@ -695,7 +699,7 @@ objectRefToInnerRefs objRef = do
 
 isEmptyCollection :: ObjectRef -> IOThrowsError Bool
 isEmptyCollection objRef = do
-  obj <- cRefEval1 objRef
+  obj <- liftIO $ readIORef objRef
   case obj of
     Intermidiate (ICollection []) -> return True
     Intermidiate (ICollection ((IElement _):_)) -> return False
@@ -709,7 +713,7 @@ isEmptyCollection objRef = do
 
 isEmptyCollectionForSnoc :: ObjectRef -> IOThrowsError Bool
 isEmptyCollectionForSnoc objRef = do
-  obj <- cRefEval1 objRef
+  obj <- liftIO $ readIORef objRef
   case obj of
     Intermidiate (ICollection innerRefs) -> do
       case reverse innerRefs of
@@ -725,7 +729,7 @@ isEmptyCollectionForSnoc objRef = do
 
 consDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
 consDestruct objRef = do
-  obj <- cRefEval1 objRef
+  obj <- liftIO $ readIORef objRef
   case obj of
     Intermidiate (ICollection []) -> throwError $ Default "consDestructInnerRefs: empty collection"
     Intermidiate (ICollection ((IElement carObjRef):rest)) -> do
@@ -743,7 +747,7 @@ consDestruct objRef = do
 
 snocDestruct :: ObjectRef -> IOThrowsError (ObjectRef, ObjectRef)
 snocDestruct objRef = do
-  obj <- cRefEval1 objRef
+  obj <- liftIO $ readIORef objRef
   case obj of
     Intermidiate (ICollection innerRefs) -> do
       case reverse innerRefs of
