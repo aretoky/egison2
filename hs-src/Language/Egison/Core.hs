@@ -265,16 +265,14 @@ cEval1 (Closure env (MatchAllExpr tgtExpr typExpr (patExpr, body))) = do
 cEval1 (Closure env (MatchExpr tgtExpr typExpr mcs)) = do
   tgtObjRef <- liftIO $ makeClosure env tgtExpr
   typObjRef <- liftIO $ makeClosure env typExpr
-  retRef <- mcLoop tgtObjRef typObjRef mcs
-  cRefEval1 retRef
+  mcLoop tgtObjRef typObjRef mcs
  where mcLoop _ _ [] = throwError $ Default "end of match clauses"
        mcLoop tgtObjRef typObjRef ((patExpr, body):rest) = do
          patObjRef <- liftIO $ makeClosure env patExpr
          matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]
          case matchs of
            [match] -> do newEnv <- liftIO $ extendEnv env match
-                         objRef <- liftIO $ newIORef (Closure newEnv body)
-                         return objRef
+                         cEval1 (Closure newEnv body)
            [] -> mcLoop tgtObjRef typObjRef rest
 cEval1 (Closure env (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)) = do
   rangeObjRef <- liftIO $ makeClosure env rangeExpr
