@@ -549,9 +549,9 @@ inductiveMatch ((pppat, typObjRef, pclss):rest) patObjRef tgtObjRef = do
       mPpmRet <- helper pclss
       case mPpmRet of
         Nothing -> throwError $ Default "inductiveMatch: not matched any primitive clauses"
-        Just tgtObjRefs -> do
+        Just tgtObjRefss -> do
           typObjRefs <- tupleToObjRefs typObjRef
-          return (typObjRefs, patObjRefs, tgtObjRefs)
+          return (typObjRefs, patObjRefs, tgtObjRefss)
      where helper [] = return Nothing
            helper ((env, ppat, expr):pclss2) = do
              mPpmRet <- primitivePatternMatch ppat tgtObjRef
