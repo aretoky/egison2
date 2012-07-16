@@ -174,147 +174,125 @@
           {[<left>
             (match mine Mine
               {
-               [<cons ,[x y] <robot _>
-                      <cons ,[(- x 1) y] <open-lift>
-                            _>>
+               [(& <cons ,[x y] <robot _>>
+                   <cons ,[(- x 1) y] <open-lift>>)
                 <empty>]
-               [<cons ,[x y] <open-lift>
-                      <cons ,[(+ x 1) y] <robot _>
-                            _>>
+               [(& <cons ,[x y] <open-lift>>
+                   <cons ,[(+ x 1) y] <robot _>>)
                 <robot <goal>>]
-               [<cons ,[x y] <robot _>
-                      <cons ,[(- x 1) y] <lambda-stone>
-                            _>>
+               [(& <cons ,[x y] <robot _>>
+                   <cons ,[(- x 1) y] <lambda-stone>>)
                 <empty>]
-               [<cons ,[x y] <lambda-stone>
-                      <cons ,[(+ x 1) y] <robot _>
-                            _>>
+               [(& <cons ,[x y] <lambda-stone>>
+                   <cons ,[(+ x 1) y] <robot _>>)
                 <robot <on-lambda>>]
-               [<cons ,[x y] <robot _>
-                      (| ^<cons ,[(- x 1) y] (| <wall> <rock _>) _>
-                         <cons ,[(- x 1) y] <rock _>
-                               <cons ,[(- x 2) y] <empty> _>>)>
+               [(& <cons ,[x y] <robot _>>
+                   (| ^<cons ,[(- x 1) y] (| <wall> <rock _>)>
+                      (& <cons ,[(- x 1) y] <rock _>>
+                         <cons ,[(- x 2) y] <empty>>)))
                 <empty>]
-               [<cons ,[(+ x 1) y] <robot _>
-                      (| ^<cons ,[x y] (| <wall> <rock _>) _>
-                         <cons ,[x y] <rock _>
-                               <cons ,[(- x 1) y] <empty> _>>)>
+               [(& <cons ,[(+ x 1) y] <robot _>>
+                   (| ^<cons ,[x y] (| <wall> <rock _>)>
+                      (& <cons ,[x y] <rock _>>
+                         <cons ,[(- x 1) y] <empty>>)))
                 <robot <normal>>]
-               [<cons ,[x y] <empty>
-                      <cons ,[(+ x 1) y] <rock _>
-                            <cons ,[(+ x 2) y] <robot _>
-                                  _>>>
+               [(& <cons ,[x y] <empty>>
+                   <cons ,[(+ x 1) y] <rock _>>
+                   <cons ,[(+ x 2) y] <robot _>>)
                 <rock #f>]
-               [<cons ,[x y] <robot _>
-                      _>
+               [<cons ,[x y] <robot _>>
                 <robot <normal>>]
-               [<cons ,[x y] $tile _> tile]})]
+               [<cons ,[x y] $tile> tile]})]
            [<right>
             (match mine Mine
               {
-               [<cons ,[x y] <robot _>
-                      <cons ,[(+ x 1) y] <open-lift>
-                            _>>
+               [(& <cons ,[x y] <robot _>>
+                   <cons ,[(+ x 1) y] <open-lift>>)
                 <empty>]
-               [<cons ,[x y] <open-lift>
-                      <cons ,[(- x 1) y] <robot _>
-                            _>>
+               [(& <cons ,[x y] <open-lift>>
+                   <cons ,[(- x 1) y] <robot _>>)
                 <robot <goal>>]
-               [<cons ,[x y] <robot _>
-                      <cons ,[(+ x 1) y] <lambda-stone>
-                            _>>
+               [(& <cons ,[x y] <robot _>>
+                   <cons ,[(+ x 1) y] <lambda-stone>>)
                 <empty>]
-               [<cons ,[x y] <lambda-stone>
-                      <cons ,[(- x 1) y] <robot _>
-                            _>>
+               [(& <cons ,[x y] <lambda-stone>>
+                   <cons ,[(- x 1) y] <robot _>>)
                 <robot <on-lambda>>]
-               [<cons ,[x y] <robot _>
-                      (| ^<cons ,[(+ x 1) y] (| <wall> <rock _>) _>
-                         <cons ,[(+ x 1) y] <rock _>
-                               <cons ,[(+ x 2) y] <empty> _>>)>
+               [(& <cons ,[x y] <robot _>>
+                   (| ^<cons ,[(+ x 1) y] (| <wall> <rock _>)>
+                      (& <cons ,[(+ x 1) y] <rock _>>
+                         <cons ,[(+ x 2) y] <empty>>)))
                 <empty>]
-               [<cons ,[(- x 1) y] <robot _>
-                      (| ^<cons ,[x y] (| <wall> <rock _>) _>
-                         <cons ,[x y] <rock _>
-                               <cons ,[(+ x 1) y] <empty> _>>)>
+               [(& <cons ,[(- x 1) y] <robot _>>
+                   (| ^<cons ,[x y] (| <wall> <rock _>)>
+                      (& <cons ,[x y] <rock _>>
+                         <cons ,[(+ x 1) y] <empty>>)))
                 <robot <normal>>]
-               [<cons ,[x y] <empty>
-                      <cons ,[(- x 1) y] <rock _>
-                            <cons ,[(- x 2) y] <robot _>
-                                  _>>>
+               [(& <cons ,[x y] <empty>>
+                   <cons ,[(- x 1) y] <rock _>>
+                   <cons ,[(- x 2) y] <robot _>>)
                 <rock #f>]
-               [<cons ,[x y] <robot _>
-                      _>
+               [<cons ,[x y] <robot _>>
                 <robot <normal>>]
-               [<cons ,[x y] $tile _> tile]})]
+               [<cons ,[x y] $tile> tile]})]
            [<up>
             (match mine Mine
               {
-               [<cons ,[x y] <robot _>
-                      <cons ,[x (+ y 1)] <open-lift>
-                            _>>
+               [(& <cons ,[x y] <robot _>>
+                   <cons ,[x (+ y 1)] <open-lift>>)
                 <empty>]
-               [<cons ,[x y] <open-lift>
-                      <cons ,[x (- y 1)] <robot _>
-                            _>>
+               [(& <cons ,[x y] <open-lift>>
+                   <cons ,[x (- y 1)] <robot _>>)
                 <robot <goal>>]
-               [<cons ,[x y] <robot _>
-                      <cons ,[x (+ y 1)] <lambda-stone>
-                            _>>
+               [(& <cons ,[x y] <robot _>>
+                   <cons ,[x (+ y 1)] <lambda-stone>>)
                 <empty>]
-               [<cons ,[x y] <lambda-stone>
-                      <cons ,[x (- y 1)] <robot _>
-                            _>>
+               [(& <cons ,[x y] <lambda-stone>>
+                   <cons ,[x (- y 1)] <robot _>>)
                 <robot <on-lambda>>]
-               [<cons ,[x y] <robot _>
-                      ^<cons ,[x (+ y 1)] (| <wall> <rock _>) _>>
+               [(& <cons ,[x y] <robot _>>
+                   ^<cons ,[x (+ y 1)] (| <wall> <rock _>)>)
                 <empty>]
-               [<cons ,[x (- y 1)] <robot _>
-                      ^<cons ,[x y] (| <wall> <rock _>) _>>
+               [(& <cons ,[x (- y 1)] <robot _>>
+                   ^<cons ,[x y] (| <wall> <rock _>)>)
                 <robot <normal>>]
-               [<cons ,[x y] <robot _>
-                      _>
+               [<cons ,[x y] <robot _>>
                 <robot <normal>>]
-               [<cons ,[x y] $tile _> tile]})]
+               [<cons ,[x y] $tile> tile]})]
            [<down>
             (match mine Mine
               {
-               [<cons ,[x y] <robot _>
-                      <cons ,[x (- y 1)] <open-lift>
-                            _>>
+               [(& <cons ,[x y] <robot _>>
+                   <cons ,[x (- y 1)] <open-lift>>)
                 <empty>]
-               [<cons ,[x y] <open-lift>
-                      <cons ,[x (+ y 1)] <robot _>
-                            _>>
+               [(& <cons ,[x y] <open-lift>>
+                   <cons ,[x (+ y 1)] <robot _>>)
                 <robot <goal>>]
-               [<cons ,[x y] <robot _>
-                      <cons ,[x (- y 1)] <lambda-stone>
-                            _>>
+               [(& <cons ,[x y] <robot _>>
+                   <cons ,[x (- y 1)] <lambda-stone>>)
                 <empty>]
-               [<cons ,[x y] <lambda-stone>
-                      <cons ,[x (+ y 1)] <robot _>
-                            _>>
+               [(& <cons ,[x y] <lambda-stone>>
+                   <cons ,[x (+ y 1)] <robot _>>)
                 <robot <on-lambda>>]
-               [<cons ,[x y] <robot _>
-                      ^<cons ,[x (- y 1)] (| <wall> <rock _>) _>>
+               [(& <cons ,[x y] <robot _>>
+                   ^<cons ,[x (- y 1)] (| <wall> <rock _>)>)
                 <empty>]
-               [<cons ,[x (+ y 1)] <robot _>
-                      ^<cons ,[x y] (| <wall> <rock _>) _>>
+               [(& <cons ,[x (+ y 1)] <robot _>>
+                   ^<cons ,[x y] (| <wall> <rock _>)>)
                 <robot <normal>>]
-               [<cons ,[x y] <robot _>
-                      _>
+               [<cons ,[x y] <robot _>>
                 <robot <normal>>]
-               [<cons ,[x y] $tile _> tile]})]
+               [<cons ,[x y] $tile> tile]})]
            [<abort>
             (match mine Mine
-              {[<cons ,[x y] <robot _> _>
+              {[<cons ,[x y] <robot _>>
                 <robot <abort>>]
-               [<cons ,[x y] $tile _> tile]})]
+               [<cons ,[x y] $tile> tile]})]
            [<wait>
             (match mine Mine
-              {[<cons ,[x y] <robot _> _>
+              {[<cons ,[x y] <robot _>>
                 <robot <normal>>]
-               [<cons ,[x y] $tile _> tile]})]
+               [<cons ,[x y] $tile> tile]})]
            }))
       (array-range mine))))
                            
@@ -323,49 +301,43 @@
     (generate-array
       (lambda [$x $y]
         (match mine Mine
-          {[<cons ,[x y] <empty>
-                  <cons ,[x (+ y 1)] <rock _>
-                        _>>
+          {[(& <cons ,[x y] <empty>>
+               <cons ,[x (+ y 1)] <rock _>>)
             <rock #t>]
-           [<cons ,[x (- y 1)] <empty>
-                  <cons ,[x y] <rock _>
-                        _>>
+           [(& <cons ,[x (- y 1)] <empty>>
+               <cons ,[x y] <rock _>>)
             <empty>]
-           [<cons ,[x y] <empty>
-                  <cons ,[(- x 1) y] (| <rock _> <lambda-stone>)
-                        <cons ,[(- x 1) (+ y 1)] <rock _>
-                              <cons ,[x (+ y 1)] <empty>
-                                    _>>>>
+           [(& <cons ,[x y] <empty>>
+               <cons ,[(- x 1) y] (| <rock _> <lambda-stone>)>
+               <cons ,[(- x 1) (+ y 1)] <rock _>>
+               <cons ,[x (+ y 1)] <empty>>)
             <rock #t>]
-           [<cons ,[x y] <rock _>
-                  <cons ,[x (- y 1)] (| <rock _> <lambda-stone>)
-                        <cons ,[(+ x 1) (- y 1)] <empty>
-                              <cons ,[(+ x 1) y] <empty>
-                                    _>>>>
+           [(& <cons ,[x y] <rock _>>
+               <cons ,[x (- y 1)] (| <rock _> <lambda-stone>)>
+               <cons ,[(+ x 1) (- y 1)] <empty>>
+               <cons ,[(+ x 1) y] <empty>>)
             <empty>]
-           [<cons ,[x y] <rock _>
-                  <cons ,[x (- y 1)] <rock _>
-                        (& (| <cons ,[(+ x 1) y] ^<empty> _>
-                              <cons ,[(+ x 1) (- y 1)] ^<empty> _>)
-                           <cons ,[(- x 1) (- y 1)] <empty>
-                                 <cons ,[(- x 1) y] <empty>
-                                       _>>)>>
+           [(& <cons ,[x y] <rock _>>
+               <cons ,[x (- y 1)] <rock _>>
+               (| <cons ,[(+ x 1) y] ^<empty>>
+                  <cons ,[(+ x 1) (- y 1)] ^<empty>>)
+               <cons ,[(- x 1) (- y 1)] <empty>>
+               <cons ,[(- x 1) y] <empty>>)
             <empty>]
-           [<cons ,[(+ x 1) (+ y 1)] <rock _>
-                  <cons ,[(+ x 1) y] <rock _>
-                        (& (| <cons ,[(+ x 2) y] ^<empty> _>
-                              <cons ,[(+ x 2) (+ y 1)] ^<empty> _>)
-                           <cons ,[x (+ y 1)] <empty>
-                                 <cons ,[x y] <empty>
-                                       _>>)>>
+           [(& <cons ,[(+ x 1) (+ y 1)] <rock _>>
+               <cons ,[(+ x 1) y] <rock _>>
+               (| <cons ,[(+ x 2) y] ^<empty>>
+                  <cons ,[(+ x 2) (+ y 1)] ^<empty>>)
+               <cons ,[x (+ y 1)] <empty>>
+               <cons ,[x y] <empty>>)
             <rock #t>]
-           [<cons ,[x y] <closed-lift> _>
+           [<cons ,[x y] <closed-lift>>
             (if (eq? 0 (size (lambda-stones mine)))
                 <open-lift>
                 <closed-lift>)]
-           [<cons ,[x y] <rock _> _>
+           [<cons ,[x y] <rock _>>
                 <rock #f>]
-           [<cons ,[x y] $tile _> tile]
+           [<cons ,[x y] $tile> tile]
            }))
       (array-range mine))))
 
@@ -373,7 +345,7 @@
   (lambda [$mine]
     (concat (map (lambda [$x $y]
                    (match mine Mine
-                     {[<cons ,[x y] <lambda-stone> _> {[x y]}]
+                     {[<cons ,[x y] <lambda-stone>> {[x y]}]
                       [_ {}]}))
                  (array-keys mine)))))
 
@@ -382,11 +354,10 @@
     (generate-array
       (lambda [$x $y]
         (match mine Mine
-          {[<cons ,[x y] <robot <normal>>
-                  <cons ,[x (+ y 1)] <rock ,#t>
-                        _>>
+          {[(& <cons ,[x y] <robot <normal>>>
+               <cons ,[x (+ y 1)] <rock ,#t>>)
             <robot <broken>>]
-           [<cons ,[x y] $tile _> tile]
+           [<cons ,[x y] $tile> tile]
            }))
       (array-range mine))))
 

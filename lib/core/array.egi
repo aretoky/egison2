@@ -5,14 +5,14 @@
 (define $Array
   (lambda [$a]
     (type
-      {[<cons ,$key ,$val _> [(Array a)]
+      {[<cons ,$key ,$val> []
         {[$arr (if (and (array-range? key arr)
                         ((= a) (array-ref key arr) val))
-                   {[arr]}
+                   {[]}
                    {})]}]
-       [<cons ,$key _ _> [a (Array a)]
+       [<cons ,$key _> [a]
         {[$arr (if (array-range? key arr)
-                   {[(array-ref key arr) arr]}
+                   {[(array-ref key arr)]}
                    {})]}]
        [_ [Something]
         {[$tgt {[tgt]}]}]
