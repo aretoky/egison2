@@ -102,6 +102,20 @@
                          rs)
                     0)})]})))
 
+(define $fib
+  (lambda [$n]
+    (match n Nat
+      {[<o> 1]
+       [<s <o>> 1]
+       [<s <s $n1>> (+ (fib (+ n1 1)) (fib n1))]})))
+
+
+(define $fact
+  (lambda [$n]
+    (match n [Nat]
+      {[<o> 1]
+       [<s $n1> (* n (fact n1))]})))
+
 (define $Mod
   (lambda [$m]
     (type
