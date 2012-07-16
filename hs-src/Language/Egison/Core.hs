@@ -8,8 +8,8 @@ import Language.Egison.Macro
 import Control.Monad.Error
 import Data.Array
 import qualified Data.Map
-import qualified System.Exit
-import System.Directory (doesFileExist, removeFile)
+import qualified System.Exit ()
+import System.Directory (doesFileExist)
 import System.IO
 import Data.IORef
 import Data.Version
@@ -128,9 +128,12 @@ cRefEval objRef = do
 cRefEval1 :: ObjectRef -> IOThrowsError Object
 cRefEval1 objRef = do
   obj <- liftIO $ readIORef objRef
-  obj2 <- cEval1 obj
-  liftIO $ writeIORef objRef obj2
-  return obj2
+  case obj of
+    Closure _ _ -> do
+      obj2 <- cEval1 obj
+      liftIO $ writeIORef objRef obj2
+      return obj2
+    _ -> return obj
 
 cEval :: Object -> IOThrowsError EgisonVal
 cEval (Closure env expr) = eval env expr
@@ -165,7 +168,7 @@ cEval1 (Closure _ (TupleExpr [])) = do
   return $ Value $ Tuple []
 cEval1 (Closure env (TupleExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
-  objRefs <- innerRefsToObjRefList innerRefs
+  objRefs <- innerRefsToObjRefs innerRefs
   case objRefs of
     [objRef] -> cRefEval1 objRef
     _ -> return $ Intermidiate $ ITuple innerRefs
@@ -271,9 +274,10 @@ cEval1 (Closure env (MatchExpr tgtExpr typExpr mcs)) = do
          patObjRef <- liftIO $ makeClosure env patExpr
          matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]
          case matchs of
+           [] -> mcLoop tgtObjRef typObjRef rest
            [match] -> do newEnv <- liftIO $ extendEnv env match
                          cEval1 (Closure newEnv body)
-           [] -> mcLoop tgtObjRef typObjRef rest
+           _ -> throwError $ Default "cEval1.mcLoop: cannot reach here"
 cEval1 (Closure env (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)) = do
   rangeObjRef <- liftIO $ makeClosure env rangeExpr
   let loopObj = Loop loopVar indexVar rangeObjRef loopExpr tailExpr
@@ -304,7 +308,8 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
                                    liftIO $ putStrLn $ showExpr newBody
                                    cEval1 (Closure env newBody)
     _ -> throwError $ Default "not function"
-cEval1 val = return val
+cEval1 val = do
+  return val
 
 cApply :: ObjectRef -> ObjectRef -> IOThrowsError EgisonVal
 cApply fnObjRef argObjRef = do
@@ -363,7 +368,7 @@ extendLet env abindings = do
          obj <- cRefEval1 objRef
          case obj of
            Intermidiate (ITuple innerRefs) -> do
-             objRefs <- innerValRefsToObjRefList innerRefs
+             objRefs <- innerValRefsToObjRefs innerRefs
              liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
            Value (Tuple innerVals) -> do
              objRefs <- liftIO $ mapM (newIORef . Value) $ innerValsToList innerVals
@@ -378,7 +383,7 @@ makeFrame (ATuple fArgs) objRef = do
   obj <- cRefEval1 objRef
   case obj of
     Intermidiate (ITuple innerRefs) -> do
-      objRefs <- innerValRefsToObjRefList innerRefs
+      objRefs <- innerValRefsToObjRefs innerRefs
       frames <- mapM (\(fArg,objRef3) -> makeFrame fArg objRef3) $ zip fArgs objRefs
       return $ concat frames
     Value (Tuple innerVals) -> do
@@ -398,22 +403,22 @@ innerExprsToExprList ((ElementExpr expr):rest) = do retRest <- innerExprsToExprL
                                                     return (expr:retRest)
 innerExprsToExprList ((SubCollectionExpr _):_) = throwError $ Default "innerExprsToExprList: subcollection is not supported"
     
-innerValRefsToObjRefList :: [InnerValRef] -> IOThrowsError [ObjectRef]
-innerValRefsToObjRefList [] = return []
-innerValRefsToObjRefList (innerRef:rest) = do
-  restRet <- innerValRefsToObjRefList rest
+innerValRefsToObjRefs :: [InnerValRef] -> IOThrowsError [ObjectRef]
+innerValRefsToObjRefs [] = return []
+innerValRefsToObjRefs (innerRef:rest) = do
+  restRet <- innerValRefsToObjRefs rest
   case innerRef of
     IElement objRef -> return $ objRef:restRet
     ISubCollection objRef -> do
       obj2 <- cRefEval1 objRef
       case obj2 of
         Intermidiate (ICollection innerRefs) -> do
-          objRefs <- innerValRefsToObjRefList innerRefs
+          objRefs <- innerValRefsToObjRefs innerRefs
           return $ objRefs ++ restRet
         Value (Collection innerVals) -> do
           objRefs <- liftIO $ mapM newIORef $ map Value $ innerValsToList innerVals
           return $ objRefs ++ restRet
-        _ -> throwError $ Default "innerValRefsToObjRefList: not collection"
+        _ -> throwError $ Default "innerValRefsToObjRefs: not collection"
 
 patternMatch :: MatchFlag -> [MState] -> IOThrowsError [FrameList]
 patternMatch _ [] = return []
@@ -488,14 +493,14 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
         Value Something -> throwError $ Default "patternMatch: Only pattern variable can be pattern matched with Something"
         _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
     Intermidiate (ITuple pats) -> do
-      patObjRefs <- innerRefsToObjRefList pats
-      tgtObjRefs <- tupleToObjRefList tgtObjRef
-      typObjRefs <- tupleToObjRefList typObjRef
+      patObjRefs <- innerRefsToObjRefs pats
+      tgtObjRefs <- tupleToObjRefs tgtObjRef
+      typObjRefs <- tupleToObjRefs typObjRef
       patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
     Value (Tuple pats) -> do
-      patObjRefs <- innerValsToObjRefList pats
-      tgtObjRefs <- tupleToObjRefList tgtObjRef
-      typObjRefs <- tupleToObjRefList typObjRef
+      patObjRefs <- innerValsToObjRefs pats
+      tgtObjRefs <- tupleToObjRefs tgtObjRef
+      typObjRefs <- tupleToObjRefs typObjRef
       patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
     Value (PredPat predObjRef patObjRefs) -> do
       argsObjRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ map IElement $ patObjRefs ++ [tgtObjRef]
@@ -535,7 +540,7 @@ inductiveMatch ((pppat, typObjRef, pclss):rest) patObjRef tgtObjRef = do
       case mPpmRet of
         Nothing -> throwError $ Default "inductiveMatch: not matched any primitive clauses"
         Just tgtObjRefs -> do
-          typObjRefs <- tupleToObjRefList typObjRef
+          typObjRefs <- tupleToObjRefs typObjRef
           return (typObjRefs, patObjRefs, tgtObjRefs)
      where helper [] = return Nothing
            helper ((env, ppat, expr):pclss2) = do
@@ -545,8 +550,8 @@ inductiveMatch ((pppat, typObjRef, pclss):rest) patObjRef tgtObjRef = do
                Just ppmRet -> do
                  newEnv <- liftIO $ extendEnv env (ppmRet ++ frame)
                  retObjRef <- liftIO $ makeClosure newEnv expr
-                 tgtObjRefs <- collectionToObjRefList retObjRef
-                 tgtObjRefss <- mapM tupleToObjRefList tgtObjRefs
+                 tgtObjRefs <- collectionToObjRefs retObjRef
+                 tgtObjRefss <- mapM tupleToObjRefs tgtObjRefs
                  return $ Just tgtObjRefss
 
 primitivePatPatternMatch :: PrimitivePatPattern -> ObjectRef -> IOThrowsError (Maybe ([ObjectRef], FrameList))
@@ -676,7 +681,7 @@ objectRefToInnerRefs objRef = do
   case obj of
     Intermidiate (ICollection innerRefs) -> return innerRefs
     Value (Collection innerVals) -> do
-      objRefs <- innerValsToObjRefList innerVals
+      objRefs <- innerValsToObjRefs innerVals
       return $ map IElement objRefs
 
 isEmptyCollection :: ObjectRef -> IOThrowsError Bool
@@ -817,42 +822,42 @@ snocDestructInnerVals innerVals =
                     return (racObjRef, rdcObjRef2)
                   _ -> throwError $ Default "snocDestructInnerVals: cannot reach here!"
 
-collectionToObjRefList :: ObjectRef -> IOThrowsError [ObjectRef]
-collectionToObjRefList objRef = do
+collectionToObjRefs :: ObjectRef -> IOThrowsError [ObjectRef]
+collectionToObjRefs objRef = do
   obj <- cRefEval1 objRef
   case obj of
-    Intermidiate (ICollection innerRefs) -> innerRefsToObjRefList innerRefs
-    Value (Collection innerVals) -> innerValsToObjRefList innerVals
-    _ -> throwError $ Default "collectionToObjRefList: not collection"
+    Intermidiate (ICollection innerRefs) -> innerRefsToObjRefs innerRefs
+    Value (Collection innerVals) -> innerValsToObjRefs innerVals
+    _ -> throwError $ Default "collectionToObjRefs: not collection"
 
-tupleToObjRefList :: ObjectRef -> IOThrowsError [ObjectRef]
-tupleToObjRefList objRef = do
+tupleToObjRefs :: ObjectRef -> IOThrowsError [ObjectRef]
+tupleToObjRefs objRef = do
   obj <- cRefEval1 objRef
   case obj of
-    Intermidiate (ITuple innerRefs) -> innerRefsToObjRefList innerRefs
-    Value (Tuple innerVals) -> innerValsToObjRefList innerVals
+    Intermidiate (ITuple innerRefs) -> innerRefsToObjRefs innerRefs
+    Value (Tuple innerVals) -> innerValsToObjRefs innerVals
     _ -> return [objRef]
 
-innerRefsToObjRefList :: [InnerValRef] -> IOThrowsError [ObjectRef]
-innerRefsToObjRefList [] = return []
-innerRefsToObjRefList ((IElement objRef):rest) = do
-  retRest <- innerRefsToObjRefList rest
+innerRefsToObjRefs :: [InnerValRef] -> IOThrowsError [ObjectRef]
+innerRefsToObjRefs [] = return []
+innerRefsToObjRefs ((IElement objRef):rest) = do
+  retRest <- innerRefsToObjRefs rest
   return $ objRef:retRest
-innerRefsToObjRefList ((ISubCollection objRef):rest) = do
-  retObj <- collectionToObjRefList objRef
-  retRest <- innerRefsToObjRefList rest
+innerRefsToObjRefs ((ISubCollection objRef):rest) = do
+  retObj <- collectionToObjRefs objRef
+  retRest <- innerRefsToObjRefs rest
   return $ retObj ++ retRest
 
-innerValsToObjRefList :: [InnerVal] -> IOThrowsError [ObjectRef]
-innerValsToObjRefList [] = return []
-innerValsToObjRefList ((Element val):rest) = do
+innerValsToObjRefs :: [InnerVal] -> IOThrowsError [ObjectRef]
+innerValsToObjRefs [] = return []
+innerValsToObjRefs ((Element val):rest) = do
   valRef <- liftIO $ newIORef $ Value val
-  retRest <- innerValsToObjRefList rest
+  retRest <- innerValsToObjRefs rest
   return $ valRef:retRest
-innerValsToObjRefList ((SubCollection val):rest) = do
+innerValsToObjRefs ((SubCollection val):rest) = do
   valRef <- liftIO $ newIORef $ Value val
-  retVal <- collectionToObjRefList valRef
-  retRest <- innerValsToObjRefList rest
+  retVal <- collectionToObjRefs valRef
+  retRest <- innerValsToObjRefs rest
   return $ retVal ++ retRest
 
   
