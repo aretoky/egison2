@@ -1,0 +1,19 @@
+;; If
+(test (if #t 1 2))
+
+(test (if #f 1 2))
+
+;; let
+(test (let {[$t [1 2]]}
+        (let {[[$x $y] t]} (+ x y))))
+
+;; Mutual recursion
+(test (letrec {[$f (lambda [$x] (+ (g x) 10))]
+               [$g (lambda [$x] (+ x 1))]}
+        (f 0)))
+
+(test (match-all 1 Something [$x x]))
+
+(test (match-all <less> Order [<less> <ok>]))
+
+(test (match-all <less> Order [,<less> <ok>]))
