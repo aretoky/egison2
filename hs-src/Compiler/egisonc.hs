@@ -20,73 +20,79 @@ main :: IO ()
 main = do 
   args <- getArgs
   let (actions, nonOpts, _) = getOpt Permute options args
-  opts <- foldl (>>=) (return defaultOptions) actions
-  let Options {optOutput = output} = opts
-  if null nonOpts
-     then showUsage
-     else do
-        let inFile = nonOpts !! 0
-            outExec = case output of
-              Just outFile -> outFile
-              Nothing -> dropExtension inFile
-        process inFile outExec
+  let opts = foldl (flip id) defaultOptions actions
+  case opts of
+    Options {optShowHelp = True} -> printHelp
+    Options {optShowVersion = True} -> printVersionNumber
+    Options {optOutput = output, optProf = prof} ->
+      if null nonOpts
+        then showUsage
+        else do
+          let inFile = nonOpts !! 0
+              outExec = case output of
+                Just outFile -> outFile
+                Nothing -> dropExtension inFile
+          process prof inFile outExec
 
--- |Data type to handle command line options that take parameters
 data Options = Options {
-    optOutput :: Maybe String -- Executable file to write
+    optShowVersion :: Bool,
+    optShowHelp :: Bool,
+    optOutput :: Maybe String,
+    optProf :: Bool
     }
 
--- |Print a usage message
 showUsage :: IO ()
 showUsage = do
   putStrLn "egisonc: no input files"
   
--- |Default values for the command line options
 defaultOptions :: Options
 defaultOptions = Options {
-    optOutput = Nothing
+    optShowVersion = False,
+    optShowHelp = False,
+    optOutput = Nothing,
+    optProf = False
     }
 
-options :: [OptDescr (Options -> IO Options)]
+options :: [OptDescr (Options -> Options)]
 options = [
-  Option ['V'] ["version"] (NoArg showVersionNumber) "show version number",
-  Option ['h', '?'] ["help"] (NoArg showHelp) "show usage information",
-  Option ['o'] ["output"] (ReqArg writeExec "FILE") "output file to write"
+  Option ['v', 'V'] ["version"]
+    (NoArg (\opts -> opts {optShowVersion = True}))
+    "show version number",
+  Option ['h', '?'] ["help"]
+    (NoArg (\opts -> opts {optShowHelp = True}))
+    "show usage information",
+  Option ['o'] ["output"]
+    (ReqArg (\out opts -> opts {optOutput = Just out})
+            "FILE")
+    "output file to write",
+  Option ['p'] ["prof"]
+    (NoArg (\opts -> opts {optProf = True}))
+    "use profiling system"
   ]
 
--- |Print version information
-showVersionNumber :: Options -> IO Options
-showVersionNumber _ = do
+printVersionNumber :: IO ()
+printVersionNumber = do
   putStrLn egisonVersion
   exitWith ExitSuccess
 
-showHelp :: Options -> IO Options
-showHelp _ = do
+printHelp :: IO ()
+printHelp = do
   putStrLn "Usage: egisonc [options] file"
   putStrLn ""
   putStrLn "Options:"
   putStrLn "  --help                Display this information"
   putStrLn "  --version             Display egison version information"
   putStrLn "  --output filename     Write executable to the given filename"
+  putStrLn "  --prof                Make use of GHC profiling system"
   putStrLn ""
   exitWith ExitSuccess
 
--- |Determine executable file to write. 
---  This version just takes a name from the command line option
-writeExec arg opt = return opt { optOutput = Just arg }
-  
--- |High level code to compile the given file
-process :: String -> String -> IO ()
-process inFile outExec = do
+process :: Bool -> String -> String -> IO ()
+process prof inFile outExec = do
   result <- (runIOThrows $ liftM show $ createHaskellFile inFile)
   case result of
    Just errMsg -> putStrLn errMsg
-   _ -> compileHaskellFile outExec
-
-replaceTabToSpace :: String -> String
-replaceTabToSpace [] = []
-replaceTabToSpace ('\t':cs) = ' ':(replaceTabToSpace cs)
-replaceTabToSpace (c:cs) = c:(replaceTabToSpace cs)
+   _ -> compileHaskellFile prof outExec
 
 createHaskellFile :: String -> IOThrowsError ()
 createHaskellFile inFile = do
@@ -98,14 +104,13 @@ createHaskellFile inFile = do
   liftIO $ appendFile "./_tmp.hs" "topExprs = "
   liftIO $ appendFile "./_tmp.hs" $ show topExprs
   return ()
-
   
--- |Compile the intermediate haskell file using GHC
-compileHaskellFile :: String -> IO()
-compileHaskellFile filename = do
+compileHaskellFile :: Bool -> String -> IO ()
+compileHaskellFile prof filename = do
   let ghc = "ghc"
---  compileStatus <- system $ ghc ++ " " ++ " -cpp --make -package ghc -fglasgow-exts -o " ++ filename ++ " _tmp.hs"
-  _ <- system $ ghc ++ " -O2 -o " ++ filename ++ " _tmp.hs"
+  if prof
+    then system $ ghc ++ " -prof -auto-all -o " ++ filename ++ " _tmp.hs"
+    else system $ ghc ++ " -O2 -o " ++ filename ++ " _tmp.hs"
   removeFile "./_tmp.hs"
   removeFile "./_tmp.hi"
   removeFile "./_tmp.o"
