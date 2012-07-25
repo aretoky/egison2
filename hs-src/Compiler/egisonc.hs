@@ -2,13 +2,12 @@ module Main where
 import Language.Egison.Core
 import Language.Egison.Types
 import Language.Egison.Parser
---import Language.Egison.Variables
 import Control.Monad.Error
 import System.Cmd (system)
 import System.Console.GetOpt
 import System.FilePath (dropExtension)
 import System.Environment
-import System.Directory (copyFile, removeFile)
+import System.Directory (doesFileExist, copyFile, removeFile)
 import System.Exit (ExitCode (..), exitWith, exitFailure)
 import System.IO
 import Paths_egison
@@ -94,16 +93,47 @@ process prof inFile outExec = do
    Just errMsg -> putStrLn errMsg
    _ -> compileHaskellFile prof outExec
 
+appendLoadExprForCoreLibraries :: [TopExpr] -> [TopExpr]
+appendLoadExprForCoreLibraries topExprs = [(Load "lib/core/base.egi"),
+                                           (Load "lib/core/number.egi"),
+                                           (Load "lib/core/collection.egi")] ++ topExprs
+   
 createHaskellFile :: String -> IOThrowsError ()
 createHaskellFile inFile = do
   templatePath <- liftIO $ getDataFileName templateFile
   liftIO $ copyFile templatePath "./_tmp.hs"
   egisonProgram <- liftIO $ readFile inFile
   topExprs <- liftThrows $ readTopExprList egisonProgram
+  topExprs2 <- expandLoadExprs $ appendLoadExprForCoreLibraries topExprs
   liftIO $ appendFile "./_tmp.hs" "\ntopExprs :: [TopExpr]\n"
   liftIO $ appendFile "./_tmp.hs" "topExprs = "
-  liftIO $ appendFile "./_tmp.hs" $ show topExprs
+  liftIO $ appendFile "./_tmp.hs" $ show topExprs2
   return ()
+
+expandLoadExprs :: [TopExpr] -> IOThrowsError [TopExpr]
+expandLoadExprs [] = return []
+expandLoadExprs ((LoadFile filename):topExprs) = do
+  result <- liftIO $ doesFileExist filename
+  if result
+    then do
+      loadProgram <- liftIO $ readFile filename
+      loadTopExprs <- liftThrows $ readTopExprList loadProgram
+      rets <- expandLoadExprs topExprs
+      return $ loadTopExprs ++ rets
+    else throwError $ Default $ "File does not exist: " ++ filename
+expandLoadExprs ((Load libname):topExprs) = do
+  filename <- liftIO (getDataFileName libname)
+  result <- liftIO $ doesFileExist filename
+  if result
+    then do
+      loadProgram <- liftIO $ readFile filename
+      loadTopExprs <- liftThrows $ readTopExprList loadProgram
+      rets <- expandLoadExprs topExprs
+      return $ loadTopExprs ++ rets
+    else throwError $ Default $ "Library does not exist: " ++ libname
+expandLoadExprs (topExpr:topExprs) = do
+  rets <- expandLoadExprs topExprs
+  return $ topExpr:rets
   
 compileHaskellFile :: Bool -> String -> IO ()
 compileHaskellFile prof filename = do
@@ -111,7 +141,7 @@ compileHaskellFile prof filename = do
   if prof
     then system $ ghc ++ " -prof -auto-all -o " ++ filename ++ " _tmp.hs"
     else system $ ghc ++ " -O2 -o " ++ filename ++ " _tmp.hs"
-  removeFile "./_tmp.hs"
+--  removeFile "./_tmp.hs"
   removeFile "./_tmp.hi"
   removeFile "./_tmp.o"
   return ()
