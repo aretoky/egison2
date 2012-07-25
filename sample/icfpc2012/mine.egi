@@ -354,7 +354,7 @@
     (generate-array
       (lambda [$x $y]
         (match mine Mine
-          {[(& <cons ,[x y] <robot <normal>>>
+          {[(& <cons ,[x y] <robot _>>
                <cons ,[x (+ y 1)] <rock ,#t>>)
             <robot <broken>>]
            [<cons ,[x y] $tile> tile]
