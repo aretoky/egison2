@@ -96,7 +96,9 @@ process prof inFile outExec = do
 appendLoadExprForCoreLibraries :: [TopExpr] -> [TopExpr]
 appendLoadExprForCoreLibraries topExprs = [(Load "lib/core/base.egi"),
                                            (Load "lib/core/number.egi"),
-                                           (Load "lib/core/collection.egi")] ++ topExprs
+                                           (Load "lib/core/collection.egi"),
+                                           (Load "lib/core/array.egi")
+                                           ] ++ topExprs
    
 createHaskellFile :: String -> IOThrowsError ()
 createHaskellFile inFile = do
@@ -141,7 +143,7 @@ compileHaskellFile prof filename = do
   if prof
     then system $ ghc ++ " -prof -auto-all -o " ++ filename ++ " _tmp.hs"
     else system $ ghc ++ " -O2 -o " ++ filename ++ " _tmp.hs"
---  removeFile "./_tmp.hs"
+  removeFile "./_tmp.hs"
   removeFile "./_tmp.hi"
   removeFile "./_tmp.o"
   return ()
