@@ -101,11 +101,8 @@
           <ok>]
          [_ <ko>]}))
 
-
-
 (test (match-all {1 2 3 4} (List Integer)
         [<join _ <join $ns _>> ns]))
-
 
 ;; pattern macro
 (define $pair
@@ -144,4 +141,4 @@
 (test (isStraight? {1 2}))
 
 ;; comparison of large list
-(test (match-all (between 1 2000) (List Integer) [<join ,(between 1 1000) <cons $x _>> x]))
+(test (match (between 1 10000) (List Integer) {[,(between 1 10000) <ok>] [_ <ko>]}))

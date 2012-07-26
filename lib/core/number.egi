@@ -104,10 +104,13 @@
 
 (define $fib
   (lambda [$n]
-    (match n Nat
-      {[<o> 1]
-       [<s <o>> 1]
-       [<s <s $n1>> (+ (fib (+ n1 1)) (fib n1))]})))
+    (letrec {[$fib1 (lambda [$n $ret1 $ret2]
+                      (match n Nat
+                        {[<o> ret2]
+                         [<s <o>> ret1]
+                         [<s $n1> (fib1 (- n 1) (+ ret1 ret2) ret1)]
+                         }))]}
+      (fib1 n 1 1))))
 
 
 (define $fact

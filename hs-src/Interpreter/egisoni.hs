@@ -1,10 +1,8 @@
 module Main where
-import Paths_egison
 import Language.Egison.Core      -- Egison Interpreter
 import Language.Egison.Parser
 import Language.Egison.Types     -- Egison data types
 import Language.Egison.Variables -- Egison variable operations
---import Control.Monad (when)
 import Control.Monad.Error
 import System.IO
 import System.Environment
@@ -70,19 +68,3 @@ runRepl = do
                                 loop env "> " ""
                         else loop env "> " ""
 
---countParens :: String -> Bool
---countParens str = let countOpen = length $ filter ((==) '(') str in
---                  let countClose = length $ filter  ((==) ')') str in
---                    (countOpen > 0) && (countOpen <= countClose)
-
--- End REPL Section
-
--- Begin Util section, of generic functions
-
-{- Remove leading/trailing white space from a string; based on corresponding Python function
-   Code taken from: http://gimbo.org.uk/blog/2007/04/20/splitting-a-string-in-haskell/ -}
-strip :: String -> String
-strip s = dropWhile ws $ reverse $ dropWhile ws $ reverse s
-    where ws = (`elem` [' ', '\n', '\t', '\r'])
-
--- End Util
