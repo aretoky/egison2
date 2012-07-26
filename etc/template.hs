@@ -1,13 +1,8 @@
 module Main where
-import Language.Egison.Core      -- Egison Interpreter
-import Language.Egison.Types     -- Egison data types
---import Language.Egison.Variables -- Egison variable operations
---import Language.Egison.Parser -- Egison variable operations
---import Control.Monad (when)
+import Language.Egison.Core
+import Language.Egison.Types
 import Control.Monad.Error
---import System.IO
 import System.Environment
-
 
 main :: IO ()
 main = do

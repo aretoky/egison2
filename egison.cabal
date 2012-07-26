@@ -24,6 +24,7 @@ Data-files:          lib/core/base.egi lib/core/number.egi lib/core/collection.e
                      sample/icfpc2012/mine.egi sample/icfpc2012/maps/*.map
                      elisp/egison-mode.el
                      etc/template.hs
+                     etc/template-for-test.hs
 
 Library
   Build-Depends:   base >= 4.0 && < 5, array, containers, haskeline, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths
