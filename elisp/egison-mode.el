@@ -87,7 +87,8 @@
                             (ip (keyword-indent-point op)))
                        (if ip
                            (+ ip cp)
-                         (+ 2 (length op) cp))))
+                         (progn (forward-sexp)
+                                (+ 1 (current-column))))))
                     ((eq (string-to-char (thing-at-point 'char)) 60)
                      (forward-char)
                      (let ((op (current-word)))
@@ -132,6 +133,7 @@
     (modify-syntax-entry 62 ")" egison-mode-syntax-table)
     (modify-syntax-entry 59 "<" egison-mode-syntax-table)
     (modify-syntax-entry 10 ">" egison-mode-syntax-table)
+    (modify-syntax-entry 63 "w" egison-mode-syntax-table)
     egison-mode-syntax-table)
   ;; (copy-syntax-table lisp-mode-syntax-table)
   "Syntax table for Egison mode")
