@@ -16,4 +16,8 @@
 
 (test (match-all <less> Order [<less> <ok>]))
 
+;; Value pattern
 (test (match-all <less> Order [,<less> <ok>]))
+
+;; Loop
+(test (loop $l $i {1 2 3} {i @l} {}))
