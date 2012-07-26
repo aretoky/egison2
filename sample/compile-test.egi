@@ -1,6 +1,0 @@
-(define $main
-  (lambda [$: $argv]
-    (do {[$: (write-string : "output : ")]
-         [$: (write : argv)]
-         [$: (write-char : '\n')]}
-        :)))
