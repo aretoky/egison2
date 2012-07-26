@@ -1,23 +1,64 @@
-;; If
-(test (if #t 1 2))
+;; Bool
+(test (match #t Bool
+        {[<true> <ok>]
+         [_ <ko>]}))
 
-(test (if #f 1 2))
+(test (match #f Bool
+        {[<false> <ok>]
+         [_ <ko>]}))
+
+(test (if (and ((match? Bool) #t #t)
+               (and ((match? Bool) #f #f)
+                    (not (or ((match? Bool) #t #f)
+                             ((match? Bool) #f #t)))))
+          <ok>
+          <ko>))
+
+;; If
+(test (if (eq-n? (if #t 1 2)
+                 1)
+          <ok>
+          <ko>))
+
+(test (if (eq-n? (if #f 1 2)
+                 2)
+          <ok>
+          <ko>))
 
 ;; let
-(test (let {[$t [1 2]]}
-        (let {[[$x $y] t]} (+ x y))))
+(test (if (eq-n? (let {[$t [1 2]]}
+                   (let {[[$x $y] t]} (+ x y)))
+                 3)
+          <ok>
+          <ko>))
 
 ;; Mutual recursion
-(test (letrec {[$f (lambda [$x] (+ (g x) 10))]
-               [$g (lambda [$x] (+ x 1))]}
-        (f 0)))
+(test (if (eq-n? (letrec {[$f (lambda [$x] (+ (g x) 10))]
+                          [$g (lambda [$x] (+ x 1))]}
+                   (f 0))
+                 11)
+          <ok>
+          <ko>))
 
-(test (match-all 1 Something [$x x]))
 
-(test (match-all <less> Order [<less> <ok>]))
+;; Something
+(test (if ((= (List Integer)) (match-all 1 Something [$x x])
+                              {1})
+          <ok>
+          <ko>))
+          
+
+;; Order
+(test (match <less> Order {[<less> <ok>]
+                           [_ <ko>]}))
 
 ;; Value pattern
-(test (match-all <less> Order [,<less> <ok>]))
+(test (match <less> Order {[,<less> <ok>]
+                           [_ <ko>]}))
 
 ;; Loop
-(test (loop $l $i {1 2 3} {i @l} {}))
+(test (if ((= (List Integer)) (loop $l $i {1 2 3} {i @l} {})
+                              {1 2 3})
+          <ok>
+          <ko>))
+      
