@@ -4,7 +4,6 @@ import Control.Monad.Error
 import Data.Array
 import Data.IORef
 import qualified Data.Map
--- import Data.Maybe
 import System.IO
 import Text.ParserCombinators.Parsec hiding (spaces)
 
@@ -327,7 +326,7 @@ showExpr (LetRecExpr bindings body) =
   "(letrec " ++ showRecursiveBindings bindings ++ " " ++ showExpr body ++ ")"
 showExpr (DoExpr bindings body) =
   "(do " ++ showBindings bindings ++ " " ++ showExpr body ++ ")"
-showExpr (TypeExpr destructor) =
+showExpr (TypeExpr _) =
   "(type " ++ "..." ++ ")"
 showExpr (MatchExpr tgtExpr typExpr _) =
   "(match " ++ showExpr tgtExpr ++ " " ++ showExpr typExpr ++ " ...)"

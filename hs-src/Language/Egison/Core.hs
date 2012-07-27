@@ -685,7 +685,7 @@ primitivePatternMatchList (pat:pats) (objRef:objRefs) = do
                      case mRestFrame of
                        Nothing -> return Nothing
                        Just restFrame -> return (Just (frame ++ restFrame))
-primitivePatternMatchList _ _ = throwError (Default "primitivePatternMatchList : number of patterns and targets are different")
+primitivePatternMatchList _ _ = throwError $ Default "primitivePatternMatchList : number of patterns and targets are different"
 
 
 objectRefToInnerRefs :: ObjectRef -> IOThrowsError [InnerValRef]
@@ -696,6 +696,7 @@ objectRefToInnerRefs objRef = do
     Value (Collection val) -> do
       objRefs <- liftIO $ mapM (newIORef . Value) val
       return $ map IElement objRefs
+    _ -> throwError $ Default "objectRefToInnerRefs: subcollection must be collection"
 
 isEmptyCollection :: ObjectRef -> IOThrowsError Bool
 isEmptyCollection objRef = do
