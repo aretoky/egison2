@@ -105,6 +105,13 @@
         [<join _ <join $ns _>> ns]))
 
 ;; pattern macro
+(define $single
+  (macro [$s $pat]
+    <cons $`s pat>))
+
+(test (match-all {1 2 3 1 2} (Multiset Integer)
+        [(single %k _) k]))
+
 (define $pair
   (macro [$s $pat]
     <cons $`s <cons ,`s pat>>))
