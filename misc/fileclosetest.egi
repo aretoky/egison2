@@ -1,0 +1,6 @@
+;; this file will not close on interpreter after
+;; (load-file "fileclosetest.egi")
+
+(define $n 1)(test 1)
+(define $n2 2)(define $n3 3)
+(define n3 1)
