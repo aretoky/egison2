@@ -1,0 +1,3 @@
+(define $main
+  (lambda [$: $argv]
+    (write : ((= (Multiset Integer)) (reverse (between 1 1000)) (between 1 1000)))))

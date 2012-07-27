@@ -1,0 +1,10 @@
+(define $fact
+  (lambda [$n]
+    (letrec {[$fact1 (lambda [$n $ret]
+                       (match n [Nat]
+                         {[<o> ret]
+                          [<s $n1> (fact1 n1 (* n ret))]}))]}
+      (fact1 n 1))))
+
+
+(test (fact 30000))

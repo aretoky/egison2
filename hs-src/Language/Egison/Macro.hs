@@ -60,6 +60,9 @@ expandMacro frame (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr) = do
   newLoopExpr <- expandMacro frame loopExpr
   newTailExpr <- expandMacro frame tailExpr
   return $ LoopExpr loopVar indexVar newRangeExpr newLoopExpr newTailExpr
+expandMacro frame (ValuePatExpr patExpr) = do
+  newPatExpr <- expandMacro frame patExpr
+  return $ ValuePatExpr newPatExpr
 --expandMacro frame (LetExpr bindings body) = undefined
 --expandMacro frame (LetRecExpr bindings body) = undefined
 expandMacro frame (MatchExpr tgtExpr typExpr mcs) = do

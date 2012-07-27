@@ -1,0 +1,3 @@
+(define $main
+  (lambda [$: $argv]
+    (write : (fact 10000))))

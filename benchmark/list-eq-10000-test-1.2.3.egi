@@ -1,0 +1,12 @@
+(load "lib/base.egi")
+(load "lib/number.egi")
+(load "lib/collection.egi")
+
+(define $between
+  (lambda [$m $n]
+    (match (compare-integer m n) Order
+      {[<less> {m @(between (+ m 1) n)}]
+       [<equal> {n}]
+       [<greater> {}]})))
+
+(test ((type-ref (List Integer) equal?) (between 1 10000) (between 1 10000)))

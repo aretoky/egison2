@@ -1,0 +1,5 @@
+(define $main
+  (lambda [$: $argv]
+    (do {[[$: $n] (read :)]
+         [$: (write : ((= (List Integer)) (between 1 n) (between 1 n)))]}
+      :)))

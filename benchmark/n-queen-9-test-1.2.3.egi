@@ -1,0 +1,25 @@
+(load "lib/base.egi")
+(load "lib/number.egi")
+(load "lib/collection.egi")
+
+(define $between
+  (lambda [$m $n]
+    (match (compare-integer m n) Order
+      {[<less> {m @(between (+ m 1) n)}]
+       [<equal> {n}]
+       [<greater> {}]})))
+
+(define $n-queen
+  (lambda [$n]
+    (match-all (between 1 n) (Multiset Integer)
+      [<cons $a_1
+             (loop $l $i (between 2 n)
+                   <cons (loop $l1 $i1 (between 1 (- i 1))
+                               (& ^,(- a_i1 (- i i1)) ^,(+ a_i1 (- i i1))
+                                  l1)
+                               $a_i)
+                         l>
+                   <nil>)>
+       [@(loop $l $i (between 1 n)  {a_i @l} {})]])))
+
+(test (n-queen 9))
