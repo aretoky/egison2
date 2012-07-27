@@ -1,61 +1,105 @@
-(load "./etc/lib/base.egi")
-(load "./etc/lib/number.egi")
-(load "./etc/lib/collection.egi")
+(define $list-equal?
+  (lambda [$val $tgt]
+    (match [val tgt] [(List Bool+) (List Bool+)]
+	  {[[$x ,x] #t]
+	   [[<cons $x $xs> <cons (? equal? x) (? list-equal? xs)>] #t]
+	   [[_ _] #f]})))
 
-(define $Bit
+(define $Bool+
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (deconstructor
-        {[on []
-          {[<on> {[]}]
-           [_ {}]}]
-         [off []
-          {[<off> {[]}]
-           [_ {}]}]
-         [X []
-          {[<X> {[]}]
-           [_ {}]}]})]
-     [$equal?
-      (lambda [$val $tgt]
-        (match [val tgt] [Bit Bit]
-          {[[<on> <on>] <true>]
-           [[<off> <off>] <true>]
-           [[<X> <X>] <true>]
-           [[_ _] <false>]}))]}))
+    {[,$val []
+      {[$tgt (if (eq? val tgt)
+                 {[]}
+                 {})]}]
+     [<true> []
+      {[<true> {[]}]
+       [#t {[]}]
+       [_ {}]}]
+     [<false> []
+      {[<false> {[]}]
+       [#f {[]}]
+       [_ {}]}]
+     [<dontcare> []
+      {[<d> {[]}]
+       [_ {}]}]
+     [_ [Something]
+      {[$tgt {tgt}]}]
+     }))
 
-(define $bit-not
-  (lambda [$b]
-    (match b Bit
-      {[<on> <off>]
-       [<off> <on>]
-       [_ b]})))
+(define $equal?
+  (lambda [$val $tgt]
+    (match [val tgt] [Bool+ Bool+]
+      {[[$x ,x] #t]
+       [[_ <dontcare>] #t]
+       [[_ _] #f]})))
 
-(define $isHD1?
-  (lambda [$v1 $v2]
-    (match [v1 v2] [(List Bit) (List Bit)]
-      {[[<join $hs <cons <on> $ts>> <join ,hs <cons <off> ,ts>>] <true>]
-       [[<join $hs <cons <off> $ts>> <join ,hs <cons <on> ,ts>>] <true>]
-       [[_ _] <false>]})))
+(define $findPrimeImplicant
+  (lambda [$as]
+    (let {[$rs
+           ((unique (List Bool+))
+                   (match-all as (Multiset (List Bool+))
+                     [<cons <join $xs <cons <false> $zs>> <cons ,{@xs #t @zs} _>> {@xs <d> @zs}]))]}
+      (match rs (List Something)
+		{[<nil> as]
+		 [_ {@(findPrimeImplicant rs) @(remove-collection-equal? as rs)}]}))))
 
-(test (isHD1? {<off> <on> <off>} {<off> <off> <off>}))
-(test (isHD1? {<off> <off> <off>} {<off> <off> <off>}))
+(define $remove-all-equal?
+  (lambda [$xs $x]
+    ((remove-collection (List Bool+)) xs (filter (lambda [$y] (list-equal? y x)) xs))))
 
-(define $merge
-  (lambda [$v1 $v2]
-    (match [v1 v2] [(List Bit) (List Bit)]
-      {[[<join $hs <cons <on> $ts>> <join ,hs <cons <off> ,ts>>] {@hs <X> @ts}]
-       [[<join $hs <cons <off> $ts>> <join ,hs <cons <on> ,ts>>] {@hs <X> @ts}]})))
+(define $remove-collection-equal?
+  (lambda [$xs $ys]
+    (match ys (List Something)
+      {[<nil> xs]
+       [<cons $y $rs> (remove-collection-equal? (remove-all-equal? xs y) rs)]})))
 
-(test (merge {<off> <on> <off>} {<off> <off> <off>}))
+(define $findMinimumCover
+  (lambda [$aSet $bSet $upper $uSet]
+    (match [aSet bSet] [(Multiset (List Bool+)) (Multiset (List Bool+))]
+	  {[(& [_ <join (& ^(loop $l $i (between 2 upper) <cons _ l> <cons _ _>) $xs) $ys>]
+		   ^[<cons $z _> <join ^<cons (? list-equal? z) _> ,ys>])
+		(findMinimumCover aSet bSet (size xs) xs)]
+	   [_ uSet]})))
 
-(define $input {{<off> <on> <off> <off>}
-                {<on> <off> <off> <off>}
-                {<on> <on> <off> <off>}
-                {<on> <off> <on> <off>}
-                {<on> <off> <off> <on>}
-                {<on> <on> <on> <off>}
-                {<on> <off> <on> <on>}
-                {<on> <on> <on> <on>}})
+(define $findMinimization
+  (lambda [$aSet $bSet]
+    (match [aSet bSet] [(Multiset (List Bool+)) (Multiset (List Bool+))]
+      {[[<nil> _] {}]
+       [[<cons $x $xs> <cons (& (? list-equal? x) $y) (& ^<cons (? list-equal? x) _> $zs)>]
+        {y @(findMinimization (remove-all-equal? xs y) zs)}]
+       [_ (findMinimumCover aSet bSet (size bSet) bSet)]})))
 
-(define 
+(define $QM
+  (lambda [$aSet]
+    (findMinimization aSet (findPrimeImplicant aSet))))
+
+(define $main
+  (lambda [$: $argv]
+    (match argv (List Something)
+      {[<cons $i <cons $o _>>
+        (do {[[$: $p] (open-input-file : i)]
+             [[$: $val] (read-from-port : p)]
+             [$: (close-input-port : p)]
+             [[$: $p] (open-output-file : o)]
+             [$: (write-to-port : p (QM val))]
+             [$: (close-output-port : p)]}
+            :)]
+       [<cons $i _>
+        (do {[[$: $p] (open-input-file : i)]
+             [[$: $val] (read-from-port : p)]
+             [$: (close-input-port : p)]
+             [$: (write-string : "output : ")]
+             [$: (flush :)]
+             [$: (write : (QM val))]
+             [$: (write-char : '\n')]
+             [$: (flush :)]}
+            :)]
+        [_
+         (do {[$: (write-string : "input : ")]
+              [$: (flush :)]
+              [[$: $val] (read : )]
+              [$: (write-string : "output : ")]
+              [$: (flush :)]
+              [$: (write : (QM val))]
+              [$: (write-char : '\n')]}
+             :)]})))
