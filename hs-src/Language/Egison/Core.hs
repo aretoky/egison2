@@ -11,6 +11,8 @@ import qualified Data.Map
 import qualified System.Exit ()
 import System.Directory (doesFileExist)
 import System.IO
+import System.IO.Strict (SIO)
+import qualified System.IO.Strict as SIO
 import Data.IORef
 import Data.Version
 import Paths_egison
@@ -76,14 +78,14 @@ evalTopExpr env (Execute args) = do evalMain env args
 evalTopExpr env (LoadFile filename) = do
   result <- liftIO $ doesFileExist filename
   if result
-    then do (liftIO $ readFile filename) >>= load env
+    then do (liftIO $ SIO.run $ SIO.readFile filename) >>= load env
             return $ filename ++ " loaded."
     else throwError $ Default $ "File does not exist: " ++ filename
 evalTopExpr env (Load libname) = do
   filename <- liftIO (getDataFileName libname)
   result <- liftIO $ doesFileExist filename
   if result
-    then do (liftIO $ readFile filename) >>= load env
+    then do (liftIO $ SIO.run $ SIO.readFile filename) >>= load env
             return $ filename ++ " loaded."
     else throwError $ Default $ "Library does not exist: " ++ libname
 

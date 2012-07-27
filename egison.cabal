@@ -27,7 +27,7 @@ Data-files:          lib/core/base.egi lib/core/number.egi lib/core/collection.e
                      etc/template-for-test.hs
 
 Library
-  Build-Depends:   base >= 4.0 && < 5, array, containers, haskeline, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths
+  Build-Depends:   base >= 4.0 && < 5, array, containers, haskeline, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths, strict-io
   Hs-Source-Dirs:  hs-src
   Exposed-Modules: Language.Egison.Core
                    Language.Egison.Types
@@ -41,13 +41,13 @@ Library
 
 Executable egison
   Main-is:             egisoni.hs
-  Build-depends:       egison, base >= 4.0 && < 5, array, containers, haskeline, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths, regex-posix
+  Build-depends:       egison, base >= 4.0 && < 5, array, containers, haskeline, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths, regex-posix, strict-io
   Other-modules:       Paths_egison
   Hs-Source-Dirs:      hs-src/Interpreter
   
 Executable egisonc
   Main-is:             egisonc.hs
-  Build-depends:       egison, base >= 4.0 && < 5, array, containers, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths, filepath, process
+  Build-depends:       egison, base >= 4.0 && < 5, array, containers, transformers, mtl, parsec >= 3.0, directory, ghc, ghc-paths, filepath, process, strict-io
   Other-modules:       Paths_egison
   Hs-Source-Dirs:      hs-src/Compiler
 
