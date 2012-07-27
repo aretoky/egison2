@@ -1,47 +1,44 @@
-(load "lib/base.egi")
-(load "lib/number.egi")
-(load "lib/collection.egi")
 (load "lib/graph.egi")
 (load "lib/poker-hands.egi")
 
-(load-file  "./etc/sample/flowchart.egi")
+;;(load-file  "./etc/sample/flowchart.egi")
 
 
 (define $Material
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[material Integer
-          {[<material $n> {n}]}]})]
-     [$equal? (lambda [$val $tgt]
-                (match [val tgt] [Material Material]
-                  {[[<material $n> <material ,n>] <true>]
-                   [[_ _] <false>]}))]}))
+    {[,$val []
+	  {[$tgt (match [val tgt] [Material Material]
+               {[[<material $n> <material ,n>] {[]}]
+                [[_ _] {}]})]}]
+     [<material _> [Integer]
+      {[<material $n> {n}]}]
+	 [_ [Something]
+	  {[$tgt {tgt}]}]
+     }))
 
 (define $Experiment
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[experiment Integer
-          {[<experiment $n> {n}]}]})]
-     [$equal? (lambda [$val $tgt]
-                (match [val tgt] [Experiment Experiment]
-                  {[[<experiment $n> <experiment ,n>] <true>]
-                   [[_ _] <false>]}))]}))
+    {[,$val []
+	  {[$tgt (match [val tgt] [Experiment Experiment]
+               {[[<experiment $n> <experiment ,n>] {[]}]
+                [[_ _] {}]})]}]
+     [<experiment _> [Integer]
+      {[<experiment $n> {n}]}]
+	 [_ [Something]
+	  {[$tgt {tgt}]}]
+     }))
 
 (define $Process
   (type
-    {[$var-match (lambda [$tgt] {tgt})]
-     [$inductive-match
-      (destructor
-        {[process [Experiment (Multiset Material) (Multiset Material)]
-          {[<process $e $in $out> {[e in out]}]}]})]
-     [$equal? (lambda [$val $tgt]
-                (match [val tgt] [Process Process]
-                  {[[<process $e $in $out> <process ,e ,in ,out>] <true>]
-                   [[_ _] <false>]}))]}))
+    {[,$val []
+	  {[$tgt (match [val tgt] [Process Process]
+               {[[<process $e $in $out> <process ,e ,in ,out>] {[]}]
+                [[_ _] {}]})]}]
+     [<process _ _ _> [Experiment (Multiset Material) (Multiset Material)]
+      {[<process $e $in $out> {[e in out]}]}]
+	 [_ [Something]
+	  {[$tgt {tgt}]}]
+     }))
 
 (define $Recipe (Multiset Process))
 
@@ -145,17 +142,17 @@
 
 
 (test (bottoms r2))
-=> {<experiment 4> <experiment 5>}
+;; => {<experiment 4> <experiment 5>}
 
 (test (get-tree2 r2 {<experiment 4>}))
-=> {{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4>}}
+;; => {{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4>}}
 
 (test (get-tree2 r2 {<experiment 5>}))
-=> {{<experiment 3>} {<experiment 5>}}
+;; => {{<experiment 3>} {<experiment 5>}}
 
 (test (merge-tree2 {{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4>}}
                    {{<experiment 3>} {<experiment 5>}}))
-=> {{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4> <experiment 5>}}
+;; => {{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4> <experiment 5>}}
 
 (test (merge-tree {{{<experiment 1>} {<experiment 2> <experiment 3>} {<experiment 4>}}
                    {{<experiment 3>} {<experiment 5>}}}))
