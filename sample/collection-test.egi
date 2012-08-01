@@ -1,10 +1,12 @@
-(load "lib/poker-hands.egi")
+;; match List
+(test (match-all {1 2 3 4 5} (List Integer) [<snoc $x $xs> [x xs]]))
+
+(test (match-all {1 2 3 4 5} (List Integer) [<join ,{1 2} $xs> xs]))
 
 (test (match-all {1 2 3 4 5} (List Integer) [<join ,{1 2} $xs> xs]))
 
 (test (match-all {[1 2] [1 2]} (List [Integer Integer])
         [<cons [$a $b] _> [a b]]))
-
 
 ;; match Multiset
 (test (match-all {1 2 3 4 5} (Multiset Integer)

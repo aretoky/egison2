@@ -1,23 +1,29 @@
+(load "lib/poker-hands.egi")
+
 (test (poker-hands {<card <club> 4>
                     <card <club> 2>
                     <card <club> 13>
                     <card <club> 1>
                     <card <club> 3>}))
+(test <straight-flush>)
 
 (test (poker-hands {<card <diamond> 1>
                     <card <club> 2>
                     <card <club> 1>
                     <card <heart> 1>
                     <card <diamond> 2>}))
+(test <full-house>)
 
 (test (poker-hands {<card <diamond> 4>
                     <card <club> 2>
                     <card <club> 5>
                     <card <heart> 1>
                     <card <diamond> 3>}))
+(test <straight>)
 
 (test (poker-hands {<card <diamond> 4>
                     <card <club> 10>
                     <card <club> 5>
                     <card <heart> 1>
                     <card <diamond> 3>}))
+(test <nothing>)
