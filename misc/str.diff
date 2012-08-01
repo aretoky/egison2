@@ -1,0 +1,245 @@
+diff -urw egison2/hs-src/Language/Egison/Core.hs egison2str/hs-src/Language/Egison/Core.hs
+--- egison2/hs-src/Language/Egison/Core.hs	2012-07-09 17:56:26 +0900
++++ egison2str/hs-src/Language/Egison/Core.hs	2012-07-09 16:50:00 +0900
+@@ -55,7 +55,7 @@
+   let mainExpr = VarExpr "main" []
+   main <- cEval1 $ Closure env mainExpr
+   mainRef <- liftIO $ newIORef main
+-  let argvExpr = CollectionExpr $ map (ElementExpr . StringExpr) args
++  let argvExpr = CollectionExpr $ map (ElementExpr . stringExpr) args
+   argv <- cEval1 $ Closure env argvExpr
+   argvRef <- liftIO $ newIORef argv
+   worldRef <- liftIO $ newIORef $ Value $ World []
+@@ -138,7 +138,7 @@
+ cEval1 :: Object -> IOThrowsError Object
+ cEval1 (Closure _ (BoolExpr contents)) = return $ Value (Bool contents)
+ cEval1 (Closure _ (CharExpr contents)) = return $ Value (Char contents)
+-cEval1 (Closure _ (StringExpr contents)) = return $ Value (String contents)
++-- cEval1 (Closure _ (StringExpr contents)) = return $ Value (String contents)
+ cEval1 (Closure _ (NumberExpr contents)) = return $ Value (Number contents)
+ cEval1 (Closure _ (FloatExpr contents)) = return $ Value (Float contents)
+ cEval1 (Closure env (VarExpr name numExprs)) = do
+diff -urw egison2/hs-src/Language/Egison/Numerical.hs egison2str/hs-src/Language/Egison/Numerical.hs
+--- egison2/hs-src/Language/Egison/Numerical.hs	2012-07-09 17:56:26 +0900
++++ egison2str/hs-src/Language/Egison/Numerical.hs	2012-07-09 17:19:43 +0900
+@@ -1,3 +1,5 @@
++{-# LANGUAGE ViewPatterns #-}
++
+ module Language.Egison.Numerical where
+ import Language.Egison.Types
+ import Control.Monad.Error
+@@ -144,7 +146,7 @@
+ -- |Extract an char from the given value, throwing a type error if
+ --  the wrong type is passed.
+ unpackString :: EgisonVal -> ThrowsError String
+-unpackString (String str) = return str
++unpackString (isStringVal -> Just str) = return str
+ unpackString notString = throwError $ TypeMismatch "string" notString
+ 
+ -- |Extract an integer from the given value, throwing a type error if
+diff -urw egison2/hs-src/Language/Egison/Parser.hs egison2str/hs-src/Language/Egison/Parser.hs
+--- egison2/hs-src/Language/Egison/Parser.hs	2012-07-09 17:56:26 +0900
++++ egison2str/hs-src/Language/Egison/Parser.hs	2012-07-09 14:19:43 +0900
+@@ -202,7 +202,7 @@
+ parseString :: Parser EgisonExpr
+ parseString = do
+   x <- parseString2
+-  return $ StringExpr x
++  return $ stringExpr x
+ 
+ parseIndexNums :: Parser [EgisonExpr]
+ parseIndexNums = do try (do char '_'
+diff -urw egison2/hs-src/Language/Egison/Primitives.hs egison2str/hs-src/Language/Egison/Primitives.hs
+--- egison2/hs-src/Language/Egison/Primitives.hs	2012-07-09 17:56:26 +0900
++++ egison2str/hs-src/Language/Egison/Primitives.hs	2012-07-09 17:21:50 +0900
+@@ -1,3 +1,5 @@
++{-# LANGUAGE ViewPatterns #-}
++
+ module Language.Egison.Primitives where
+ import Language.Egison.Parser
+ import Language.Egison.Types
+@@ -15,7 +17,7 @@
+ -- I/O Primitives
+ ---------------------------------------------------
+ makePort :: IOMode -> [EgisonVal] -> IOThrowsError EgisonVal
+-makePort mode [(World actions), (String filename)] = do
++makePort mode [(World actions), (isStringVal -> Just filename)] = do
+   port <- liftM (Port filename) $ liftIO $ openFile filename mode
+   let newWorld = case mode of
+                    ReadMode -> World $ (OpenInputPort filename):actions
+@@ -41,14 +43,14 @@
+ writeChar _ = throwError $ Default $ "writeChar: invalid arguments"
+ 
+ writeString :: [EgisonVal] -> IOThrowsError EgisonVal
+-writeString [World actions, String str] = do
++writeString [World actions, (isStringVal -> Just str)] = do
+   liftIO $ putStr str
+   let newWorld = World $ (WriteToPort "stdout" str):actions
+   return newWorld
+ writeString _ = throwError $ Default $ "writeString: invalid arguments"
+ 
+ writeStringLine :: [EgisonVal] -> IOThrowsError EgisonVal
+-writeStringLine [World actions, String str] = do
++writeStringLine [World actions, (isStringVal -> Just str)] = do
+   liftIO $ putStrLn str
+   let newWorld = World $ (WriteToPort "stdout" str):actions
+   return newWorld
+@@ -96,7 +98,7 @@
+                 else throwError $ Default "I/O error read-line"
+     Right inpStr -> do
+       let newWorld = World $ (ReadFromPort "stdin" inpStr):actions
+-      return $ makeTupleFromValList [newWorld, String inpStr]
++      return $ makeTupleFromValList [newWorld, stringVal inpStr]
+ readLine _ = throwError $ Default $ "readLine: invalid arguments"
+ 
+ readFromStdin :: [EgisonVal] -> IOThrowsError EgisonVal
+@@ -117,14 +119,14 @@
+ writeCharToPort _ = throwError $ Default $ "writeCharToPort: invalid arguments"
+ 
+ writeStringToPort :: [EgisonVal] -> IOThrowsError EgisonVal
+-writeStringToPort [World actions, Port filename port, String str] = do
++writeStringToPort [World actions, Port filename port, (isStringVal -> Just str)] = do
+   liftIO $ hPutStr port str
+   let newWorld = World $ (WriteToPort filename str):actions
+   return newWorld
+ writeStringToPort _ = throwError $ Default $ "writeString: invalid arguments"
+ 
+ writeStringLineToPort :: [EgisonVal] -> IOThrowsError EgisonVal
+-writeStringLineToPort [World actions, Port filename port, String str] = do
++writeStringLineToPort [World actions, Port filename port, (isStringVal -> Just str)] = do
+   liftIO $ hPutStrLn port str
+   let newWorld = World $ (WriteToPort filename str):actions
+   return newWorld
+@@ -172,7 +174,7 @@
+                 else throwError $ Default "I/O error read-line-from-port"
+     Right inpStr -> do
+       let newWorld = World $ (ReadFromPort filename inpStr):actions
+-      return $ makeTupleFromValList [newWorld, String inpStr]
++      return $ makeTupleFromValList [newWorld, stringVal inpStr]
+ readLineFromPort _ = throwError $ Default $ "readLineFromPort: invalid arguments"
+ 
+ readFromPort :: [EgisonVal] -> IOThrowsError EgisonVal
+@@ -219,7 +221,7 @@
+ exprToVal :: EgisonExpr -> ThrowsError EgisonVal
+ exprToVal (BoolExpr contents) = return $ Bool contents
+ exprToVal (CharExpr contents) = return $ Char contents
+-exprToVal (StringExpr contents) = return $ String contents
++-- exprToVal (StringExpr contents) = return $ String contents
+ exprToVal (NumberExpr contents) = return $ Number contents
+ exprToVal (FloatExpr contents) = return $ Float contents
+ exprToVal (InductiveDataExpr cons argExprs) = do
+diff -urw egison2/hs-src/Language/Egison/Types.hs egison2str/hs-src/Language/Egison/Types.hs
+--- egison2/hs-src/Language/Egison/Types.hs	2012-07-09 17:56:26 +0900
++++ egison2str/hs-src/Language/Egison/Types.hs	2012-07-09 17:42:07 +0900
+@@ -78,7 +78,7 @@
+   | Load String
+         
+ data EgisonExpr = CharExpr Char
+-  | StringExpr String
++--  | StringExpr String -- to be CollectionExpr [CharExpr ..] , constructor : stringExpr
+   | BoolExpr Bool
+   | NumberExpr Integer
+   | FloatExpr Double
+@@ -109,6 +109,9 @@
+   | MatchAllExpr EgisonExpr EgisonExpr MatchClause
+   | ApplyExpr EgisonExpr EgisonExpr
+ 
++stringExpr :: String -> EgisonExpr
++stringExpr str = CollectionExpr (map (ElementExpr . CharExpr) str)
++
+ type ArgsExpr = Args
+                
+ type MatchClause = (EgisonExpr, EgisonExpr)
+@@ -145,7 +148,7 @@
+   
+ data EgisonVal = World [Action]
+   | Char Char
+-  | String String
++--  | String String -- to be Collection [Char ..] , constructor : stringVal, pattern match : String str => (isStringVal -> Just str) (use {-# LANGUAGE ViewPatterns #-})
+   | Bool Bool
+   | Number Integer
+   | Float Double
+@@ -167,6 +170,17 @@
+   | Port String Handle
+   | EOF
+ 
++stringVal :: String -> EgisonVal
++stringVal str = Collection (map (Element . Char) str)
++
++isCharVal :: EgisonVal -> Maybe Char
++isCharVal (Char c) = Just c
++isCharVal _ = Nothing
++
++isStringVal :: EgisonVal -> Maybe String
++isStringVal (Collection contents) = mapM isCharVal $ innerValsToList contents
++isStringVal _ = Nothing
++
+ data IntermidiateVal = IInductiveData String [ObjectRef]
+   | ITuple [InnerValRef]
+   | ICollection [InnerValRef]
+@@ -285,7 +299,7 @@
+ 
+ showExpr :: EgisonExpr -> String
+ showExpr (CharExpr chr) = [chr]
+-showExpr (StringExpr contents) = contents
++-- showExpr (StringExpr contents) = contents
+ showExpr (BoolExpr True) = "#t-expr"
+ showExpr (BoolExpr False) = "#f-expr"
+ showExpr (NumberExpr contents) = show contents
+@@ -302,6 +316,7 @@
+ showExpr (PredPatExpr _ _) = "#<pred-pat>"
+ showExpr (InductiveDataExpr cons _) = "<" ++ cons ++ "...>"
+ showExpr (TupleExpr _) = "[...]"
++-- do not show contents even if string
+ showExpr (CollectionExpr _) = "{...}"
+ showExpr (FuncExpr _ _) =
+   "(lambda [" ++ "..." ++ "] ...)"
+@@ -337,7 +352,8 @@
+ eqv [(Number arg1), (Number arg2)] = return $ Bool $ arg1 == arg2
+ eqv [(Float arg1), (Float arg2)] = return $ Bool $ arg1 == arg2
+ eqv [(Char arg1), (Char arg2)] = return $ Bool $ arg1 == arg2
+-eqv [(String arg1), (String arg2)] = return $ Bool $ arg1 == arg2
++-- CAUTION : string no longer supports eqv
++-- eqv [(String arg1), (String arg2)] = return $ Bool $ arg1 == arg2
+ eqv [_, _] = return $ Bool False
+ eqv badArgList = throwError $ NumArgs 2 badArgList
+ 
+@@ -357,7 +373,7 @@
+ showVal (Bool True) = "#t"
+ showVal (Bool False) = "#f"
+ showVal (Char chr) = "'" ++ [chr] ++ "'"
+-showVal (String str) = "\"" ++ str ++ "\""
++-- showVal (String str) = "\"" ++ str ++ "\""
+ showVal (Number contents) = show contents
+ showVal (Float contents) = show contents
+ showVal WildCard = "_"
+@@ -370,7 +386,8 @@
+ showVal (InductiveData cons []) = "<" ++ cons ++ ">"
+ showVal (InductiveData cons args) = "<" ++ cons ++ " " ++ unwordsList args ++ ">"
+ showVal (Tuple innerVals) = "[" ++ showInnerVals innerVals ++ "]"
+-showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
++-- showVal (Collection innerVals) = "{" ++ showInnerVals innerVals ++ "}"
++showVal (Collection innerVals) = "{" ++ showCollectionInnerVals innerVals ++ "}"
+ showVal (Type _) = "#<type>"
+ showVal (Destructor _) = "#<destructor>"
+ showVal (Func _ _ _) = "(lambda [" ++ "..." ++ "] ...)"
+@@ -392,6 +409,19 @@
+ --showInnerVals' ((Element val):rest) = " " ++ show val ++ showInnerVals' rest
+ --showInnerVals' ((SubCollection val):rest) = " @" ++ show val ++ showInnerVals' rest
+ 
++showCollectionInnerVals :: [InnerVal] -> String
++showCollectionInnerVals iVals = showStringValsInit $ innerValsToList iVals
++ where
++  showStringValsInit []            = ""
++  showStringValsInit ((Char c):xs) = '@':'"':c:showStringVals True xs
++  showStringValsInit (x:xs)        = (show x)++(showStringVals False xs)
++  showStringVals False []            = ""
++  showStringVals True  []            = "\""
++  showStringVals False ((Char c):xs) = ' ':'@':'"':c:(showStringVals True xs)
++  showStringVals True  ((Char c):xs) = c:(showStringVals True xs)
++  showStringVals False (x:xs)        = ' ':(show x)++(showStringVals False xs)
++  showStringVals True  (x:xs)        = '"':' ':(show x)++(showStringVals False xs)
++
+ showInnerVals :: [InnerVal] -> String
+ showInnerVals iVals = unwordsList $ innerValsToList iVals
+ 
