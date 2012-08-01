@@ -133,7 +133,7 @@
 (define $isStraight?
   (lambda [$Ns]
     (match Ns (Multiset Integer)
-      {[<cons (as $n (max Ns))
+      {[<cons (& ,(max Ns) $n)
          (loop-pat (- n 1))>
         <ok>]
        [_ <ko>]})))
