@@ -1,0 +1,4 @@
+;; egison load-file read only until (test $a 1) and do not read (test $b 2) without any message
+
+(test $a 1)asdf
+(test $b 2)
