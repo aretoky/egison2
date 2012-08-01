@@ -1,24 +1,14 @@
-(test (if ((= (List Integer)) (between 3 5)
-                              {3 4 5})
-          <ok>
-          <ko>))
+(test (between 3 5))
+(test {3 4 5})
 
-(test (if (eq? (min&max {10 20 4 40 23})
-               [4 40])
-          <ok>
-          <ko>))
+(test (min&max {10 20 4 40 23}))
+(test [4 40])
 
-(test (if (eq-n? (fib 10)
-                 89)
-          <ok>
-          <ko>))
+(test (fib 10))
+(test 89)
 
-(test (if (eq-n? (fact 10)
-                 3628800)
-          <ok>
-          <ko>))
+(test (fact 10))
+(test 3628800)
 
-(test (if (eq-n? (gcd {10 20 40 35})
-                 5)
-          <ok>
-          <ko>))
+(test (gcd {10 20 40 35}))
+(test 5)
