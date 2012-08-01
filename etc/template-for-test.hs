@@ -7,8 +7,10 @@ evalTopExprs :: Env -> [TopExpr] -> IO ()
 evalTopExprs _ [] = return ()
 evalTopExprs env (topExpr:rest) = do
   str <- runIOThrowsREPL $ evalTopExpr env topExpr
-  putStrLn str
-  evalTopExprs env rest
+  case topExpr of
+    Test _ -> do putStrLn str
+                 evalTopExprs env rest
+    _ -> evalTopExprs env rest
 
 main :: IO ()
 main = do
