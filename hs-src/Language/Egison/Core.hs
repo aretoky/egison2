@@ -724,7 +724,7 @@ isEmptyCollectionForSnoc objRef = do
         ((IElement _):_) -> return False
         ((ISubCollection subObjRef):rest) -> do
           subInnerRefs <- objectRefToInnerRefs subObjRef
-          liftIO $ writeIORef objRef $ Intermidiate $ ICollection $ reverse rest ++ reverse subInnerRefs
+          liftIO $ writeIORef objRef $ Intermidiate $ ICollection $ reverse rest ++ subInnerRefs
           isEmptyCollectionForSnoc objRef
     Value (Collection []) -> return True
     Value (Collection _) -> return False
@@ -760,7 +760,7 @@ snocDestruct objRef = do
           return (racObjRef, rdcObjRef)
         ((ISubCollection subObjRef):rest) -> do
           subInnerRefs <- objectRefToInnerRefs subObjRef
-          liftIO $ writeIORef objRef $ Intermidiate $ ICollection $ reverse rest ++ reverse subInnerRefs
+          liftIO $ writeIORef objRef $ Intermidiate $ ICollection $ reverse rest ++ subInnerRefs
           snocDestruct objRef
     Value (Collection vals) -> do
       case reverse vals of
