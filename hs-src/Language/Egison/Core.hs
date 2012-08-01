@@ -819,7 +819,8 @@ constants = [("pi", Float 3.14)
          
 {- I/O primitives -}
 ioPrimitives :: [(String, [EgisonVal] -> IOThrowsError EgisonVal)]
-ioPrimitives = [("open-input-file", makePort ReadMode),
+ioPrimitives = [("get-lib-dir-name", getLibDirName),
+                ("open-input-file", makePort ReadMode),
                 ("open-output-file", makePort WriteMode),
                 ("close-input-port", closePort),
                 ("close-output-port", closePort),

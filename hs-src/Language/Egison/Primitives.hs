@@ -11,9 +11,15 @@ import System.IO
 import System.Directory (doesFileExist, removeFile)
 import System.IO.Error hiding (try)
 
+import Paths_egison
+
 ---------------------------------------------------
 -- I/O Primitives
 ---------------------------------------------------
+getLibDirName :: [EgisonVal] -> IOThrowsError EgisonVal
+getLibDirName [] = liftIO $ (getDataFileName "") >>= return . String
+getLibDirName _ = throwError $ Default $ "readCharFromPort: invalid arguments"
+
 makePort :: IOMode -> [EgisonVal] -> IOThrowsError EgisonVal
 makePort mode [(World actions), (String filename)] = do
   port <- liftM (Port filename) $ liftIO $ openFile filename mode
