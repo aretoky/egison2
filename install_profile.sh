@@ -1,5 +1,7 @@
 #!/bin/sh
 
+ghc-pkg unregister strict-io
+cabal install --reinstall -p --enable-executable-profiling strict-io
 ghc-pkg unregister terminfo
 cabal install --reinstall -p --enable-executable-profiling terminfo
 ghc-pkg unregister haskeline
