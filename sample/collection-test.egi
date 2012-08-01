@@ -1,3 +1,5 @@
+(load "lib/poker-hands.egi")
+
 (test (match-all {1 2 3 4 5} (List Integer) [<join ,{1 2} $xs> xs]))
 
 (test (match-all {[1 2] [1 2]} (List [Integer Integer])

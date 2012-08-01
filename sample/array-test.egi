@@ -26,5 +26,5 @@
 (test (array-ref [2 3] bss))
 
 (test (match ass (Array Integer)
-        {[<cons ,[2 2] $n <cons ,[2 3] ,(+ n 1) _>> <ok>]
+        {[(& <cons ,[2 2] $n> <cons ,[2 3] ,(+ n 1)>) <ok>]
          [_ <ko>]}))
