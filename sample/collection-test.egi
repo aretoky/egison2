@@ -1,3 +1,5 @@
+(load "lib/poker-hands.egi")
+
 ;; match List
 (test (match-all {1 2 3 4 5} (List Integer) [<snoc $x $xs> [x xs]]))
 
