@@ -26,26 +26,29 @@
                                       [[<cons $x $xs> <cons ,x $ys>] (helper xs ys)]
                                       [[_ _] {}]}))]}
                  (helper pxs tgt))]}]
+       [<join _ ,$pys> [(List a)]
+        {[$tgt (letrec {[$helper (lambda [$pys $tgt]
+                                   (match [pys tgt] [(List a) (List a)]
+                                     {[[<nil> _] {tgt}]
+                                      [[<snoc $x $xs> <snoc ,x $ys>] (helper xs ys)]
+                                      [[_ _] {}]}))]}
+                 (helper pys tgt))]}]
        [<join _ _> [(List a) (List a)]
-        {[$tgt (letrec {[$loop-fn
-                         (lambda [$ts]
-                           (match ts (List a)
-                             {[<nil> {[{} {}]}]
-                              [<cons $x $xs>
-                               {[{} ts]
-                                @(map (lambda [$as $bs] [{x @as} bs])
-                                      (loop-fn xs))}]}))]}
-                 (loop-fn tgt))]}]
+		{[$tgt (letrec {[$helper (lambda [$xs $ys $r]
+								   (match ys (List a)
+									 {[<nil> {[xs {}] @r}]
+									  [<cons $z $zs> (helper {@xs z} zs {[xs ys] @r})]}))]}
+				 (helper {} tgt {}))]}]
+       [<nioj ,$pxs _> [(List a)]
+        {[$tgt (match-all tgt (List a) [<join $ys ,pxs> ys])]}]
+       [<nioj _ ,$pys> [(List a)]
+        {[$tgt (match-all tgt (List a) [<join ,pys $xs> xs])]}]
        [<nioj _ _> [(List a) (List a)]
-        {[$tgt (letrec {[$loop-fn
-                         (lambda [$ts]
-                           (match ts (List a)
-                             {[<nil> {[{} {}]}]
-                              [<snoc $x $xs>
-                               {[{} ts]
-                                @(map (lambda [$as $bs] [{@as x} bs])
-                                      (loop-fn xs))}]}))]}
-                 (loop-fn tgt))]}]
+		{[$tgt (letrec {[$helper (lambda [$xs $ys $r]
+								   (match ys (List a)
+									 {[<nil> {[{} xs] @r}]
+									  [<cons $z $zs> (helper {@xs z} zs {[ys xs] @r})]}))]}
+				 (helper {} tgt {}))]}]
        [_ [Something]
         {[$tgt {tgt}]}]
        })))

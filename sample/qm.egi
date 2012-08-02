@@ -38,7 +38,7 @@
     (let {[$rs
            ((unique (List Bool+))
                    (match-all as (Multiset (List Bool+))
-                     [<cons <join $xs <cons <false> $zs>> <cons ,{@xs #t @zs} _>> {@xs <d> @zs}]))]}
+                     [<cons <join $xs <cons ,#f $zs>> <cons ,{@xs #t @zs} _>> {@xs <d> @zs}]))]}
       (match rs (List Something)
 		{[<nil> as]
 		 [_ {@(findPrimeImplicant rs) @(remove-collection-equal? as rs)}]}))))
