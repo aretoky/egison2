@@ -1,0 +1,42 @@
+;; ordinary computation Fibonacci numbers "fib" (exp time) and memoized computation Fibonacci numbers
+
+;; ordinary computation Fibonacci numbers "fib" (exp time)
+
+(define $fib (lambda [$n]
+  (match n Integer {[,0 0] [,1 1] [$n (+ (fib (- n 2)) (fib (- n 1)))]})))
+
+;; Haskell version of closure memoized computation Fibonacci numbers retrieved  from "Memoization - Haskell Wiki" http://www.haskell.org/haskellwiki/Memoization
+;; 
+;; memoized_fib :: Int -> Integer
+;; memoized_fib = (map fib [0 ..] !!)
+;;    where fib 0 = 0
+;;          fib 1 = 1
+;;          fib n = memoized_fib (n-2) + memoized_fib (n-1)
+
+;; [0 ..] in Haskell
+(define $zero2inf (letrec {[$itoinf (lambda [$i] {i @(itoinf (+ i 1))})]} (itoinf 0)))
+
+(define $cmemfib (letrec {[$fib (lambda [$n] (match n Integer {[,0 0] [,1 1] [$n (+ (cmemfib (- n 2)) (cmemfib (- n 1)))]}))]}
+  (lambda [$n] (nth n (map fib zero2inf)))))
+
+;; Haskell version of list memoized computation Fibonacci numbers modified former one
+;; 
+;; list_memoized_fib :: Int -> Integer
+;; list_memoized_fib = (memfibl !!)
+;;  where
+;;   memfibl = map fib [0 ..]
+;;   fib 0 = 0
+;;   fib 1 = 1
+;;   fib n = list_memoized_fib (n-2) + list_memoized_fib (n-1)
+
+(define $lmemfib (letrec
+  {[$memfibl (map fib zero2inf)]
+   [$fib (lambda [$n] (match n Integer {[,0 0] [,1 1] [$n (+ (lmemfib (- n 2)) (lmemfib (- n 1)))]}))]}
+  (lambda [$n] (nth n memfibl))))
+
+
+(test (fib 25)) ;; 2s
+(test (cmemfib 10)) ;; 2s
+(test (lmemfib 1000)) ;; 12s
+(test (lmemfib 1000)) ;; second time call: 0s
+

@@ -10,7 +10,7 @@ getExpr frame name = Data.Map.lookup name frame
 expandMacro :: MacroFrame -> EgisonExpr -> IOThrowsError EgisonExpr
 expandMacro frame (VarExpr name []) =
   case getExpr frame name of
-    Nothing -> return $ MacroVarExpr name []
+    Nothing -> return $ VarExpr name []
     Just expr -> return expr
 expandMacro frame (PatVarOmitExpr expr) = do
   newExpr <- expandMacro frame expr
@@ -75,6 +75,10 @@ expandMacro frame (MatchAllExpr tgtExpr typExpr mc) = do
   newTypExpr <- expandMacro frame typExpr
   newMc <- expandMacroMatchClause frame mc
   return $ MatchAllExpr newTgtExpr newTypExpr newMc
+expandMacro frame (ApplyExpr opExpr argExpr) = do
+  newOpExpr <- expandMacro frame opExpr
+  newArgExpr <- expandMacro frame argExpr
+  return $ ApplyExpr newOpExpr newArgExpr
 expandMacro _ expr = return expr
 
 expandMacroMatchClause :: MacroFrame -> MatchClause -> IOThrowsError MatchClause
