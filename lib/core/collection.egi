@@ -34,20 +34,20 @@
                                       [[_ _] {}]}))]}
                  (helper pys tgt))]}]
        [<join _ _> [(List a) (List a)]
-		{[$tgt (letrec {[$helper (lambda [$xs $ys $r]
+		{[$tgt (letrec {[$helper (lambda [$xs $ys]
 								   (match ys (List a)
-									 {[<nil> {[xs {}] @r}]
-									  [<cons $z $zs> (helper {@xs z} zs {[xs ys] @r})]}))]}
-				 (helper {} tgt {}))]}]
+									 {[<nil> {[xs {}]}]
+									  [<cons $z $zs> {[xs ys] @(helper {@xs z} zs {[xs ys]})}]}))]}
+				 (helper {} tgt))]}]
        [<nioj ,$pxs _> [(List a)]
         {[$tgt (match-all tgt (List a) [<join $ys ,pxs> ys])]}]
        [<nioj _ ,$pys> [(List a)]
         {[$tgt (match-all tgt (List a) [<join ,pys $xs> xs])]}]
        [<nioj _ _> [(List a) (List a)]
-		{[$tgt (letrec {[$helper (lambda [$xs $ys $r]
+		{[$tgt (letrec {[$helper (lambda [$xs $ys]
 								   (match ys (List a)
-									 {[<nil> {[{} xs] @r}]
-									  [<cons $z $zs> (helper {@xs z} zs {[ys xs] @r})]}))]}
+									 {[<nil> {[{} xs]}]
+									  [<cons $z $zs> {[ys xs] @(helper {@xs z} zs)}]}))]}
 				 (helper {} tgt {}))]}]
        [_ [Something]
         {[$tgt {tgt}]}]
@@ -121,11 +121,10 @@
 (define $subcollections
   (lambda [$xs]
     (match xs (List Something)
-      {[<nil> {{}}]
-       [<cons $x $rs>
-        (let {[$subs (subcollections rs)]}
-          {@subs @(map (lambda [$sub] {x @sub})
-                       subs)})]})))
+	  {[<nil> {{}}]
+	   [<cons $x $rs>
+        (let {[$subs (subcollections rs)]} 
+		  {@subs @(map (lambda [$sub] {x @sub}) subs)})]})))
 
 (define $size
   (lambda [$xs]
@@ -195,7 +194,6 @@
           (if ((member? a) x ys)
               ((subcollection? a) rest ys)
               #f)]}))))
-             
 
 (define $concat
   (lambda [$xs]
@@ -215,16 +213,26 @@
         {[{} {[]}]
          [_ {}]}]
        [<cons ,$px _> [(Multiset a)]
-        {[$tgt (if ((member? a) px tgt)
-                   {((remove a) tgt px)}
-                   {})]}]
+        {[$tgt (letrec {[$helper (lambda [$xs $ys]
+								   (match xs (List a)
+									 {[<nil> {}]
+									  [<cons ,px $zs> {{@ys @zs}}]
+									  [<cons $z $zs> (helper zs {@ys z})]}))]}
+				 (helper tgt {}))]}]
        [<cons _ _> [a (Multiset a)]
-        {[$tgt (map (lambda [$t] [t ((remove a) tgt t)])
-                    ((unique a) tgt))]}]
+        {[$tgt (letrec {[$helper (lambda [$xs $ys]
+								   (match ys (List a)
+									 {[<nil> {}]
+									  [<cons $z $zs> (if ((member? a) z xs)
+														 (helper {@xs z} zs)
+														 {[z {@xs @zs}] @(helper {@xs z} zs)})]}))]}
+				 (helper {} tgt))]}]
        [<join ,$pxs _> [(Multiset a)]
         {[$tgt (if ((subcollection? a) pxs tgt)
                    {((remove-collection a) tgt pxs)}
                    {})]}]
+       [<join _ ,$pys> [(Multiset a)]
+        {[$tgt (match-all tgt (Multiset a) [<join ,pys $xs> xs])]}]
        [<join _ _> [(Multiset a) (Multiset a)]
         {[$tgt (map (lambda [$ts] [ts ((remove-collection a) tgt ts)])
                     (subcollections tgt))]}]
@@ -243,6 +251,8 @@
        [<nil> []
         {[{} {[]}]
          [_ {}]}]
+	   [<cons ,$px _> [(Set a)]
+		{[$tgt (map (unique a) (match-all tgt (Multiset a) [<cons ,px $xs> xs]))]}]
        [<cons _ _> [a (Set a)]
         {[$tgt (let {[$tgt2 ((unique a) tgt)]}
                  {@(match-all tgt2 (Multiset a) [<cons $x $xs> [x xs]])

@@ -17,7 +17,7 @@
             <equal>
             <greater>))))
 
-(define $Double
+(define $Float
   (type
     {[,$d []
       {[$tgt (if (eq-f? tgt d)
