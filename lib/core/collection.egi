@@ -153,11 +153,8 @@
     (match xs (List Something)
       {[<snoc _ $ys> ys]})))
 
-(define $nth
-  (lambda [$n $ls]
-    (if (eq-n? n 1)
-        (car ls)
-        (nth (- n 1) (cdr ls)))))
+(define $nth (lambda [$i $l]
+  (match l (List Something) {[<cons $x $xs> (if (eq? i 0) x (nth (- i 1) xs))]})))
 
 (define $reverse
   (lambda [$xs]
