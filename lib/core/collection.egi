@@ -255,10 +255,14 @@
 									  [<cons ,px $zs> {{@ys @zs} tgt}]
 									  [<cons $z $zs> (helper zs {@ys z})]}))]}
 				 (helper ((unique a) tgt) {}))]}]
-       [<cons _ _> [a (Set a)]
+	   [<cons _ _> [a (Set a)]
         {[$tgt (let {[$tgt2 ((unique a) tgt)]}
-                 {@(match-all tgt2 (Multiset a) [<cons $x $xs> [x xs]])
-                  @(match-all tgt2 (Multiset a) [<cons $x $xs> [x {@xs x}]])})]}]
+				 (letrec {[$helper (lambda [$xs $ys]
+									 (match xs (List a)
+									   {[<nil> {}]
+										[<cons $z $zs> 
+										 {[z {@ys @zs}] [z tgt2] @(helper zs {@ys z})}]}))]}
+				   (helper tgt2 {})))]}]
        [<join _ _> [(Set a) (Set a)]
         {[$tgt (let {[$tgt2 ((unique a) tgt)]}
                  (concat (map (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
