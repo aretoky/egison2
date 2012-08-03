@@ -249,7 +249,12 @@
         {[{} {[]}]
          [_ {}]}]
 	   [<cons ,$px _> [(Set a)]
-		{[$tgt (map (unique a) (match-all tgt (Multiset a) [<cons ,px $xs> xs]))]}]
+        {[$tgt (letrec {[$helper (lambda [$xs $ys]
+								   (match xs (List a)
+									 {[<nil> {}]
+									  [<cons ,px $zs> {{@ys @zs} tgt}]
+									  [<cons $z $zs> (helper zs {@ys z})]}))]}
+				 (helper ((unique a) tgt) {}))]}]
        [<cons _ _> [a (Set a)]
         {[$tgt (let {[$tgt2 ((unique a) tgt)]}
                  {@(match-all tgt2 (Multiset a) [<cons $x $xs> [x xs]])
