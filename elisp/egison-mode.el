@@ -19,6 +19,7 @@
      "\\<match-all\\>"
      "\\<generate-array\\>"
 
+     "\\<undefined\\>"
      "\\<Something\\>"
      
      "\\\."

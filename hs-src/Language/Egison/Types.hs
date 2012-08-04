@@ -17,6 +17,7 @@ data EgisonError = NumArgs Integer [EgisonVal]
   | NotFunction String String
   | UnboundVar String String
   | DivideByZero
+  | ReachToUndefined
   | NotImplemented String
   | InternalError String
   | Default String
@@ -30,7 +31,8 @@ showError (Parser parseErr) = "Parse error at " ++ ": " ++ show parseErr
 showError (BadSpecialForm message args) = message ++ ": " ++ unwordsList args
 showError (NotFunction message func) = message ++ ": " ++ show func
 showError (UnboundVar message varname) = message ++ ": " ++ varname
-showError (DivideByZero) = "Division by zero"
+showError DivideByZero = "Division by zero"
+showError ReachToUndefined = "Reached to undefined"
 showError (NotImplemented message) = "Not implemented: " ++ message
 showError (InternalError message) = "An internal error occurred: " ++ message
 showError (Default message) = "Error: " ++ message
@@ -110,6 +112,7 @@ data EgisonExpr = CharExpr Char
   | GenerateArrayExpr EgisonExpr EgisonExpr
   | ApplyExpr EgisonExpr EgisonExpr
   | SomethingExpr
+  | UndefinedExpr
  deriving (Show)
 
 data ArrayElementExpr = AElementExpr EgisonExpr
@@ -337,6 +340,7 @@ showExpr (GenerateArrayExpr fnExpr arrExpr) =
 showExpr (ApplyExpr opExpr argExpr) =
   "(" ++ showExpr opExpr ++ " " ++ showExpr argExpr ++ ")"
 showExpr SomethingExpr = "Something"
+showExpr UndefinedExpr = "undefined"
 
 ---- |Allow conversion of egisonexpr instances to strings
 --instance Show EgisonExpr where show = showExpr

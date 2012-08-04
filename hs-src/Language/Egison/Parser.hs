@@ -404,6 +404,8 @@ parseExpr =
   <|> lexeme parseMacroVarExpr
   <|> lexeme parsePatVarOmitExpr
   <|> lexeme parseVarOmitExpr
+  <|> try (lexeme (do string "undefined"
+                      return UndefinedExpr))
   <|> try (lexeme (do string "Something"
                       return SomethingExpr))
   <|> lexeme parseVar

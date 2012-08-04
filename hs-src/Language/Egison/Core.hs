@@ -11,7 +11,6 @@ import qualified Data.Map
 import qualified System.Exit ()
 import System.Directory (doesFileExist)
 import System.IO
-import System.IO.Strict (SIO)
 import qualified System.IO.Strict as SIO
 import Data.IORef
 import Data.Version
@@ -320,6 +319,8 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
                                    liftIO $ putStrLn $ showExpr newBody
                                    cEval1 (Closure env newBody)
     _ -> throwError $ Default "not function"
+cEval1 (Closure _ UndefinedExpr) = do
+  throwError ReachToUndefined
 cEval1 val = do
   return val
 
