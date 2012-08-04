@@ -211,19 +211,19 @@
          [_ {}]}]
        [<cons ,$px _> [(Multiset a)]
         {[$tgt (letrec {[$helper (lambda [$xs $ys]
-								   (match xs (List a)
-									 {[<nil> {}]
-									  [<cons ,px $zs> {{@ys @zs}}]
-									  [<cons $z $zs> (helper zs {@ys z})]}))]}
-				 (helper tgt {}))]}]
+				   (match xs (List a)
+				     {[<nil> {}]
+				      [<cons ,px $zs> {{@ys @zs}}]
+				      [<cons $z $zs> (helper zs {@ys z})]}))]}
+		 (helper tgt {}))]}]
        [<cons _ _> [a (Multiset a)]
         {[$tgt (letrec {[$helper (lambda [$xs $ys]
-								   (match ys (List a)
-									 {[<nil> {}]
-									  [<cons $z $zs> (if ((member? a) z xs)
-														 (helper {@xs z} zs)
-														 {[z {@xs @zs}] @(helper {@xs z} zs)})]}))]}
-				 (helper {} tgt))]}]
+				   (match ys (List a)
+				     {[<nil> {}]
+				      [<cons $z $zs> (if ((member? a) z xs)
+							 (helper {@xs z} zs)
+							 {[z {@xs @zs}] @(helper {@xs z} zs)})]}))]}
+		 (helper {} tgt))]}]
        [<join ,$pxs _> [(Multiset a)]
         {[$tgt (if ((subcollection? a) pxs tgt)
                    {((remove-collection a) tgt pxs)}
@@ -248,21 +248,21 @@
        [<nil> []
         {[{} {[]}]
          [_ {}]}]
-	   [<cons ,$px _> [(Set a)]
+       [<cons ,$px _> [(Set a)]
         {[$tgt (letrec {[$helper (lambda [$xs $ys]
-								   (match xs (List a)
-									 {[<nil> {}]
-									  [<cons ,px $zs> {{@ys @zs} tgt}]
-									  [<cons $z $zs> (helper zs {@ys z})]}))]}
-				 (helper ((unique a) tgt) {}))]}]
-	   [<cons _ _> [a (Set a)]
+				   (match xs (List a)
+				     {[<nil> {}]
+				      [<cons ,px $zs> {{@ys @zs} tgt}]
+				      [<cons $z $zs> (helper zs {@ys z})]}))]}
+		 (helper ((unique a) tgt) {}))]}]
+       [<cons _ _> [a (Set a)]
         {[$tgt (let {[$tgt2 ((unique a) tgt)]}
-				 (letrec {[$helper (lambda [$xs $ys]
-									 (match xs (List a)
-									   {[<nil> {}]
-										[<cons $z $zs> 
-										 {[z {@ys @zs}] [z tgt2] @(helper zs {@ys z})}]}))]}
-				   (helper tgt2 {})))]}]
+		 (letrec {[$helper (lambda [$xs $ys]
+				     (match xs (List a)
+				       {[<nil> {}]
+					[<cons $z $zs> 
+					 {[z {@ys @zs}] [z tgt2] @(helper zs {@ys z})}]}))]}
+		   (helper tgt2 {})))]}]
        [<join _ _> [(Set a) (Set a)]
         {[$tgt (let {[$tgt2 ((unique a) tgt)]}
                  (concat (map (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
