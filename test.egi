@@ -128,13 +128,12 @@
 
 (test (match {undefined 2} (List Integer) {[<cons $y $x> x]}))
 
-
-(define $inf 
-(test (match {undefined 2} (List Integer) {[<cons $y $x> x]}))
-
+(test (let {[[$x $y] [undefined 2]]} y))
 
 
 
 (define $f (lambda [$x $y $z] [x y z]))
 
 (test (f 1))
+
+(test (let {[[$x $y $z] [1 2]]} x))

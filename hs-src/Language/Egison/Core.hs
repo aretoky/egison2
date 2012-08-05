@@ -515,18 +515,32 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
         Value Something -> throwError $ Default "patternMatch: Only pattern variable can be pattern matched with Something"
         _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
     Intermidiate (ITuple patObjRefs) -> do
-      tgtObjRefs <- tupleToObjRefs tgtObjRef
       typObjRefs <- tupleToObjRefs typObjRef
-      if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
-        then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
-        else throwError $ Default "patternMatch: number of types, patterns and targets are different"
+      if length typObjRefs == 1
+        then do
+          let tgtObjRefs = [tgtObjRef]
+          if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
+            then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+            else throwError $ Default "patternMatch: number of types, patterns and targets are different"
+        else do
+          tgtObjRefs <- tupleToObjRefs tgtObjRef
+          if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
+            then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+            else throwError $ Default "patternMatch: number of types, patterns and targets are different"
     Value (Tuple pats) -> do
       patObjRefs <- liftIO $ mapM (newIORef . Value) pats
-      tgtObjRefs <- tupleToObjRefs tgtObjRef
       typObjRefs <- tupleToObjRefs typObjRef
-      if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
-        then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
-        else throwError $ Default "patternMatch: number of types, patterns and targets are different"
+      if length typObjRefs == 1
+        then do
+          let tgtObjRefs = [tgtObjRef]
+          if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
+            then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+            else throwError $ Default "patternMatch: number of types, patterns and targets are different"
+        else do
+          tgtObjRefs <- tupleToObjRefs tgtObjRef
+          if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
+            then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+            else throwError $ Default "patternMatch: number of types, patterns and targets are different"
     Value (PredPat predObjRef patObjRefs) -> do
       argsObjRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ patObjRefs ++ [tgtObjRef]
       ret <- cApply1 predObjRef argsObjRef
@@ -564,9 +578,14 @@ inductiveMatch ((pppat, typObjRef, pclss):rest) patObjRef tgtObjRef = do
       mPpmRet <- helper pclss
       case mPpmRet of
         Nothing -> throwError $ Default "inductiveMatch: not matched any primitive clauses"
-        Just tgtObjRefss -> do
+        Just tgtObjRefs -> do
           typObjRefs <- tupleToObjRefs typObjRef
-          return (typObjRefs, patObjRefs, tgtObjRefss)
+          if length typObjRefs == 1
+            then do let tgtObjRefss = map (\x -> [x]) tgtObjRefs
+                    liftIO $ putStrLn "egiTest: here"
+                    return (typObjRefs, patObjRefs, tgtObjRefss)
+            else do tgtObjRefss <- mapM tupleToObjRefs tgtObjRefs
+                    return (typObjRefs, patObjRefs, tgtObjRefss)
      where helper [] = return Nothing
            helper ((env, ppat, expr):pclss2) = do
              mPpmRet <- primitivePatternMatch ppat tgtObjRef
@@ -576,8 +595,7 @@ inductiveMatch ((pppat, typObjRef, pclss):rest) patObjRef tgtObjRef = do
                  newEnv <- liftIO $ extendEnv env (ppmRet ++ frame)
                  retObjRef <- liftIO $ makeClosure newEnv expr
                  tgtObjRefs <- collectionToObjRefs retObjRef
-                 tgtObjRefss <- mapM tupleToObjRefs tgtObjRefs
-                 return $ Just tgtObjRefss
+                 return $ Just tgtObjRefs
 
 primitivePatPatternMatch :: PrimitivePatPattern -> ObjectRef -> IOThrowsError (Maybe ([ObjectRef], FrameList))
 primitivePatPatternMatch PPWildCard patObjRef = return $ Just ([patObjRef], [])
