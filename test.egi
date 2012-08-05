@@ -131,3 +131,10 @@
 
 (define $inf 
 (test (match {undefined 2} (List Integer) {[<cons $y $x> x]}))
+
+
+
+
+(define $f (lambda [$x $y $z] [x y z]))
+
+(test (f 1))

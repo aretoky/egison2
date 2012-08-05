@@ -417,7 +417,7 @@ parseExpr =
   <|> brackets (do exprs <- sepEndBy parseExpr whiteSpace
                    return $ TupleExpr exprs)
   <|> parens (do try (string "lambda" >> many1 space)
-                 args <- lexeme parseArgs
+                 args <- lexeme parseExpr
                  body <- lexeme parseExpr
                  return (FuncExpr args body)
           <|> do try (string "macro" >> many1 space)

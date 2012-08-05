@@ -236,7 +236,8 @@ cEval1 (Closure env (AndPatExpr patExprs)) = do
   patObjRefs <- liftIO $ mapM (makeClosure env) patExprs
   return $ Value $ AndPat patObjRefs
 cEval1 (Closure env (FuncExpr args body)) = do
-  return $ Value $ Func args body env
+  argsObjRef <- liftIO $ makeClosure env args
+  return $ Value $ Func argsObjRef body env
 cEval1 (Closure _ (MacroExpr args body)) = do
   return $ Value $ Macro args body
 cEval1 (Closure env (IfExpr condExpr expr1 expr2)) = do
@@ -310,7 +311,8 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
     Value (PrimitiveFunc fn) -> do arg <- eval env argExpr
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
-    Value (Func fArgs body cEnv) -> do frame <- liftIO (makeClosure env argExpr) >>= makeFrame fArgs
+    Value (Func fArgs body cEnv) -> do argObjRef <- liftIO $ makeClosure env argExpr
+                                       frame <- makeFrame [(fArgs, argObjRef)]
                                        newEnv <- liftIO $ extendEnv cEnv frame
                                        cEval1 (Closure newEnv body)
     Value (Macro mArgs body) -> do argExprs <- liftThrows $ tupleExprToExprList argExpr
@@ -333,7 +335,7 @@ cApply fnObjRef argObjRef = do
     Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ val
-    Value (Func fArgs body cEnv) -> do frame <- makeFrame fArgs argObjRef
+    Value (Func fArgs body cEnv) -> do frame <- makeFrame [(fArgs, argObjRef)]
                                        newEnv <- liftIO $ extendEnv cEnv frame
                                        cEval (Closure newEnv body)
     _ -> throwError $ Default "cApply1 not function"
@@ -348,7 +350,7 @@ cApply1 fnObjRef argObjRef = do
     Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
-    Value (Func fArgs body cEnv) -> do frame <- makeFrame fArgs argObjRef
+    Value (Func fArgs body cEnv) -> do frame <- makeFrame [(fArgs, argObjRef)]
                                        newEnv <- liftIO $ extendEnv cEnv frame
                                        cEval1 (Closure newEnv body)
     _ -> throwError $ Default "cApply1: not function"
@@ -366,7 +368,6 @@ expandLoop env (Loop loopVar indexVar rangeObjRef loopExpr tailExpr) = do
             cEval1 $ Closure newEnv loopExpr
 expandLoop _ obj = throwError $ Default $ "expandLoop: cannot reach here: " ++ show obj
            
--- |Extend given environment by binding a series of values to a new environment for let.
 extendLet :: Env -- ^ Environment 
           -> [(EgisonExpr, EgisonExpr)] -- ^ Extensions to the environment
           -> IOThrowsError Env -- ^ Extended environment
@@ -394,21 +395,25 @@ extendLet env binding = do
                                    return $ match ++ retRest
                      _ -> throwError $ Default "extendLet: binding error"
 
-makeFrame :: Args -> ObjectRef -> IOThrowsError [(Var, ObjectRef)]
-makeFrame (AVar name) objRef = return $ [((name,[]), objRef)]
-makeFrame (ATuple []) _ = return $ []
-makeFrame (ATuple [fArg]) objRef = makeFrame fArg objRef
-makeFrame (ATuple fArgs) objRef = do
-  obj <- cRefEval1 objRef
-  case obj of
-    Intermidiate (ITuple objRefs) -> do
-      frames <- mapM (\(fArg,objRef3) -> makeFrame fArg objRef3) $ zip fArgs objRefs
-      return $ concat frames
-    Value (Tuple vals) -> do
-      objRefs <- liftIO $ mapM (newIORef . Value) vals
-      frames <- mapM (\(fArg,objRef3) -> makeFrame fArg objRef3) $ zip fArgs objRefs
-      return $ concat frames
-    _ -> throwError $ Default "makeFrame: not tuple"
+makeFrame :: [(ObjectRef, ObjectRef)] -- ^ Extensions to the environment
+          -> IOThrowsError FrameList -- ^ Extended environment
+makeFrame [] = return []
+makeFrame ((patObjRef, tgtObjRef):rest) = do
+  patObjRefs <- tupleToObjRefs patObjRef
+  let n = length patObjRefs
+  if n == 1
+    then do typObjRef <- liftIO $ newIORef $ Value Something
+            matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]           
+            case matchs of
+              [match] -> do retRest <- makeFrame rest
+                            return $ match ++ retRest
+              _ -> throwError $ Default "makeFrame: binding error"
+    else do typObjRef <- liftIO $ newIORef $ (Value . Tuple) $ replicate (length patObjRefs) Something
+            matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]           
+            case matchs of
+              [match] -> do retRest <- makeFrame rest
+                            return $ match ++ retRest
+              _ -> throwError $ Default "makeFrame: binding error"
 
 tupleExprToExprList :: EgisonExpr -> ThrowsError [EgisonExpr]
 tupleExprToExprList (TupleExpr exprs) = return exprs
@@ -512,12 +517,16 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
     Intermidiate (ITuple patObjRefs) -> do
       tgtObjRefs <- tupleToObjRefs tgtObjRef
       typObjRefs <- tupleToObjRefs typObjRef
-      patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+      if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
+        then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+        else throwError $ Default "patternMatch: number of types, patterns and targets are different"
     Value (Tuple pats) -> do
       patObjRefs <- liftIO $ mapM (newIORef . Value) pats
       tgtObjRefs <- tupleToObjRefs tgtObjRef
       typObjRefs <- tupleToObjRefs typObjRef
-      patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+      if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
+        then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
+        else throwError $ Default "patternMatch: number of types, patterns and targets are different"
     Value (PredPat predObjRef patObjRefs) -> do
       argsObjRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ patObjRefs ++ [tgtObjRef]
       ret <- cApply1 predObjRef argsObjRef

@@ -98,7 +98,7 @@ data EgisonExpr = CharExpr Char
   | TupleExpr [EgisonExpr]
   | CollectionExpr [InnerExpr]
   | ArrayExpr [ArrayElementExpr]
-  | FuncExpr Args EgisonExpr
+  | FuncExpr EgisonExpr EgisonExpr
   | MacroExpr [String] EgisonExpr
   | LoopExpr String String EgisonExpr EgisonExpr EgisonExpr
   | ParamsExpr String EgisonExpr EgisonExpr
@@ -179,7 +179,7 @@ data EgisonVal = World [Action]
   | Collection [EgisonVal]
   | Array Integer [Integer] (Array Integer EgisonVal)
   | Type DestructInfo
-  | Func Args EgisonExpr Env
+  | Func ObjectRef EgisonExpr Env
   | Macro [String] EgisonExpr
   | PrimitiveFunc ([EgisonVal] -> ThrowsError EgisonVal)
   | IOFunc ([EgisonVal] -> IOThrowsError EgisonVal)
