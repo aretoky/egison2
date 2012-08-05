@@ -368,24 +368,31 @@ expandLoop _ obj = throwError $ Default $ "expandLoop: cannot reach here: " ++ s
            
 -- |Extend given environment by binding a series of values to a new environment for let.
 extendLet :: Env -- ^ Environment 
-          -> [(Args, EgisonExpr)] -- ^ Extensions to the environment
+          -> [(EgisonExpr, EgisonExpr)] -- ^ Extensions to the environment
           -> IOThrowsError Env -- ^ Extended environment
-extendLet env abindings = do
-  bingingList <- liftM concat $ mapM (\(args, expr) -> do
-                                         objRef <- liftIO $ makeClosure env expr
-                                         helper args objRef)
-                      abindings
-  liftIO $ extendEnv env bingingList
- where helper (AVar name) objRef = return [((name, []), objRef)]
-       helper (ATuple argss) objRef = do
-         obj <- cRefEval1 objRef
-         case obj of
-           Intermidiate (ITuple objRefs) -> do
-             liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
-           Value (Tuple vals) -> do
-             objRefs <- liftIO $ mapM (newIORef . Value) vals
-             liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
-           _ -> liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss [objRef]
+extendLet env binding = do
+ frame <- helper binding
+ liftIO $ extendEnv env frame
+ where helper :: [(EgisonExpr, EgisonExpr)] -> IOThrowsError FrameList
+       helper [] = return []
+       helper ((patExpr, tgtExpr):rest) = do
+         patObjRef <- liftIO $ makeClosure env patExpr
+         tgtObjRef <- liftIO $ makeClosure env tgtExpr
+         patObjRefs <- tupleToObjRefs patObjRef
+         let n = length patObjRefs
+         if n == 1
+           then do typObjRef <- liftIO $ newIORef $ Value Something
+                   matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]           
+                   case matchs of
+                     [match] -> do retRest <- helper rest
+                                   return $ match ++ retRest
+                     _ -> throwError $ Default "extendLet: binding error"
+           else do typObjRef <- liftIO $ newIORef $ (Value . Tuple) $ replicate (length patObjRefs) Something
+                   matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]           
+                   case matchs of
+                     [match] -> do retRest <- helper rest
+                                   return $ match ++ retRest
+                     _ -> throwError $ Default "extendLet: binding error"
 
 makeFrame :: Args -> ObjectRef -> IOThrowsError [(Var, ObjectRef)]
 makeFrame (AVar name) objRef = return $ [((name,[]), objRef)]

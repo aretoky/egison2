@@ -252,7 +252,7 @@ parseArgs = do
                     
 parseBindings :: Parser Bindings
 parseBindings = do
-  braces (do sepEndBy (brackets (do args <- lexeme parseArgs
+  braces (do sepEndBy (brackets (do args <- lexeme parseExpr
                                     expr <- lexeme parseExpr
                                     return (args, expr)))
                       whiteSpace)

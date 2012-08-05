@@ -144,7 +144,7 @@ data InnerExpr = ElementExpr EgisonExpr
   | SubCollectionExpr EgisonExpr
  deriving (Show)
 
-type Bindings = [(Args, EgisonExpr)]
+type Bindings = [(EgisonExpr, EgisonExpr)]
 
 type RecursiveBindings = [(String, EgisonExpr)]
   
