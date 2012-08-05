@@ -20,6 +20,6 @@
                                $a_i)
                          l>
                    <nil>)>
-       [@(loop $l $i (between 1 n)  {a_i @l} {})]])))
+       (loop $l $i (between 1 n)  {a_i @l} {})])))
 
 (test (n-queen 9))
