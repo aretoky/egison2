@@ -2,13 +2,9 @@ module Language.Egison.Parser where
 import Language.Egison.Types
 import Control.Monad.Error
 import qualified Data.Char as Char
-import Data.Complex
-import Data.Array
 import Numeric
-import Data.Ratio
 import Text.ParserCombinators.Parsec hiding (spaces)
 import Text.Parsec.Language
-import Text.Parsec.Prim (ParsecT)
 import qualified Text.Parsec.Token as P
 
 egisonDef :: LanguageDef ()
@@ -418,8 +414,8 @@ parseExpr =
                  return $ InductiveDataExpr cons argExprs)
   <|> braces (do innerExprs <- sepEndBy parseInnerExpr whiteSpace
                  return $ CollectionExpr innerExprs)
-  <|> brackets (do innerExprs <- sepEndBy parseInnerExpr whiteSpace
-                   return $ TupleExpr innerExprs)
+  <|> brackets (do exprs <- sepEndBy parseExpr whiteSpace
+                   return $ TupleExpr exprs)
   <|> parens (do try (string "lambda" >> many1 space)
                  args <- lexeme parseArgs
                  body <- lexeme parseExpr
@@ -473,7 +469,7 @@ parseExpr =
                  return (GenerateArrayExpr fnExpr arrExpr)
           <|> do opExpr <- lexeme parseExpr
                  argExprs <- sepEndBy parseExpr whiteSpace
-                 return (ApplyExpr opExpr (TupleExpr (map ElementExpr argExprs))))
+                 return (ApplyExpr opExpr (TupleExpr argExprs)))
   <?> "Expression"
 
 parseTopExpr :: Parser TopExpr

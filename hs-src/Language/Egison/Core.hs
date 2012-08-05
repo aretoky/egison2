@@ -62,7 +62,7 @@ evalMain env args = do
   argv <- cEval1 $ Closure env argvExpr
   argvRef <- liftIO $ newIORef argv
   worldRef <- liftIO $ newIORef $ Value $ World []
-  argsRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ [IElement worldRef, IElement argvRef]
+  argsRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ [worldRef, argvRef]
   ret <- cApply1 mainRef argsRef
   cEval ret
 
@@ -111,9 +111,9 @@ iEval (IInductiveData cons argRefs) = do
 iEval (ICollection innerRefs) = do
   vals <- innerRefsEval innerRefs
   return $ Collection vals
-iEval (ITuple innerRefs) = do
-  innerVals <- innerRefsEval innerRefs
-  return $ Tuple innerVals
+iEval (ITuple objRefs) = do
+  vals <- mapM cRefEval objRefs
+  return $ Tuple vals
 
 innerRefsEval :: [InnerValRef] -> IOThrowsError [EgisonVal]
 innerRefsEval [] = return []
@@ -177,12 +177,11 @@ cEval1 (Closure env (InductiveDataExpr cons argExprs)) = do
   return $ Intermidiate $ IInductiveData cons args
 cEval1 (Closure _ (TupleExpr [])) = do
   return $ Value $ Tuple []
-cEval1 (Closure env (TupleExpr innerExprs)) = do
-  innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
-  objRefs <- innerRefsToObjRefs innerRefs
+cEval1 (Closure env (TupleExpr exprs)) = do
+  objRefs <- liftIO $ mapM (makeClosure env) exprs
   case objRefs of
     [objRef] -> cRefEval1 objRef
-    _ -> return $ Intermidiate $ ITuple innerRefs
+    _ -> return $ Intermidiate $ ITuple objRefs
 cEval1 (Closure env (CollectionExpr innerExprs)) = do
   innerRefs <- liftIO $ mapM (makeInnerValRef env) innerExprs
   return $ Intermidiate $ ICollection innerRefs
@@ -381,8 +380,7 @@ extendLet env abindings = do
        helper (ATuple argss) objRef = do
          obj <- cRefEval1 objRef
          case obj of
-           Intermidiate (ITuple innerRefs) -> do
-             objRefs <- innerValRefsToObjRefs innerRefs
+           Intermidiate (ITuple objRefs) -> do
              liftM concat $ mapM (\(args,objRef3) -> helper args objRef3) $ zip argss objRefs
            Value (Tuple vals) -> do
              objRefs <- liftIO $ mapM (newIORef . Value) vals
@@ -396,8 +394,7 @@ makeFrame (ATuple [fArg]) objRef = makeFrame fArg objRef
 makeFrame (ATuple fArgs) objRef = do
   obj <- cRefEval1 objRef
   case obj of
-    Intermidiate (ITuple innerRefs) -> do
-      objRefs <- innerValRefsToObjRefs innerRefs
+    Intermidiate (ITuple objRefs) -> do
       frames <- mapM (\(fArg,objRef3) -> makeFrame fArg objRef3) $ zip fArgs objRefs
       return $ concat frames
     Value (Tuple vals) -> do
@@ -407,7 +404,7 @@ makeFrame (ATuple fArgs) objRef = do
     _ -> throwError $ Default "makeFrame: not tuple"
 
 tupleExprToExprList :: EgisonExpr -> ThrowsError [EgisonExpr]
-tupleExprToExprList (TupleExpr innerExprs) = innerExprsToExprList innerExprs
+tupleExprToExprList (TupleExpr exprs) = return exprs
 tupleExprToExprList expr = return [expr]
 
 innerExprsToExprList :: [InnerExpr] -> ThrowsError [EgisonExpr]
@@ -505,8 +502,7 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
                                       inTgtObjRefss) ++ states)
         Value Something -> throwError $ Default "patternMatch: Only pattern variable can be pattern matched with Something"
         _ -> throwError $ Default "patternMatch: second argument of match expressions must be type"
-    Intermidiate (ITuple pats) -> do
-      patObjRefs <- innerRefsToObjRefs pats
+    Intermidiate (ITuple patObjRefs) -> do
       tgtObjRefs <- tupleToObjRefs tgtObjRef
       typObjRefs <- tupleToObjRefs typObjRef
       patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
@@ -516,7 +512,7 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
       typObjRefs <- tupleToObjRefs typObjRef
       patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
     Value (PredPat predObjRef patObjRefs) -> do
-      argsObjRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ map IElement $ patObjRefs ++ [tgtObjRef]
+      argsObjRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ patObjRefs ++ [tgtObjRef]
       ret <- cApply1 predObjRef argsObjRef
       case ret of
         Value (Bool True) -> patternMatch flag ((MState frame atoms):states)
@@ -784,7 +780,7 @@ tupleToObjRefs :: ObjectRef -> IOThrowsError [ObjectRef]
 tupleToObjRefs objRef = do
   obj <- cRefEval1 objRef
   case obj of
-    Intermidiate (ITuple innerRefs) -> innerRefsToObjRefs innerRefs
+    Intermidiate (ITuple objRefs) -> return objRefs
     Value (Tuple vals) -> liftIO $ mapM (newIORef . Value) vals
     _ -> return [objRef]
 
@@ -906,9 +902,6 @@ primitives = [("+", numericBinop (+)),
               
               ("&&", boolBinop (&&)),
               ("||", boolBinop (||)),
-
-              ("tuple-to-collection", tupleToCollection),
-              ("collection-to-tuple", collectionToTuple),
 
               ("array-dimension", arrayDimension),
               ("array-range", arrayRange),

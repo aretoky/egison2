@@ -95,7 +95,7 @@ data EgisonExpr = CharExpr Char
   | OrPatExpr [EgisonExpr]
   | PredPatExpr EgisonExpr [EgisonExpr]
   | InductiveDataExpr String [EgisonExpr]
-  | TupleExpr [InnerExpr]
+  | TupleExpr [EgisonExpr]
   | CollectionExpr [InnerExpr]
   | ArrayExpr [ArrayElementExpr]
   | FuncExpr Args EgisonExpr
@@ -188,7 +188,7 @@ data EgisonVal = World [Action]
   | EOF
 
 data IntermidiateVal = IInductiveData String [ObjectRef]
-  | ITuple [InnerValRef]
+  | ITuple [ObjectRef]
   | ICollection [InnerValRef]
   
 data Action = OpenInputPort String

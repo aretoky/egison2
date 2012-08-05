@@ -25,9 +25,9 @@ expandMacro frame (VarOmitExpr expr) = do
 expandMacro frame (InductiveDataExpr cons exprs) = do
   newExprs <- mapM (expandMacro frame) exprs
   return $ InductiveDataExpr cons newExprs
-expandMacro frame (TupleExpr innerExprs) = do
-  newInnerExprs <- mapM (expandMacroInnerExpr frame) innerExprs
-  return $ TupleExpr newInnerExprs
+expandMacro frame (TupleExpr exprs) = do
+  newExprs <- mapM (expandMacro frame) exprs
+  return $ TupleExpr newExprs
 expandMacro frame (CollectionExpr innerExprs) = do
   newInnerExprs <- mapM (expandMacroInnerExpr frame) innerExprs
   return $ CollectionExpr newInnerExprs

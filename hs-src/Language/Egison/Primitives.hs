@@ -234,8 +234,8 @@ exprToVal (InductiveDataExpr cons argExprs) = do
 exprToVal (CollectionExpr innerExprs) = do
   vals <- innerExprsToVals innerExprs
   return $ Collection vals
-exprToVal (TupleExpr innerExprs) = do
-  vals <- innerExprsToVals innerExprs
+exprToVal (TupleExpr exprs) = do
+  vals <- mapM exprToVal exprs
   return $ Tuple vals
 exprToVal _ = throwError $ Default "read: invalid value"
 

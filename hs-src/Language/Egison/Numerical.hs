@@ -1,10 +1,6 @@
 module Language.Egison.Numerical where
 import Language.Egison.Types
 import Control.Monad.Error
---import Data.Char hiding (isNumber)
---import Data.Fixed
---import Numeric
---import Text.Printf
 import Data.Array
 
 boolBinop :: (Bool -> Bool -> Bool) -> [EgisonVal] -> ThrowsError EgisonVal
@@ -162,18 +158,6 @@ unpackNum notNum = throwError $ TypeMismatch "number" [notNum]
 unpackFloat :: EgisonVal -> ThrowsError Double
 unpackFloat (Float n) = return n
 unpackFloat notFloat = throwError $ TypeMismatch "float" [notFloat]
-
-
-tupleToCollection :: [EgisonVal] -> ThrowsError EgisonVal
-tupleToCollection vals = return $ Collection $ vals
-
-collectionToTuple :: [EgisonVal] -> ThrowsError EgisonVal
-collectionToTuple [(Collection vals)] = do
-  case vals of
-    [val] -> return val
-    _ -> return $ Tuple vals
-collectionToTuple [x] = throwError $ TypeMismatch "collection" [x]
-collectionToTuple badArgList = throwError $ NumArgs 1 badArgList
 
 stringToChars :: [EgisonVal] -> ThrowsError EgisonVal
 stringToChars [(String str)] = return $ Collection $ map Char str
