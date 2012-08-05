@@ -1,10 +1,45 @@
+(define $Order
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[less []
+          {[<less> {[]}]
+           [_ {}]}]
+         [equal []
+          {[<equal> {[]}]
+           [_ {}]}]
+         [greater []
+          {[<greater> {[]}]
+           [_ {}]}]})]
+     [$equal?
+      (lambda [$val $tgt]
+        (match [val tgt] [Order Order]
+          {[[<less> <less>] <true>]
+           [[<equal> <equal>] <true>]
+           [[<greater> <greater>] <true>]
+           [[_ _] <false>]}))]}))
+
+(define $Nat
+  (type
+    {[$var-match (lambda [$tgt] {tgt})]
+     [$inductive-match
+      (destructor
+        {[o []
+          {[0 {[]}]
+           [_ {}]}]
+         [s [Nat]
+          {[$tgt (match (compare-integer tgt 0) Order
+                   {[<greater> {(- tgt 1)}]
+                    [_ {}]})]}]})]
+     [$equal? (lambda [$val $tgt] (= val tgt))]}))
+
 (define $fact
   (lambda [$n]
-    (letrec {[$fact1 (lambda [$n $ret]
-                       (match n [Nat]
-                         {[<o> ret]
-                          [<s $n1> (fact1 n1 (* n ret))]}))]}
+    (let {[$fact1 (lambda [$n $ret]
+                    (match n [Nat]
+                      {[<o> ret]
+                       [<s $n1> (fact1 n1 (* n ret))]}))]}
       (fact1 n 1))))
-
 
 (test (fact 30000))

@@ -122,3 +122,12 @@
 
 (test (match-all {1 1 1} (Multiset Integer)
         [<cons $x $xs> [x xs]]))
+
+
+
+
+(test (match {undefined 2} (List Integer) {[<cons $y $x> x]}))
+
+
+(define $inf 
+(test (match {undefined 2} (List Integer) {[<cons $y $x> x]}))

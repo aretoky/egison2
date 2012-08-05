@@ -9,4 +9,4 @@
        [<equal> {n}]
        [<greater> {}]})))
 
-(test ((type-ref (List Integer) equal?) (between 1 10000) (between 1 10000)))
+(test ((type-ref (List Integer) equal?) (between 1 30000) (between 1 30000)))

@@ -1,0 +1,3 @@
+(define $main
+  (lambda [$: $argv]
+    (write : ((= (List Integer)) (between 1 30000) (between 1 30000)))))
