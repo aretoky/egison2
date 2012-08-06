@@ -312,7 +312,7 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
     Value (Func fArgs body cEnv) -> do argObjRef <- liftIO $ makeClosure env argExpr
-                                       frame <- makeFrame [(fArgs, argObjRef)]
+                                       frame <- makeFrame fArgs argObjRef
                                        newEnv <- liftIO $ extendEnv cEnv frame
                                        cEval1 (Closure newEnv body)
     Value (Macro mArgs body) -> do argExprs <- liftThrows $ tupleExprToExprList argExpr
@@ -335,7 +335,7 @@ cApply fnObjRef argObjRef = do
     Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ val
-    Value (Func fArgs body cEnv) -> do frame <- makeFrame [(fArgs, argObjRef)]
+    Value (Func fArgs body cEnv) -> do frame <- makeFrame fArgs argObjRef
                                        newEnv <- liftIO $ extendEnv cEnv frame
                                        cEval (Closure newEnv body)
     _ -> throwError $ Default "cApply1 not function"
@@ -350,7 +350,7 @@ cApply1 fnObjRef argObjRef = do
     Value (PrimitiveFunc fn) -> do arg <- cRefEval argObjRef
                                    val <- liftThrows $ fn (tupleToList arg)
                                    return $ Value val
-    Value (Func fArgs body cEnv) -> do frame <- makeFrame [(fArgs, argObjRef)]
+    Value (Func fArgs body cEnv) -> do frame <- makeFrame fArgs argObjRef
                                        newEnv <- liftIO $ extendEnv cEnv frame
                                        cEval1 (Closure newEnv body)
     _ -> throwError $ Default "cApply1: not function"
@@ -379,40 +379,24 @@ extendLet env binding = do
        helper ((patExpr, tgtExpr):rest) = do
          patObjRef <- liftIO $ makeClosure env patExpr
          tgtObjRef <- liftIO $ makeClosure env tgtExpr
-         patObjRefs <- tupleToObjRefs patObjRef
-         let n = length patObjRefs
-         if n == 1
-           then do typObjRef <- liftIO $ newIORef $ Value Something
-                   matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]           
-                   case matchs of
-                     [match] -> do retRest <- helper rest
-                                   return $ match ++ retRest
-                     _ -> throwError $ Default "extendLet: binding error"
-           else do typObjRef <- liftIO $ newIORef $ (Value . Tuple) $ replicate (length patObjRefs) Something
-                   matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]           
-                   case matchs of
-                     [match] -> do retRest <- helper rest
-                                   return $ match ++ retRest
-                     _ -> throwError $ Default "extendLet: binding error"
+         frame <- makeFrame patObjRef tgtObjRef
+         retRest <- helper rest
+         return $ frame ++ retRest
 
-makeFrame :: [(ObjectRef, ObjectRef)] -- ^ Extensions to the environment
-          -> IOThrowsError FrameList -- ^ Extended environment
-makeFrame [] = return []
-makeFrame ((patObjRef, tgtObjRef):rest) = do
+makeFrame :: ObjectRef -> ObjectRef -> IOThrowsError FrameList
+makeFrame patObjRef tgtObjRef = do
   patObjRefs <- tupleToObjRefs patObjRef
   let n = length patObjRefs
   if n == 1
     then do typObjRef <- liftIO $ newIORef $ Value Something
             matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]           
             case matchs of
-              [match] -> do retRest <- makeFrame rest
-                            return $ match ++ retRest
+              [match] -> return match
               _ -> throwError $ Default "makeFrame: binding error"
     else do typObjRef <- liftIO $ newIORef $ (Value . Tuple) $ replicate (length patObjRefs) Something
             matchs <- patternMatch MOne [(MState [] [(MAtom (PClosure [] patObjRef) tgtObjRef typObjRef)])]           
             case matchs of
-              [match] -> do retRest <- makeFrame rest
-                            return $ match ++ retRest
+              [match] -> do return match
               _ -> throwError $ Default "makeFrame: binding error"
 
 tupleExprToExprList :: EgisonExpr -> ThrowsError [EgisonExpr]
@@ -582,7 +566,6 @@ inductiveMatch ((pppat, typObjRef, pclss):rest) patObjRef tgtObjRef = do
           typObjRefs <- tupleToObjRefs typObjRef
           if length typObjRefs == 1
             then do let tgtObjRefss = map (\x -> [x]) tgtObjRefs
-                    liftIO $ putStrLn "egiTest: here"
                     return (typObjRefs, patObjRefs, tgtObjRefss)
             else do tgtObjRefss <- mapM tupleToObjRefs tgtObjRefs
                     return (typObjRefs, patObjRefs, tgtObjRefss)
