@@ -298,10 +298,15 @@
 									   {[z {@ys @zs}] [z tgt] @(helper ((remove-all a) zs z) {@ys z})}]}))]}
 				 (helper tgt {}))]}]
        [<join _ _> [(Set a) (Set a)]
-        {[$tgt (let {[$tgt2 ((unique a) tgt)]}
-                 (map&concat (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
-                                                     ((subcollections a) xs)))
-                              (match-all tgt2 (Multiset a) [<join $xs $ys> [xs ys]])))]}]
+		{[$tgt (let {[$tgt2 ((unique a) tgt)]}
+				 (foldr
+						(lambda [$x $xs]
+						  (map&concat (lambda [$sub] 
+										(do {[[$ys $zs] sub]
+											 [$zs ((remove-all a) zs x)]}
+											{[{x @ys} zs] [ys {x @zs}] [{x @ys} {x @zs}]})) xs))
+						{[{} tgt2]}
+						tgt2))]}]
        [_ [Something]
         {[$tgt {tgt}]}]
        })))
