@@ -287,20 +287,16 @@
         {[{} {[]}]
          [_ {}]}]
        [<cons ,$px _> [(Set a)]
-        {[$tgt (letrec {[$helper (lambda [$xs $ys]
-				   (match xs (List a)
-				     {[<nil> {}]
-				      [<cons ,px $zs> {{@ys @zs} tgt}]
-				      [<cons $z $zs> (helper zs {@ys z})]}))]}
-		 (helper ((unique a) tgt) {}))]}]
+        {[$tgt (if ((member? a) px tgt)
+				   {((remove-all a) tgt px) tgt}
+				   {})]}]
        [<cons _ _> [a (Set a)]
-        {[$tgt (let {[$tgt2 ((unique a) tgt)]}
-		 (letrec {[$helper (lambda [$xs $ys]
-				     (match xs (List a)
-				       {[<nil> {}]
-					[<cons $z $zs> 
-					 {[z {@ys @zs}] [z tgt2] @(helper zs {@ys z})}]}))]}
-		   (helper tgt2 {})))]}]
+        {[$tgt (letrec {[$helper (lambda [$xs $ys]
+								   (match xs (List a)
+									 {[<nil> {}]
+									  [<cons $z $zs> 
+									   {[z {@ys @zs}] [z tgt] @(helper ((remove-all a) zs z) {@ys z})}]}))]}
+				 (helper tgt {}))]}]
        [<join _ _> [(Set a) (Set a)]
         {[$tgt (let {[$tgt2 ((unique a) tgt)]}
                  (map&concat (lambda [$xs $ys] (map (lambda [$sxs] [xs {@ys @sxs}])
