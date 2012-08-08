@@ -35,20 +35,20 @@
                  (helper pys tgt))]}]
        [<join _ _> [(List a) (List a)]
 		{[$tgt (letrec {[$helper (lambda [$xs $ys]
-								   (match ys (List a)
-									 {[<nil> {[xs {}]}]
-									  [<cons $z $zs> {[xs ys] @(helper {@xs z} zs)}]}))]}
-				 (helper {} tgt))]}]
+					   (match ys (List a)
+					     {[<nil> {[xs {}]}]
+					      [<cons $z $zs> {[xs ys] @(helper {@xs z} zs)}]}))]}
+			 (helper {} tgt))]}]
        [<nioj ,$pxs _> [(List a)]
         {[$tgt (match-all tgt (List a) [<join $ys ,pxs> ys])]}]
        [<nioj _ ,$pys> [(List a)]
         {[$tgt (match-all tgt (List a) [<join ,pys $xs> xs])]}]
        [<nioj _ _> [(List a) (List a)]
-		{[$tgt (letrec {[$helper (lambda [$xs $ys]
-								   (match ys (List a)
-									 {[<nil> {[{} xs]}]
-									  [<cons $z $zs> {[ys xs] @(helper {@xs z} zs)}]}))]}
-				 (helper {} tgt))]}]
+	{[$tgt (letrec {[$helper (lambda [$xs $ys]
+				   (match ys (List a)
+				     {[<nil> {[{} xs]}]
+				      [<cons $z $zs> {[ys xs] @(helper {@xs z} zs)}]}))]}
+		 (helper {} tgt))]}]
        [_ [Something]
         {[$tgt {tgt}]}]
        })))

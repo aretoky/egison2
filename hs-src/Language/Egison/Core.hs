@@ -505,12 +505,12 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
           let tgtObjRefs = [tgtObjRef]
           if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
             then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
-            else throwError $ Default "patternMatch: number of types, patterns and targets are different"
+            else throwError $ Default "patternMatch(ITuple-1): number of types, patterns and targets are different"
         else do
           tgtObjRefs <- tupleToObjRefs tgtObjRef
           if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
             then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
-            else throwError $ Default "patternMatch: number of types, patterns and targets are different"
+            else throwError $ Default "patternMatch(ITuple): number of types, patterns and targets are different"
     Value (Tuple pats) -> do
       patObjRefs <- liftIO $ mapM (newIORef . Value) pats
       typObjRefs <- tupleToObjRefs typObjRef
@@ -519,12 +519,12 @@ patternMatch flag ((MState frame ((MAtom (PClosure bf patObjRef) tgtObjRef typOb
           let tgtObjRefs = [tgtObjRef]
           if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
             then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
-            else throwError $ Default "patternMatch: number of types, patterns and targets are different"
+            else throwError $ Default "patternMatch(Tuple-1): number of types, patterns and targets are different"
         else do
           tgtObjRefs <- tupleToObjRefs tgtObjRef
           if (length typObjRefs == length patObjRefs) && (length typObjRefs == length tgtObjRefs)
             then patternMatch flag $ (MState frame ((map (\(pat,tgt,typ) -> MAtom (PClosure bf pat) tgt typ) (zip3 patObjRefs tgtObjRefs typObjRefs)) ++ atoms)):states
-            else throwError $ Default "patternMatch: number of types, patterns and targets are different"
+            else throwError $ Default "patternMatch(Tuple): number of types, patterns and targets are different"
     Value (PredPat predObjRef patObjRefs) -> do
       argsObjRef <- liftIO $ newIORef $ Intermidiate $ ITuple $ patObjRefs ++ [tgtObjRef]
       ret <- cApply1 predObjRef argsObjRef
