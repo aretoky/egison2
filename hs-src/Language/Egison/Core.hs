@@ -828,7 +828,7 @@ primitiveBindings = do
 
 
 constants :: [(String, EgisonVal)]
-constants = [("pi", Float 3.14)
+constants = [("pi", Float 3.141592653589793)
              ]
          
 {- I/O primitives -}
