@@ -1,5 +1,13 @@
 ;;; egison-mode.el --- Egison editing mode
 
+;; Copyright 2011-2012 Satoshi Egi
+
+;;; Author: Satoshi Egi <egisatoshi@gmail.com>
+;;; URL: https://github.com/egisatoshi/egison2/blob/master/elisp/egison-mode.el
+;;; Version: 0.1.0
+
+;; Code goes here
+
 (defconst egison-font-lock-keywords-1
   (eval-when-compile
     (list
@@ -180,3 +188,5 @@ if that value is non-nil."
 See `run-hooks'."
   :type 'hook
   :group 'egison)
+
+;;; egison-mode.el ends here
