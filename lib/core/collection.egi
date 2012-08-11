@@ -26,13 +26,13 @@
                                       [[<cons $x $xs> <cons ,x $ys>] (helper xs ys)]
                                       [[_ _] {}]}))]}
                  (helper pxs tgt))]}]
-       [<join _ ,$pys> [(List a)]
-        {[$tgt (letrec {[$helper (lambda [$pys $tgt]
-                                   (match [pys tgt] [(List a) (List a)]
-                                     {[[<nil> _] {tgt}]
-                                      [[<snoc $x $xs> <snoc ,x $ys>] (helper xs ys)]
-                                      [[_ _] {}]}))]}
-                 (helper pys tgt))]}]
+;;       [<join _ ,$pys> [(List a)]
+;;        {[$tgt (letrec {[$helper (lambda [$pys $tgt]
+;;                                   (match [pys tgt] [(List a) (List a)]
+;;                                     {[[<nil> _] {tgt}]
+;;                                      [[<snoc $x $xs> <snoc ,x $ys>] (helper xs ys)]
+;;                                      [[_ _] {}]}))]}
+;;                 (helper pys tgt))]}]
        [<join _ _> [(List a) (List a)]
 		{[$tgt (letrec {[$helper (lambda [$xs $ys]
 					   (match ys (List a)
@@ -41,8 +41,8 @@
 			 (helper {} tgt))]}]
        [<nioj ,$pxs _> [(List a)]
         {[$tgt (match-all tgt (List a) [<join $ys ,pxs> ys])]}]
-       [<nioj _ ,$pys> [(List a)]
-        {[$tgt (match-all tgt (List a) [<join ,pys $xs> xs])]}]
+;;       [<nioj _ ,$pys> [(List a)]
+;;        {[$tgt (match-all tgt (List a) [<join ,pys $xs> xs])]}]
        [<nioj _ _> [(List a) (List a)]
 	{[$tgt (letrec {[$helper (lambda [$xs $ys]
 				   (match ys (List a)
@@ -256,8 +256,8 @@
 														 (helper zs ((remove a) ys z))
 														 {})]}))]}
 				 {(helper pxs tgt)})]}]
-	   [<join _ ,$pys> [(Multiset a)]
-        {[$tgt (match-all tgt (Multiset a) [<join ,pys $xs> xs])]}]
+;;	   [<join _ ,$pys> [(Multiset a)]
+;;        {[$tgt (match-all tgt (Multiset a) [<join ,pys $xs> xs])]}]
 	   [<join _ _> [(Multiset a) (Multiset a)]
 		{[$tgt
 		  (foldr
