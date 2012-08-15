@@ -13,18 +13,27 @@
                      | <comment-contents> "#|" <comment-contents>> "|#" <comment-contents>
 
 <assign-var> ::= "$" <identifier>
+<macro-var> ::= "%" <identifier>
 <identifier> ::= <fstname> <sndname>*
 <fstname> ::= <alphabet> | <fstsymbol>
 <fstsymbol> ::= "&" | "*" | "+" | "-" | "/" | ":" | "="
 <sndname> ::= <fstname> | <digit> | <sndsymbol>
 <sndsymbol> ::= "?" | "!"
 
-<string> ::= "\"" <character>* "\""
 
-<egison-exp> ::= <buildin-data> | <egison-fml> | <identifier> | <assign-var> | "Something" | "undefined"
-<buildin-data> ::= <integer> | <float> | <bool> | <char> | <string>
-
-<egison-fml> ::= <lambda-exp>
+<egison-exp> ::= <buildin-data>
+               | <identifier>
+               | <assign-var>
+               | <macro-var>
+               | "$`" <identifier>
+               | "`" <identifier>
+               | <base-data-exp>
+               | <collection-exp>
+               | <tuple-exp>
+               | <array-exp>
+               | <generate-array-exp>
+               | <pattern-exp>
+               | <lambda-exp>
                | <match-exp>
                | <match-all-exp>
                | <let-exp>
@@ -34,11 +43,13 @@
                | <loop-exp>
                | <type-exp>
                | <macro-exp>
-               | <base-data-exp>
-               | <collection-exp>
-               | <tuple-exp>
-               | <array-exp>
-               | <pattern-exp>
+               | "Something"
+               | "undefined"
+
+<buildin-data> ::= <integer> | <float> | <bool> | <char> | <string>
+
+<char> ::= "'" <character> "'"
+<string> ::= "\"" <character>* "\""
 
 <match-exp> ::= "(" "match" <egison-exp> <egison-exp> <match-clauses> ")"
 <match-all-exp> ::= "(" "match-all" <egison-exp> <egison-exp> <match-clause> ")"
@@ -47,7 +58,7 @@
 <letrec-exp> ::= "(" "letrec" <match-clauses> <egison-exp> ")"
 <if-exp> ::= "(" "if" <egison-exp> <egison-exp> <egison-exp> ")"
 <loop-exp> ::= "(" "loop" <assign-var> <assign-var> <egison-exp> <egison-exp> <egison-exp> ")"
-<macro-exp> ::= "(" "macro" <assignvar-tuple> <egison-exp> ")"
+<macro-exp> ::= "(" "macro" "[ <assign-var>* "]" <egison-exp> ")"
 <type-exp> ::= "(" "type" <type-def-clauses> ")"
 
 <match-clauses> ::= "{" <match-clause>+ "}"
@@ -67,6 +78,8 @@
 <contents-exp> ::= <egison-exp> | "@" <egison-exp>
 <base-data-exp> ::= "<" <identifier> <egison-exp>* ">"
 <tuple-exp> ::= "[" <egison-exp>* "]"
+<generate-array-exp> ::= "(" "generate-array" <egison-exp> <egison-exp> ")"
+
 <array-exp> ::= "[|" <array-row_0> "|]"
 <array-row_n> ::= <egison-exp>* | ("[~" <array-row_(n+1)> "~]")*
 
