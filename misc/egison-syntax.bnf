@@ -1,26 +1,18 @@
-;; 途中までまとめようと思ったけど断念しています。
-;; 空白の扱いが微妙です。
+<sourcefile> ::= <empty> | (<toplevel> <newline>)*
 
+<toplevel> ::= <test-exp> | <define-exp> | <load-exp> | <load-file-exp> | <execute-exp>
 
-<sourcefile> ::= <empty> | (<whsp>* <toplevel> <whsp>* <newline>)* <whsp>* <toplevel> <whsp>*
+<test-exp> ::= "(" "test" <egison-exp> ")"
+<define-exp> ::= "(" "define" <assign-var> <egison-exp> ")"
+<load-exp> ::= "(" "load" <string> ")"
+<load-file-exp> ::= "(" "load-file" <string> ")"
+<excecute-exp> ::= "(" "execute" <egison-exp>* ")"
 
-<toplevel> ::= <testexp> | <defexp> | <ldexp> | <ldfexp> | <excexp>
+<comment> ::= ";" <character>* <newline> | "#|" <comment-contents> "|#"
+<comment-contents> ::= <string-do-not-contain-neither-#|-nor-|#>
+                     | <comment-contents> "#|" <comment-contents>> "|#" <comment-contents>
 
-<leftpar> ::= "(" 
-<rightpar> ::= ")"
-
-<testexp> ::= "(" "test" <egisonexp> ")"
-<defexp> ::= "(" "define" <assignvar> <egisonexp> ")"
-<ldexp> ::= "(" "load" <string> ")"
-<ldfexp> ::= "(" "load-file" <string> ")"
-<excexp> ::= "(" "execute" ")"
-
-<whsp> ::= " " | "\t" | <newline> | <commentexp>
-<newline> ::= "\n" | "\r" | "\r\n"
-<commentexp> ::= ";" <character>* <newline> | "#|" <comment> "|#"
-<comment> ::= <characterdonotcontainneither#|nor|#>* | "#|" <comment> "|#"
-
-<assignvar> ::= "$" <identifier>
+<assign-var> ::= "$" <identifier>
 <identifier> ::= <fstname> <sndname>*
 <fstname> ::= <alphabet> | <fstsymbol>
 <fstsymbol> ::= "&" | "*" | "+" | "-" | "/" | ":" | "="
@@ -29,36 +21,59 @@
 
 <string> ::= "\"" <character>* "\""
 
-<egisonexp> ::= <basedata> | <egisonfml> | <identifier>
-<basedata> ::= <integer> | <float> | <bool> | <char> | <string>
+<egison-exp> ::= <buildin-data> | <egison-fml> | <identifier> | <assign-var> | "Something" | "undefined"
+<buildin-data> ::= <integer> | <float> | <bool> | <char> | <string>
 
-<egisonfml> ::= <lambdaexp> | <matchexp> | <matchallexp> | <letexp> | <doexp> | <letrecexp> | <ifexp> | <loopexp> | <typeexp> | <macroexp> | <collectionexp> | <tupleexp> | <arrayexp> | <patternexp>
+<egison-fml> ::= <lambda-exp>
+               | <match-exp>
+               | <match-all-exp>
+               | <let-exp>
+               | <do-exp>
+               | <letrec-exp>
+               | <if-exp>
+               | <loop-exp>
+               | <type-exp>
+               | <macro-exp>
+               | <base-data-exp>
+               | <collection-exp>
+               | <tuple-exp>
+               | <array-exp>
+               | <pattern-exp>
 
-<matchexp> ::= "(" "match" <egisonexp> <egisonexp> <paircollection> <rightpar>
-<paircollection> ::= "{" <pair>* "}"
-<pair> ::= "[" <egisonexp> <egisonexp> "]"
-<matchallexp> ::= "(" "match-all" <egisonexp> <egisonexp> <pair> ")"
-<letexp> ::= "(" "let" <paircollection> <egisonexp> ")"
-<doexp> ::= "(" "do" <paircollection> <egisonexp> ")"
-<letrecexp> ::= "(" "letrec" <paircollection> <egisonexp> ")"
-<ifexp> ::= "(" "if" <egisonexp> <egisonexp> <egisonexp> ")"
-<loopexp> ::= "(" "loop" <assignvar> <assignvar> <egisonexp> <egisonexp> <egisonexp> ")"
-<macroexp> ::= "(" "macro" <assignvartuple> <egisonexp> ")"
-<typeexp> ::= "(" "type" <patdefcollection> ")"
-<patdefcollection> ::= "{" <patdeftuple>* "}"
-<patdeftuple> ::= "[" <patdef> <egisonexp> <paircollection> "]"
-<patdef> ::= "_" | "," <assignvar> | <basepat>
+<match-exp> ::= "(" "match" <egison-exp> <egison-exp> <match-clauses> ")"
+<match-all-exp> ::= "(" "match-all" <egison-exp> <egison-exp> <match-clause> ")"
+<let-exp> ::= "(" "let" <match-clauses>  <egison-exp> ")"
+<do-exp> ::= "(" "do" <match-clauses> <egison-exp> ")"
+<letrec-exp> ::= "(" "letrec" <match-clauses> <egison-exp> ")"
+<if-exp> ::= "(" "if" <egison-exp> <egison-exp> <egison-exp> ")"
+<loop-exp> ::= "(" "loop" <assign-var> <assign-var> <egison-exp> <egison-exp> <egison-exp> ")"
+<macro-exp> ::= "(" "macro" <assignvar-tuple> <egison-exp> ")"
+<type-exp> ::= "(" "type" <type-def-clauses> ")"
 
-<collectionexp> ::= "{" <contentsexp>* "}"
-<contentsexp> ::= <egisonexp> | "@" <egisonexp>
-<tupleexp> ::= "[" <egisonexp>* "]"
-<arrayexp> ::= "[|" <arrayrow_0> "|]"
-<arrayrow_n> ::= <egisonexp>* | ("[~" <arrayrow_(n+1)> "~]")*
-<patternexp> ::= <basepat> | <valuepat> | <cutpat> | <andpat> | <orpat> | <notpat>
-<basepat> ::= "<" <identifier> <patarg>* ">"
-<patarg> ::= <egisonexp> | <assignvar>
-<valuepat> ::= "," <egisonexp>
-<cutpat> ::= "!" <egisonexp>
-<andpat> ::= "(" "&" <egisonexp>* ")"
-<orpat> ::= "(" "|" <egisonexp>* ")"
-<notpat> ::= "^" <egisonexp>
+<match-clauses> ::= "{" <match-clause>+ "}"
+<match-clause> ::= "[" <egison-exp> <egison-exp> "]"
+
+<type-def-clauses> ::= "{" <type-def-clause>+ "}"
+<type-def-clause> ::= "[" <primitive-pat-pat> <egison-exp> <primitive-pat-clauses> "]"
+
+<primitive-pat-clauses> ::= "{" <primitive-pat-clause>+ "}"
+<primitive-pat-clause> ::= "[" <primitive-pat> <egison-exp> "]"
+
+<primitive-pat-pat> ::= "_"
+                      | "," <assign-var>
+                      | "<" <identifier> <primitive-pat-pat>* ">"
+
+<collection-exp> ::= "{" <contents-exp>* "}"
+<contents-exp> ::= <egison-exp> | "@" <egison-exp>
+<base-data-exp> ::= "<" <identifier> <egison-exp>* ">"
+<tuple-exp> ::= "[" <egison-exp>* "]"
+<array-exp> ::= "[|" <array-row_0> "|]"
+<array-row_n> ::= <egison-exp>* | ("[~" <array-row_(n+1)> "~]")*
+
+<pattern-exp> ::= <base-pat> | <value-pat> | <cut-pat> | <and-pat> | <or-pat> | <not-pat>
+<base-pat> ::= "<" <identifier> <egison-exp>* ">"
+<value-pat> ::= "," <egison-exp>
+<cut-pat> ::= "!" <egison-exp>
+<and-pat> ::= "(" "&" <egison-exp>+ ")"
+<or-pat> ::= "(" "|" <egison-exp>+ ")"
+<not-pat> ::= "^" <egison-exp>
