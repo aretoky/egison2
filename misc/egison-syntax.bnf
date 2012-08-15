@@ -1,6 +1,6 @@
-<sourcefile> ::= <empty> | (<toplevel> <newline>)*
+<source-file> ::= <EOF> | <top-exp> <source-file>
 
-<toplevel> ::= <test-exp> | <define-exp> | <load-exp> | <load-file-exp> | <execute-exp>
+<top-exp> ::= <test-exp> | <define-exp> | <load-exp> | <load-file-exp> | <execute-exp>
 
 <test-exp> ::= "(" "test" <egison-exp> ")"
 <define-exp> ::= "(" "define" <assign-var> <egison-exp> ")"
