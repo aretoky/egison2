@@ -6,24 +6,19 @@
 
 <toplevel> ::= <testexp> | <defexp> | <ldexp> | <ldfexp> | <excexp>
 
-<leftpar> ::= "(" <whsp>*
-<rightpar> ::= <whsp>* ")"
+<leftpar> ::= "(" 
+<rightpar> ::= ")"
 
-<testexp> ::= <leftpar> "test" <whsp>* <argexp_1> <rightpar>
-<defexp> ::= <leftpar> "define" <whsp>* <assignvar> <whsp>* <argexp_1> <rightpar>
-<ldexp> ::= <leftpar> "load" <whsp>* <string> <rightpar>
-<ldfexp> ::= <leftpar> "load-file" <whsp>* <string> <rightpar>
-<excexp> ::= <leftpar> "execute" <rightpar>
+<testexp> ::= "(" "test" <egisonexp> ")"
+<defexp> ::= "(" "define" <assignvar> <egisonexp> ")"
+<ldexp> ::= "(" "load" <string> ")"
+<ldfexp> ::= "(" "load-file" <string> ")"
+<excexp> ::= "(" "execute" ")"
 
 <whsp> ::= " " | "\t" | <newline> | <commentexp>
 <newline> ::= "\n" | "\r" | "\r\n"
 <commentexp> ::= ";" <character>* <newline> | "#|" <comment> "|#"
 <comment> ::= <characterdonotcontainneither#|nor|#>* | "#|" <comment> "|#"
-
-<argexp_1> ::= <whsp> <depexp> | <indexp>
-<subargexp_1> ::= <egisonexp>
-<argexp_(n+1)> ::= <whsp> <depexp> <whsp>* <argexp_n> | <indexp> <whsp>* <subargexp_n>
-<subargexp_(n+1)> ::= <depexp> <whsp>* <argexp_n> | <indexp> <whsp>* <subargexp_n>
 
 <assignvar> ::= "$" <identifier>
 <identifier> ::= <fstname> <sndname>*
@@ -34,38 +29,36 @@
 
 <string> ::= "\"" <character>* "\""
 
-<egisonexp> ::= <data> | <egisonfml> | <identifier>
-<depexp> ::= <depdata> | <identifier>
-<indpexp> ::= <indpdata> | <egisonfml>
-<data> ::= <depdata> | <indpdata>
-<depdata> ::= <integer> | <float>
-<indpdata> ::= <collectiondata> | <tupledata> | <arraydata> | <patterndata> | <lambdaexp> | <assignvar> | <string> | <char> | <bool>
-<integer> ::= <digit>+ | "-" <digit>+
-<float> ::= <integer> "." <digit>+
-<bool> ::= "#t" | "#f"
-<char> ::= "'" <character> "'"
-<contentsdata> ::= <whsp>+ <indpdata> | <depdata>
-<datalist> ::= <empty> | <data> (<whsp>* <contentsdata>)*
-<collectiondata> ::= "{" <whsp>* <datalist> <whsp>* "}"
-<tupledata> ::= "[" <whsp>* <datalist> <whsp>* "]"
-<arraydata> ::= "[|" <whsp>* <datalist> <whsp>* "|]" | "[|" <whsp>* <arrayrowdata_0> (<whsp>* <arrayrowdata_0>)* <whsp>* "|]"
-<arrayrowdata_n> ::= "[~" <whsp>* <datalist> <whsp>* "~]" | "[~" <whsp>* <arrayrowdata_(n+1)> (<whsp>* <arrayrowdata_(n+1)>)* <whsp>* "~]"
-<patterndata> ::= "<" <whsp>* <identifier> <whsp>* <datalist> <whsp>* ">" 
-<lambdadata> ::= <leftpar> "lambda" <whsp>* <assignvartuple> <whsp>* <egisonexp> <rightpar>
-<assignvartuple> ::= <assignvar> | "[" (<whsp>* <assignvar>)* <whsp>* "]"
+<egisonexp> ::= <basedata> | <egisonfml> | <identifier>
+<basedata> ::= <integer> | <float> | <bool> | <char> | <string>
 
-<egisonfml> ::= <matchexp> | <matchallexp> | <letexp> | <doexp> | <letrecexp> | <ifexp> | <loopexp> | <typeexp> | <macroexp>
-<matchexp> ::= <leftpar> "match" <whsp>+ <subargexp_2> <whsp>* <paircollection> <rightpar>
-<paircollection> ::= "{" <whsp>* <pair>? (<whsp>* <pair>)* <whsp>* "}"
-<pair> ::= "[" <whsp>* <subargexp_2> <whsp>* "]"
-<matchallexp> ::= <leftpar> "match-all" <whsp>+ <subargexp_2> <whsp>* <pair> <rightpar>
-<letexp> ::= <leftpar> "let" <whsp>+ <paircollection> <whsp>* <egisonexp> <rightpar>
-<doexp> ::= <leftpar> "do" <whsp>+ <paircollection> <whsp>* <egisonexp> <rightpar>
-<letrecexp> ::= <leftpar> "letrec" <whsp>+ <paircollection> <whsp>* <egisonexp> <rightpar>
-<ifexp> ::= <leftpar> "if" <whsp>+ <subargexp_3> <rightpar>
-<loopexp> ::= <leftpar> "loop" <whsp>+ <assignvar> <whsp>* <assignvar> <whsp>* <argexp_3> <rightpar>
-<macroexp> ::= <leftpar> "macro" <whsp>+ <assignvartuple> <whsp>* <egisonexp> <rightpar>
-<typeexp> ::= <leftpar> "type" <whsp>+ <patdefcollection> <rightpar>
-<patdefcollection> ::= "{" <whsp>* <patdeftuepl>? (<whsp>* <patdeftuple>)* <whsp>* "}"
-<patdeftuple> ::= "[" <whsp>* <patdef> <whsp>* <egisonexp> <whsp>* <paircollection> <whsp>* "]"
-<patdef> ::= "_" | "," <assignvar> <whsp> | <basepat>
+<egisonfml> ::= <lambdaexp> | <matchexp> | <matchallexp> | <letexp> | <doexp> | <letrecexp> | <ifexp> | <loopexp> | <typeexp> | <macroexp> | <collectionexp> | <tupleexp> | <arrayexp> | <patternexp>
+
+<matchexp> ::= "(" "match" <egisonexp> <egisonexp> <paircollection> <rightpar>
+<paircollection> ::= "{" <pair>* "}"
+<pair> ::= "[" <egisonexp> <egisonexp> "]"
+<matchallexp> ::= "(" "match-all" <egisonexp> <egisonexp> <pair> ")"
+<letexp> ::= "(" "let" <paircollection> <egisonexp> ")"
+<doexp> ::= "(" "do" <paircollection> <egisonexp> ")"
+<letrecexp> ::= "(" "letrec" <paircollection> <egisonexp> ")"
+<ifexp> ::= "(" "if" <egisonexp> <egisonexp> <egisonexp> ")"
+<loopexp> ::= "(" "loop" <assignvar> <assignvar> <egisonexp> <egisonexp> <egisonexp> ")"
+<macroexp> ::= "(" "macro" <assignvartuple> <egisonexp> ")"
+<typeexp> ::= "(" "type" <patdefcollection> ")"
+<patdefcollection> ::= "{" <patdeftuple>* "}"
+<patdeftuple> ::= "[" <patdef> <egisonexp> <paircollection> "]"
+<patdef> ::= "_" | "," <assignvar> | <basepat>
+
+<collectionexp> ::= "{" <contentsexp>* "}"
+<contentsexp> ::= <egisonexp> | "@" <egisonexp>
+<tupleexp> ::= "[" <egisonexp>* "]"
+<arrayexp> ::= "[|" <arrayrow_0> "|]"
+<arrayrow_n> ::= <egisonexp>* | ("[~" <arrayrow_(n+1)> "~]")*
+<patternexp> ::= <basepat> | <valuepat> | <cutpat> | <andpat> | <orpat> | <notpat>
+<basepat> ::= "<" <identifier> <patarg>* ">"
+<patarg> ::= <egisonexp> | <assignvar>
+<valuepat> ::= "," <egisonexp>
+<cutpat> ::= "!" <egisonexp>
+<andpat> ::= "(" "&" <egisonexp>* ")"
+<orpat> ::= "(" "|" <egisonexp>* ")"
+<notpat> ::= "^" <egisonexp>
