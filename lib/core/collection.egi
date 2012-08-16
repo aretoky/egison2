@@ -124,7 +124,7 @@
         {[<nil> xs]
          [<cons $y $rs> ((union a) ((add a) xs y) rs)]}))))
 
-(define $occurence
+(define $occurrence
   (lambda [$a]
 	(lambda [$xs]
 	  (letrec
@@ -138,7 +138,7 @@
 		(match xs (List Something)
 		  {[<nil> {}]
 		   [<cons $x $ys> (let {[[$rs $i] (remove&count x ys)]}
-							{[x i] @((occurence a) rs)})]})))))
+							{[x i] @((occurrence a) rs)})]})))))
 
 (define $subcollections
   (lambda [$a]
@@ -150,7 +150,7 @@
 							   (match-all (loop $l $j (between 1 i) {y @l} {}) (List a) [<join $ys _> {@ys @sub}]))
 							 rs)))
 			 {{}}
-			 ((occurence a) xs)))))
+			 ((occurrence a) xs)))))
 
 
 (define $size
@@ -270,7 +270,7 @@
 									   (match-all (loop $l $j (between 1 i) {x @l} {}) (List a) [<join $us $vs> [{@us @ys} {@zs @vs}]])))
 								 xs)))
 				 {[{} tgt]}
-				 ((occurence a) tgt))]}]
+				 ((occurrence a) tgt))]}]
 	   [_ [Something]
         {[$tgt {tgt}]}]
 	   })))

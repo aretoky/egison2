@@ -5,7 +5,7 @@
 (define $Bool
   (type
     {[,$val []
-      {[$tgt (if (eq? val tgt)
+      {[$tgt (if (and (or (not val) tgt) (or val (not tgt)))
                  {[]}
                  {})]}]
      [<true> []
