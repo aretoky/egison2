@@ -1,0 +1,55 @@
+(define $product
+  (letrec 
+    {[$subproduct (lambda [$xs $ys]
+                    (match xs (List Something)
+                      {[<nil> {}]
+                       [<cons $z $zs> {@(map (lambda [$y] {z @y}) ys) @(subproduct zs ys)}]}))]}
+    (lambda [$xs]
+      (match xs (List Something)
+        {[<nil> {}]
+         [<cons $y <nil>> (map (lambda [$z] {z}) y)]
+         [<cons $y $ys> (subproduct y (product ys))]}))))
+
+(define $COC
+  (lambda [$a $b] ;; a : collection-type   b : contents-type   see. an example below
+    (type
+      {[,$val []
+        {[$tgt (match tgt (List (a b))
+                 {[,val {[]}]
+                  [_ {}]})]}]
+       [<nil> [] ;; nil when some contents is nil
+        {[$tgt (letrec
+                 {[$helper (lambda [$xs]
+                             (match xs (List Something)
+                               {[<nil> {}]
+                                [<cons $y $ys> (match y [(a b)]
+                                                 {[<nil> {[]}]
+                                                  [_ (helper ys)]})]}))]}
+                 (helper tgt))]}]
+       [<cons ,$xs _> [(COC a b)]
+        {[$tgt (letrec
+                 {[$helper (lambda [$xs $ys]
+                             (match [xs ys] [(List Something) (List Something)]
+                               {[[<nil> <nil>] {}]
+                                [[<cons $x $xs> <cons $y $ys>] {(match-all y [(a b)] [<cons ,x $xs> xs]) @(helper xs ys)}]}))]}
+                 (product (helper xs tgt)))]}]
+       [<cons _ _> [(List b) (COC a b)]
+        {[$tgt (letrec
+                 {[$helper (lambda [$xs]
+                             (match xs (List Something)
+                               {[<nil> {}]
+                                [<cons $y $ys> {(match-all y [(a b)] [<cons $z $zs> [z zs]]) @(helper ys)}]}))]
+                  [$lt2tl (lambda [$xs]
+                            (match xs (List [Something Something])
+                              {[<nil> [{} {}]]
+                               [<cons [$y $z] $ys> (let {[[$p $q] (lt2tl ys)]} [{y @p} {z @q}])]}))]}
+                 (map lt2tl (product (helper tgt))))]}]
+       [_ [Something]
+        {[$tgt {tgt}]}]})))
+
+
+;; (define $n-queen
+;;   (lambda [$n]
+;;    (match-all {(between 1 n) (between 2 (* 2 n)) (between (- 1 n) (- n 1))} (COC Multiset Integer)
+;;      [(loop $l $i (between 1 n) <cons <cons $a_i ,{(+ a_i i) (- a_i i)}> l> <nil>)
+;;       (loop $l $i (between 1 n) {a_i @l} {})])))
