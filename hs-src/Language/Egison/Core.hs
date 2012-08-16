@@ -296,7 +296,7 @@ cEval1 (Closure env (LoopExpr loopVar indexVar rangeExpr loopExpr tailExpr)) = d
 cEval1 (Closure env (GenerateArrayExpr fnExpr rangeExpr)) = do
   fnObjRef <- liftIO $ makeClosure env fnExpr
   rangeVal <- eval env rangeExpr
-  ms <- liftThrows $ mapM unpackNum $ tupleToList rangeVal
+  ms <- liftThrows $ mapM fromEgisonVal $ tupleToList rangeVal
   let d = fromIntegral $ length ms
   let is = map (\iss -> (Value . Tuple) $ map Number iss) $ indexList ms
   isRefs <- liftIO $ mapM newIORef is
@@ -858,67 +858,64 @@ ioPrimitives = [("get-lib-dir-name", getLibDirName),
 
 {- "Pure" primitive functions -}
 primitives :: [(String, [EgisonVal] -> ThrowsError EgisonVal)]
-primitives = [("+", numericBinop (+)),
-              ("-", numericBinop (-)),
-              ("*", numericBinop (*)),
---              ("/", numericBinop (/)),
-              ("mod", numericBinop mod),
-              ("quotient", numericBinop quot),
-              ("remainder", numericBinop rem),
+primitives = [("+", multiOp ((+) :: Integer -> Integer -> Integer)),
+              ("-", multiOp ((-) :: Integer -> Integer -> Integer)),
+              ("*", multiOp ((*) :: Integer -> Integer -> Integer)),
+--              ("/", multiOp ((/) :: Integer -> Integer -> Integer)),
+              ("mod", multiOp (mod :: Integer -> Integer -> Integer)),
+              ("quotient", multiOp (quot :: Integer -> Integer -> Integer)),
+              ("remainder", multiOp (rem :: Integer -> Integer -> Integer)),
 
-              ("+f", floatBinop (+)),
-              ("-f", floatBinop (-)),
-              ("*f", floatBinop (*)),
-              ("/f", floatBinop (/)),
+              ("+f", multiOp ((+) :: Double -> Double -> Double)),
+              ("-f", multiOp ((-) :: Double -> Double -> Double)),
+              ("*f", multiOp ((*) :: Double -> Double -> Double)),
+              ("/f", multiOp ((/) :: Double -> Double -> Double)),
 
-              ("round", floatNumSglop round),
-              ("floor", floatNumSglop floor),
-              ("ceiling", floatNumSglop ceiling),
-              ("truncate", floatNumSglop truncate),
+              ("round", singleOp (round :: Double -> Integer)),
+              ("floor", singleOp (floor :: Double -> Integer)),
+              ("ceiling", singleOp (ceiling :: Double -> Integer)),
+              ("truncate", singleOp (truncate :: Double -> Integer)),
 
-              ("exp", numExp),
-              ("log", numLog),
+              ("exp", singleOp (exp :: Double -> Double)),
+              ("log", singleOp (log :: Double -> Double)),
 
-              ("sin", floatSglop sin),
-              ("cos", floatSglop cos),
-              ("tan", floatSglop tan),
-              ("asin", floatSglop asin),
-              ("acos", floatSglop acos),
-              ("atan", floatSglop atan),
-              ("sinh", floatSglop sinh),
-              ("cosh", floatSglop cosh),
-              ("tanh", floatSglop tanh),
-              ("asinh", floatSglop asinh),
-              ("acosh", floatSglop acosh),
-              ("atanh", floatSglop atanh),
+              ("sin", singleOp (sin :: Double -> Double)),
+              ("cos", singleOp (cos :: Double -> Double)),
+              ("tan", singleOp (tan :: Double -> Double)),
+              ("asin", singleOp (asin :: Double -> Double)),
+              ("acos", singleOp (acos :: Double -> Double)),
+              ("atan", singleOp (atan :: Double -> Double)),
+              ("sinh", singleOp (sinh :: Double -> Double)),
+              ("cosh", singleOp (cosh :: Double -> Double)),
+              ("tanh", singleOp (tanh :: Double -> Double)),
+              ("asinh", singleOp (asinh :: Double -> Double)),
+              ("acosh", singleOp (acosh :: Double -> Double)),
+              ("atanh", singleOp (atanh :: Double -> Double)),
 
-              ("sqrt", numSqrt),
-              ("expt", numExpt),
+              ("sqrt", singleOp (sqrt :: Double -> Double)),
+              ("expt", binaryOp ((^) :: Double -> Integer -> Double)),
 
               ("eq?", eqv),
               
-              ("eq-n?", numBoolBinop (==)),
-              ("lt-n?", numBoolBinop (<)),
-              ("lte-n?", numBoolBinop (<=)),
-              ("gt-n?", numBoolBinop (>)),
-              ("gte-n?", numBoolBinop (>=)),
+              ("eq-n?", binaryOp ((==) :: Integer -> Integer -> Bool)),
+              ("lt-n?", binaryOp ((<) :: Integer -> Integer -> Bool)),
+              ("lte-n?", binaryOp ((<=) :: Integer -> Integer -> Bool)),
+              ("gt-n?", binaryOp ((>) :: Integer -> Integer -> Bool)),
+              ("gte-n?", binaryOp ((>=) :: Integer -> Integer -> Bool)),
 
-              ("eq-f?", floatBoolBinop (==)),
-              ("lt-f?", floatBoolBinop (<)),
-              ("lte-f?", floatBoolBinop (<=)),
-              ("gt-f?", floatBoolBinop (>)),
-              ("gte-f?", floatBoolBinop (>=)),
+              ("eq-f?", binaryOp ((==) :: Double -> Double -> Bool)),
+              ("lt-f?", binaryOp ((<) :: Double -> Double -> Bool)),
+              ("lte-f?", binaryOp ((<=) :: Double -> Double -> Bool)),
+              ("gt-f?", binaryOp ((>) :: Double -> Double -> Bool)),
+              ("gte-f?", binaryOp ((>=) :: Double -> Double -> Bool)),
 
-              ("eq-c?", charBoolBinop (==)),
-              ("eq-s?", strBoolBinop (==)),
+              ("eq-c?", binaryOp ((==) :: Char -> Char -> Bool)),
+              ("eq-s?", binaryOp ((==) :: String -> String -> Bool)),
 
-              ("string-append", stringBinop (++)),
+              ("string-append", multiOp ((++) :: String -> String -> String)),
               
               ("string-to-chars", stringToChars),
               ("chars-to-string", charsToString),
-              
-              ("&&", boolBinop (&&)),
-              ("||", boolBinop (||)),
 
               ("array-dimension", arrayDimension),
               ("array-range", arrayRange),
@@ -936,4 +933,3 @@ primitives = [("+", numericBinop (+)),
               ("eof?", isEgisonEOF)
 
               ]
-

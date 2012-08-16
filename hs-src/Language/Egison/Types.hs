@@ -1,3 +1,4 @@
+{-# Language TypeSynonymInstances, FlexibleInstances #-}
 module Language.Egison.Types where
 
 import Control.Monad.Error
@@ -206,6 +207,39 @@ data InnerValRef = IElement ObjectRef
   | ISubCollection ObjectRef
 
 type DestructInfo = [(PrimitivePatPattern, ObjectRef, [(Env, PrimitivePattern, EgisonExpr)])]
+
+-- 
+-- Class for primitive data
+--
+class PrimitiveVal a where
+    fromEgisonVal :: EgisonVal -> ThrowsError a
+    toEgisonVal :: a -> EgisonVal
+
+instance PrimitiveVal Bool where
+    fromEgisonVal (Bool b) = return b
+    fromEgisonVal notBool = throwError $ TypeMismatch "bool" [notBool]
+    toEgisonVal = Bool
+
+instance PrimitiveVal Char where
+    fromEgisonVal (Char c) = return c
+    fromEgisonVal notChar = throwError $ TypeMismatch "char" [notChar]
+    toEgisonVal = Char
+
+instance PrimitiveVal String where
+    fromEgisonVal (String str) = return str
+    fromEgisonVal notString = throwError $ TypeMismatch "string" [notString]
+    toEgisonVal = String
+
+instance PrimitiveVal Integer where
+    fromEgisonVal (Number n) = return n
+    fromEgisonVal notNum = throwError $ TypeMismatch "number" [notNum]
+    toEgisonVal = Number
+
+instance PrimitiveVal Double where
+    fromEgisonVal (Float n) = return n
+    fromEgisonVal (Number n) = return . fromInteger $ n
+    fromEgisonVal notNum = throwError $ TypeMismatch "float" [notNum]
+    toEgisonVal = Float
 
 --
 -- Internal Data
