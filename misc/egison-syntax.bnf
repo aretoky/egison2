@@ -76,9 +76,11 @@
 <primitive-pat> ::= "_"
                   | <assign-var>
                   | "<" <identifier> <primitive-pat>* ">"
+                  | "[" <primitive-pat>* "]"
 		  | "{}"
 		  | "{" <primitive-pat> " ." <primitive-pat> "}"
 		  | "{." <primitive-pat> " " <primitive-pat> "}"
+		  | <builtin-data>
 
 <collection-exp> ::= "{" <contents-exp>* "}"
 <contents-exp> ::= <egison-exp> | "@" <egison-exp>
