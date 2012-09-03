@@ -73,6 +73,13 @@
                       | "," <assign-var>
                       | "<" <identifier> <primitive-pat-pat>* ">"
 
+<primitive-pat> ::= "_"
+                  | <assign-var>
+                  | "<" <identifier> <primitive-pat>* ">"
+		  | "{}"
+		  | "{" <primitive-pat> " ." <primitive-pat> "}"
+		  | "{." <primitive-pat> " " <primitive-pat> "}"
+
 <collection-exp> ::= "{" <contents-exp>* "}"
 <contents-exp> ::= <egison-exp> | "@" <egison-exp>
 <tuple-exp> ::= "[" <egison-exp>* "]"
