@@ -1,0 +1,33 @@
+;; egison can parse 1500 in 1sec
+
+(define $lastone (lambda [$l] (match l (List (List Char)) {[<join _ <cons $last <nil>>> last] [<nil> <empty>]})))
+
+(define $pattovar (lambda [$pat $varname-pat] (& pat varname-pat))) ;; can be used for char and str
+
+(define $char-str (lambda [$char-pat] (lambda [$x] (match-all x (List Char) [<cons char-pat $next> next]))))
+
+(define $peg-or (lambda [$p1 $p2] (lambda [$x] {@(p1 x) @(p2 x)})))
+(define $peg-concat (lambda [$p1 $p2] (lambda [$x] (concat (map p2 (p1 x))) )))
+(define $peg-ast (lambda [$p] (lambda [$x] {x @((peg-concat p (peg-ast p)) x)} )))
+(define $peg-plus (lambda [$p] (peg-concat p (peg-ast p)) ))
+
+
+
+(define $numchar-pat (| ,'0' ,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,'7' ,'8' ,'9'))
+(define $num-plus (peg-plus (char-str numchar-pat)))
+(define $parexpr (peg-concat (peg-concat (char-str ,'[') expr) (char-str ,']')))
+(define $value (peg-or num-plus parexpr))
+(define $product (peg-concat value (peg-ast (peg-concat (peg-or (char-str ,'*') (char-str ,'/')) value))))
+(define $sum (peg-concat product (peg-ast (peg-concat (peg-or (char-str ,'+') (char-str ,'-')) product))))
+(define $expr sum)
+
+;; (test (expr { '1' '2' 'E' }))
+;; (test (expr {'[' '1' '2' ']' '+' '3' '*' '4' 'E' }))
+
+(define $testdata {'[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '2' 'E' })
+;; (test (lastone (expr testdata)))
+
+(define $repeat (lambda [$i $l] (if (lt-n? i 0) {} {@l @(repeat (- i 1) l)} )))
+(define $longtestdata (lambda [$n] {'[' @(repeat n {'1' '2' '+' '3' '*'}) '4' ']' '+' '1'}))
+
+;; (test (expr (longtestdata 300)))
