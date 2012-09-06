@@ -1,5 +1,6 @@
 module Language.Egison.Macro where
 import Language.Egison.Types
+import Control.Monad.Error
 import qualified Data.Map
 
 type MacroFrame = Data.Map.Map String EgisonExpr
@@ -12,16 +13,16 @@ expandMacro frame (VarExpr name []) =
   case getExpr frame name of
     Nothing -> return $ VarExpr name []
     Just expr -> return expr
-expandMacro frame (PatVarOmitExpr expr) = do
-  newExpr <- expandMacro frame expr
-  case newExpr of
-    MacroVarExpr name numExprs -> return $ PatVarExpr name numExprs
-    _ -> return $ PatVarOmitExpr newExpr
-expandMacro frame (VarOmitExpr expr) = do
-  newExpr <- expandMacro frame expr
-  case newExpr of
-    MacroVarExpr name numExprs -> return $ VarExpr name numExprs
-    _ -> return $ VarOmitExpr newExpr
+expandMacro frame (PatVarOmitExpr name nums) = do
+  case getExpr frame name of
+    Nothing -> throwError $ Default $ "no macro var: " ++ name
+    Just (MacroVarExpr name2) -> return $ PatVarExpr name2 nums
+    expr -> throwError $ Default $ "not macro var: " ++ show expr
+expandMacro frame (VarOmitExpr name nums) = do
+  case getExpr frame name of
+    Nothing -> throwError $ Default $ "no macro var: " ++ name
+    Just (MacroVarExpr name2) -> return $ VarExpr name2 nums
+    expr -> throwError $ Default $ "not macro var: " ++ show expr
 expandMacro frame (InductiveDataExpr cons exprs) = do
   newExprs <- mapM (expandMacro frame) exprs
   return $ InductiveDataExpr cons newExprs
