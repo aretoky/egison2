@@ -1,7 +1,5 @@
 ;; egison can parse 1500 in 1sec
 
-(define $lastone (lambda [$l] (match l (List (List Char)) {[<join _ <cons $last <nil>>> last] [<nil> <empty>]})))
-
 (define $pattovar (lambda [$pat $varname-pat] (& pat varname-pat))) ;; can be used for char and str
 
 (define $char-str (lambda [$char-pat] (lambda [$x] (match-all x (List Char) [<cons char-pat $next> next]))))
@@ -23,9 +21,6 @@
 
 ;; (test (expr { '1' '2' 'E' }))
 ;; (test (expr {'[' '1' '2' ']' '+' '3' '*' '4' 'E' }))
-
-(define $testdata {'[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '2' 'E' })
-;; (test (lastone (expr testdata)))
 
 (define $repeat (lambda [$i $l] (if (lt-n? i 0) {} {@l @(repeat (- i 1) l)} )))
 (define $longtestdata (lambda [$n] {'[' @(repeat n {'1' '2' '+' '3' '*'}) '4' ']' '+' '1'}))
