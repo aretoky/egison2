@@ -34,11 +34,11 @@
 ;;                                      [[_ _] {}]}))]}
 ;;                 (helper pys tgt))]}]
        [<join _ _> [(List a) (List a)]
-		{[$tgt (letrec {[$helper (lambda [$xs $ys]
-					   (match ys (List a)
-					     {[<nil> {[xs {}]}]
-					      [<cons $z $zs> {[xs ys] @(helper {@xs z} zs)}]}))]}
-			 (helper {} tgt))]}]
+	{[$tgt (letrec {[$helper (lambda [$xs $ys]
+				   (match ys (List a)
+				     {[<nil> {[xs {}]}]
+				      [<cons $z $zs> {[xs ys] @(helper {@xs z} zs)}]}))]}
+		 (helper {} tgt))]}]
        [<nioj ,$pxs _> [(List a)]
         {[$tgt (match-all tgt (List a) [<join $ys ,pxs> ys])]}]
 ;;       [<nioj _ ,$pys> [(List a)]
@@ -52,7 +52,7 @@
        [_ [Something]
         {[$tgt {tgt}]}]
        })))
-  
+
 (define $map
   (lambda [$fn $ls]
     (match ls (List Something)
@@ -126,31 +126,31 @@
 
 (define $occurrence
   (lambda [$a]
-	(lambda [$xs]
-	  (letrec
-		{[$remove&count (lambda [$x $xs]
-						  (match xs (List a)
-							{[<nil> [{} 1]]
-							 [<cons ,x $ys> (let {[[$r $i] (remove&count x ys)]}
-											  [r (+ i 1)])]
-							 [<cons $y $ys> (let {[[$r $i] (remove&count x ys)]}
-											  [{y @r} i])]}))]}
-		(match xs (List Something)
-		  {[<nil> {}]
-		   [<cons $x $ys> (let {[[$rs $i] (remove&count x ys)]}
-							{[x i] @((occurrence a) rs)})]})))))
+    (lambda [$xs]
+      (letrec
+	{[$remove&count (lambda [$x $xs]
+			  (match xs (List a)
+			    {[<nil> [{} 1]]
+			     [<cons ,x $ys> (let {[[$r $i] (remove&count x ys)]}
+					      [r (+ i 1)])]
+			     [<cons $y $ys> (let {[[$r $i] (remove&count x ys)]}
+					      [{y @r} i])]}))]}
+	(match xs (List Something)
+	  {[<nil> {}]
+	   [<cons $x $ys> (let {[[$rs $i] (remove&count x ys)]}
+			    {[x i] @((occurrence a) rs)})]})))))
 
 (define $subcollections
   (lambda [$a]
-	(lambda [$xs]
-	  (foldr
-			 (lambda [$x $rs]
-			   (let {[[$y $i] x]} 
-				 (map&concat (lambda [$sub] 
-							   (match-all (loop $l $j (between 1 i) {y @l} {}) (List a) [<join $ys _> {@ys @sub}]))
-							 rs)))
-			 {{}}
-			 ((occurrence a) xs)))))
+    (lambda [$xs]
+      (foldr
+	     (lambda [$x $rs]
+	       (let {[[$y $i] x]} 
+		 (map&concat (lambda [$sub] 
+			       (match-all (loop $l $j (between 1 i) {y @l} {}) (List a) [<join $ys _> {@ys @sub}]))
+			     rs)))
+	     {{}}
+	     ((occurrence a) xs)))))
 
 
 (define $size
@@ -180,7 +180,7 @@
       {[<snoc _ $ys> ys]})))
 
 (define $nth (lambda [$i $l]
-  (match l (List Something) {[<cons $x $xs> (if (eq? i 0) x (nth (- i 1) xs))]})))
+               (match l (List Something) {[<cons $x $xs> (if (eq? i 0) x (nth (- i 1) xs))]})))
 
 (define $reverse
   (lambda [$xs]
@@ -228,59 +228,85 @@
 (define $Multiset
   (lambda [$a]
     (type
-	  {[,$val []
+      {[,$val []
         {[$tgt (match [val tgt] [(List a) (Multiset a)]
                  {[[<nil> <nil>] {[]}]
-				  [[<cons $x $xs> <cons ,x ,xs>] {[]}]
-				  [[_ _] {}]})]}]
-	   [<nil> []
+		  [[<cons $x $xs> <cons ,x ,xs>] {[]}]
+		  [[_ _] {}]})]}]
+       [<nil> []
         {[{} {[]}]
          [_ {}]}]
-	   [<cons ,$px _> [(Multiset a)]
+       [<cons ,$px _> [(Multiset a)]
         {[$tgt (if ((member? a) px tgt)
-				   {((remove a) tgt px)}
-				   {})]}]
-	   [<cons _ _> [a (Multiset a)]
+		   {((remove a) tgt px)}
+		   {})]}]
+       [<cons _ _> [a (Multiset a)]
         {[$tgt (letrec {[$helper (lambda [$xs $ys]
-								   (match ys (List a)
-									 {[<nil> {}]
-									  [<cons $z $zs> (if ((member? a) z xs)
-														 (helper {@xs z} zs)
-														 {[z {@xs @zs}] @(helper {@xs z} zs)})]}))]}
-				 (helper {} tgt))]}]
-	   [<join ,$pxs _> [(Multiset a)]
+				   (match ys (List a)
+				     {[<nil> {}]
+				      [<cons $z $zs> (if ((member? a) z xs)
+							 (helper {@xs z} zs)
+							 {[z {@xs @zs}] @(helper {@xs z} zs)})]}))]}
+		 (helper {} tgt))]}]
+       [<join ,$pxs _> [(Multiset a)]
         {[$tgt (letrec {[$helper (lambda [$xs $ys]
-								   (match xs (List Something)
-									 {[<nil> ys]
-									  [<cons $z $zs> (if ((member? a) z ys)
-														 (helper zs ((remove a) ys z))
-														 {})]}))]}
-				 {(helper pxs tgt)})]}]
+				   (match xs (List Something)
+				     {[<nil> ys]
+				      [<cons $z $zs> (if ((member? a) z ys)
+							 (helper zs ((remove a) ys z))
+							 {})]}))]}
+		 {(helper pxs tgt)})]}]
 ;;	   [<join _ ,$pys> [(Multiset a)]
 ;;        {[$tgt (match-all tgt (Multiset a) [<join ,pys $xs> xs])]}]
-	   [<join _ _> [(Multiset a) (Multiset a)]
-		{[$tgt
-		  (foldr
-				 (lambda [$xi $xs]
-				   (let {[[$x $i] xi]}
-					 (map&concat
-								 (lambda [$sub] 
-								   (do {[[$ys $zs] sub]
-										[$zs ((remove-all a) zs x)]}
-									   (match-all (loop $l $j (between 1 i) {x @l} {}) (List a) [<join $us $vs> [{@us @ys} {@zs @vs}]])))
-								 xs)))
-				 {[{} tgt]}
-				 ((occurrence a) tgt))]}]
-	   [_ [Something]
+       [<join _ _> [(Multiset a) (Multiset a)]
+	{[$tgt
+	  (foldr
+		 (lambda [$xi $xs]
+		   (let {[[$x $i] xi]}
+		     (map&concat
+				 (lambda [$sub] 
+				   (do {[[$ys $zs] sub]
+					[$zs ((remove-all a) zs x)]}
+				     (match-all (loop $l $j (between 1 i) {x @l} {}) (List a) [<join $us $vs> [{@us @ys} {@zs @vs}]])))
+				 xs)))
+		 {[{} tgt]}
+		 ((occurrence a) tgt))]}]
+       [_ [Something]
         {[$tgt {tgt}]}]
-	   })))
+       })))
 
 (define $Set
   (lambda [$a]
     (type
       {[,$val []
-        {[$tgt (if (and ((subcollection? a) val tgt)
-                        ((subcollection? a) tgt val))
+        {[$tgt (if ((= (Multiset a)) ((unique a) val) ((unique a) tgt))
+                   {[]}
+                   {})]}]
+       [<nil> []
+        {[{} {[]}]
+         [_ {}]}]
+       [<cons ,$px _> [(Set2 a)]
+        {[$tgt (let {[$tgt2 ((unique a) tgt)]}
+                 (if ((member? a) px tgt)
+		     {tgt}
+		     {}))]}]
+       [<cons _ _> [a (Set2 a)]
+        {[$tgt (let {[$tgt2 ((unique a) tgt)]}
+                 (match-all tgt2 (Multiset a)
+                   [<cons $x _> [x tgt2]]))]}]
+       [<join _ _> [(Set2 a) (Set2 a)]
+        {[$tgt (let {[$tgt2 ((unique a) tgt)]}
+                 (match-all tgt2 (Multiset a)
+                   [<join $xs _> [xs tgt2]]))]}]
+       [_ [Something]
+        {[$tgt {tgt}]}]
+       })))
+
+(define $Set2 ; handle already uniqued target collection
+  (lambda [$a]
+    (type
+      {[,$val []
+        {[$tgt (if ((= (Multiset a)) ((unique a) val) tgt)
                    {[]}
                    {})]}]
        [<nil> []
@@ -288,25 +314,14 @@
          [_ {}]}]
        [<cons ,$px _> [(Set a)]
         {[$tgt (if ((member? a) px tgt)
-				   {((remove-all a) tgt px) tgt}
-				   {})]}]
+		   {tgt}
+		   {})]}]
        [<cons _ _> [a (Set a)]
-        {[$tgt (letrec {[$helper (lambda [$xs $ys]
-								   (match xs (List a)
-									 {[<nil> {}]
-									  [<cons $z $zs> 
-									   {[z {@ys @zs}] [z tgt] @(helper ((remove-all a) zs z) {@ys z})}]}))]}
-				 (helper tgt {}))]}]
+        {[$tgt (match-all tgt (Multiset a)
+                 [<cons $x _> [x tgt]])]}]
        [<join _ _> [(Set a) (Set a)]
-		{[$tgt (let {[$tgt2 ((unique a) tgt)]}
-				 (foldr
-						(lambda [$x $xs]
-						  (map&concat (lambda [$sub] 
-										(do {[[$ys $zs] sub]
-											 [$zs ((remove-all a) zs x)]}
-											{[{x @ys} zs] [ys {x @zs}] [{x @ys} {x @zs}]})) xs))
-						{[{} tgt2]}
-						tgt2))]}]
+        {[$tgt (match-all tgt (Multiset a)
+                 [<join $xs _> [xs tgt]])]}]
        [_ [Something]
         {[$tgt {tgt}]}]
        })))
