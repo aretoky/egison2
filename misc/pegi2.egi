@@ -35,6 +35,6 @@
 ;; (test (expr (string-to-chars "-[12]+3*4/6E")))
 
 (define $repeat (lambda [$i $l] (if (lt-n? i 0) {} {@l @(repeat (- i 1) l)} )))
-(define $longtestdata (lambda [$n] {'[' @(repeat n (string-to-chars "12+3*")) @(string-to-chars "4]+1")))
+(define $longtestdata (lambda [$n] {'[' @(repeat n (string-to-chars "12+3*")) @(string-to-chars "4]+1")}))
 
 ;; (test (expr (longtestdata 300)))
