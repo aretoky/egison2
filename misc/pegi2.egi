@@ -1,9 +1,6 @@
-;; egison can parse 1500 in 1sec
+;;simple PEG parser
 
-(define $lastone (lambda [$l] (match l (List (List Char)) {[<join _ <cons $last <nil>>> last] [<nil> <empty>]})))
-
-(define $pattovar (lambda [$pat $varname-pat] (& pat varname-pat))) ;; can be used for char and str
-
+;; convert character pattern to string pattern
 (define $char-str (lambda [$char-pat] (lambda [$x] (match-all x (List Char) [<cons char-pat $next> next]))))
 
 (define $peg-or (lambda [$p1 $p2] (lambda [$x] {@(p1 x) @(p2 x)})))
@@ -12,22 +9,32 @@
 (define $peg-plus (lambda [$p] (peg-concat p (peg-ast p)) ))
 
 
-
+;; numchar-pat = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 (define $numchar-pat (| ,'0' ,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,'7' ,'8' ,'9'))
+;; num-plus = numchar-pat
 (define $num-plus (peg-plus (char-str numchar-pat)))
+;; parexpr = '[' expr ']'
 (define $parexpr (peg-concat (peg-concat (char-str ,'[') expr) (char-str ,']')))
+;; value = num-plus | parexpr
 (define $value (peg-or num-plus parexpr))
-(define $product (peg-concat value (peg-ast (peg-concat (peg-or (char-str ,'*') (char-str ,'/')) value))))
-(define $sum (peg-concat product (peg-ast (peg-concat (peg-or (char-str ,'+') (char-str ,'-')) product))))
-(define $expr sum)
+;; prod = value (('*' | '/') value)*
+(define $prod (peg-concat value (peg-ast (peg-concat (peg-or (char-str ,'*') (char-str ,'/')) value))))
+;; sum = prod (('+' | '-') prod)*
+(define $sum (peg-concat prod (peg-ast (peg-concat (peg-or (char-str ,'+') (char-str ,'-')) prod))))
+;; expr = sum | '-' sum
+(define $expr (peg-or sum (peg-concat (char-str ,'-') sum)))
 
-;; (test (expr { '1' '2' 'E' }))
-;; (test (expr {'[' '1' '2' ']' '+' '3' '*' '4' 'E' }))
-
-(define $testdata {'[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '4' '3' '+' '3' '/' '[' '1' '-' '1' '7' ']' '*' '2' '*' '3' '/' '2' '+' '4' '+' '5' '+' '3' '-' '1' '5' '*' '[' '1' '2' '+' '3' ']' '*' '4' '3' '+' '2' 'E' })
-;; (test (lastone (expr testdata)))
+;; (test (expr (string-to-chars "12E")))
+;; (test (expr (string-to-chars "1-2E")))
+;; (test (expr (string-to-chars "-12E")))
+;; (test (expr (string-to-chars "1+2-3-4E")))
+;; (test (expr (string-to-chars "1+2-3*4E")))
+;; (test (expr (string-to-chars "1+-2E")))
+;; (test (expr (string-to-chars "[12]+3*4E")))
+;; (test (expr (string-to-chars "-[12]+3*4E")))
+;; (test (expr (string-to-chars "-[12]+3*4/6E")))
 
 (define $repeat (lambda [$i $l] (if (lt-n? i 0) {} {@l @(repeat (- i 1) l)} )))
-(define $longtestdata (lambda [$n] {'[' @(repeat n {'1' '2' '+' '3' '*'}) '4' ']' '+' '1'}))
+(define $longtestdata (lambda [$n] {'[' @(repeat n (string-to-chars "12+3*")) @(string-to-chars "4]+1")))
 
 ;; (test (expr (longtestdata 300)))
