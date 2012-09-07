@@ -1,5 +1,5 @@
 Name:                egison
-Version:             2.4.1
+Version:             2.4.3
 Synopsis:            An Interpreter and Compiler for the Programming Language Egison
 Description:         An interpreter and compiler for the programming language Egison.
                      A feature of Egison is the strong pattern match facility.
@@ -16,7 +16,8 @@ Category:            Compilers/Interpreters
 Build-type:          Simple
 Cabal-version:       >=1.8
 
-Data-files:          lib/core/base.egi lib/core/number.egi lib/core/collection.egi lib/core/array.egi lib/graph.egi lib/poker-hands.egi
+Data-files:          lib/core/base.egi lib/core/number.egi lib/core/collection.egi lib/core/array.egi lib/core/pattern.egi
+                     lib/graph.egi lib/poker-hands.egi lib/coc.egi lib/tree.egi
                      sample/number-test.egi sample/collection-test.egi sample/array-test.egi sample/graph-test.egi
                      sample/poker-hands-test.egi
                      sample/io/argv-test.egi sample/io/cat.egi sample/io/copy.egi sample/io/char-test.egi sample/io/hello.egi sample/io/read-write-test.egi

@@ -40,6 +40,7 @@ loadLibraries env = do
   _ <- evalString env $ "(load \"lib/core/number.egi\")"
   _ <- evalString env $ "(load \"lib/core/collection.egi\")"
   _ <- evalString env $ "(load \"lib/core/array.egi\")"
+  _ <- evalString env $ "(load \"lib/core/pattern.egi\")"
   return ()
 
   
@@ -317,7 +318,6 @@ cEval1 (Closure env (ApplyExpr opExpr argExpr)) = do
                                        cEval1 (Closure newEnv body)
     Value (Macro mArgs body) -> do argExprs <- liftThrows $ tupleExprToExprList argExpr
                                    newBody <- expandMacro (Data.Map.fromList (zip mArgs argExprs)) body
-                                   liftIO $ putStrLn $ showExpr newBody
                                    cEval1 (Closure env newBody)
     _ -> throwError $ Default "not function"
 cEval1 (Closure _ UndefinedExpr) = do

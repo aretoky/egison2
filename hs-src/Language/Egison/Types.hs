@@ -84,9 +84,9 @@ data EgisonExpr = CharExpr Char
   | NumberExpr Integer
   | FloatExpr Double
   | VarExpr String [EgisonExpr]
-  | MacroVarExpr String [EgisonExpr]
-  | PatVarOmitExpr EgisonExpr
-  | VarOmitExpr EgisonExpr
+  | MacroVarExpr String
+  | PatVarOmitExpr String [EgisonExpr]
+  | VarOmitExpr String [EgisonExpr]
   | PatVarExpr String [EgisonExpr]
   | WildCardExpr
   | ValuePatExpr EgisonExpr
@@ -331,12 +331,12 @@ showExpr (BoolExpr False) = "#f-expr"
 showExpr (NumberExpr contents) = show contents
 showExpr (FloatExpr contents) = show contents
 showExpr (VarExpr name nums) = name ++ unwordsNumExprs nums
-showExpr (MacroVarExpr name nums) = "%" ++ name ++ unwordsNumExprs nums
+showExpr (MacroVarExpr name) = "%" ++ name
 showExpr (PatVarExpr name nums) = "$" ++ name ++ unwordsNumExprs nums
 showExpr WildCardExpr = "_"
 showExpr (ValuePatExpr expr) = "," ++ showExpr expr
-showExpr (PatVarOmitExpr pvar) = "$`" ++ showExpr pvar
-showExpr (VarOmitExpr pvar) = "`" ++ showExpr pvar
+showExpr (PatVarOmitExpr name nums) = "$`" ++ name ++ unwordsNumExprs nums
+showExpr (VarOmitExpr name nums) = "`" ++ name ++ unwordsNumExprs nums
 showExpr (CutPatExpr _) = "#<cut-pat>"
 showExpr (NotPatExpr _) = "#<not-pat>"
 showExpr (AndPatExpr _) = "#<and-pat>"

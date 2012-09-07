@@ -228,20 +228,21 @@ parseMacroVarExpr :: Parser EgisonExpr
 parseMacroVarExpr = do
   char '%'
   name <- identifier
-  nums <- lexeme parseIndexNums
-  return $ MacroVarExpr name nums
+  return $ MacroVarExpr name
 
 parsePatVarOmitExpr :: Parser EgisonExpr
 parsePatVarOmitExpr = do
   string "$`"
-  expr <- lexeme parseExpr
-  return $ PatVarOmitExpr expr
+  name <- identifier
+  nums <- lexeme parseIndexNums
+  return $ PatVarOmitExpr name nums
 
 parseVarOmitExpr :: Parser EgisonExpr
 parseVarOmitExpr = do
   char '`'
-  expr <- lexeme parseExpr
-  return $ VarOmitExpr expr
+  name <- identifier
+  nums <- lexeme parseIndexNums
+  return $ VarOmitExpr name nums
 
 parseArgs :: Parser ArgsExpr
 parseArgs = do

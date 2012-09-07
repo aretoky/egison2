@@ -1,0 +1,19 @@
+;;
+;; Pattern.egi
+;;
+
+(define $n-cons
+  (macro [$n $v]
+    (loop $l $i (between 1 n) <cons $`v_i l> _)))
+
+(define $comb
+  (macro [$n $v]
+    (loop $l $i (between 1 n) <join _ <cons $`v_i l>> _)))
+
+(define $comb/double
+  (macro [$n $v]
+    (loop $l $i (between 1 n) <join _ (& <cons $`v_i _> l)> _)))
+
+(define $cloop
+  (macro [$n $v]
+    (loop $l $i (between 1 n) {`v_i @l} {})))

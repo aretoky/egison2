@@ -1,0 +1,16 @@
+;;
+;; PCCB
+;;
+
+(define $sum-of-numbers
+  (lambda [$n $m $xs]
+    (filter (lambda [$ys] (eq-n? m (foldr + 0 ys)))
+            (match-all xs (Set Integer)
+              [(loop $l $i (between 1 n) <cons $a_i l> _)
+               (loop $l $i (between 1 n) {a_i @l} {})]))))
+
+(test (sum-of-numbers 4 10 {1 3 5}))
+
+(test (match-all {0 1} (Set Integer)
+        [<cons $a_1 <cons $a_2 <cons $a_3 _>>>
+         {a_1 a_2 a_3}]))

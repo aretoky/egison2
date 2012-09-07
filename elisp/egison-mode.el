@@ -4,7 +4,7 @@
 
 ;;; Author: Satoshi Egi <egisatoshi@gmail.com>
 ;;; URL: https://github.com/egisatoshi/egison2/blob/master/elisp/egison-mode.el
-;;; Version: 0.1.0
+;;; Version: 0.1.2
 
 ;; Code goes here
 
@@ -171,6 +171,7 @@ Entry to this mode calls the value of `egison-mode-hook'
 if that value is non-nil."
   (interactive)
   (kill-all-local-variables)
+  (setq indent-tabs-mode nil)
   (use-local-map egison-mode-map)
   (setq major-mode 'egison-mode)
   (setq mode-name "Egison")
