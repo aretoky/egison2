@@ -1,0 +1,43 @@
+;;simple PEG pattern
+
+;; convert character pattern to string pattern
+(define $char-str (lambda [$cpat] (lambda [$next] <cons cpat next>)))
+
+(define $peg-eps (lambda [$next] next))
+(define $peg-or (lambda [$p1 $p2] (lambda [$next] (| (p1 next) (p2 next)))))
+(define $peg-concat (lambda [$p1 $p2] (lambda [$next] (p1 (p2 next)))))
+(define $peg-ast (lambda [$p] (peg-or peg-eps (peg-concat p (peg-ast p))) ))
+(define $peg-plus (lambda [$p] (peg-concat p (peg-ast p)) ))
+
+
+;; numchar-pat = '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+(define $numchar-pat (| ,'0' ,'1' ,'2' ,'3' ,'4' ,'5' ,'6' ,'7' ,'8' ,'9'))
+;; num-plus = numchar-pat+
+(define $num-plus (peg-plus (char-str numchar-pat)))
+;; parexpr = '[' expr ']'
+(define $parexpr (peg-concat (peg-concat (char-str ,'[') expr) (char-str ,']')))
+;; value = num-plus | parexpr
+(define $value (peg-or num-plus parexpr))
+;; prod = value (('*' | '/') value)*
+(define $prod (peg-concat value (peg-ast (peg-concat (peg-or (char-str ,'*') (char-str ,'/')) value))))
+;; sum = prod (('+' | '-') prod)*
+(define $sum (peg-concat prod (peg-ast (peg-concat (peg-or (char-str ,'+') (char-str ,'-')) prod))))
+;; expr = sum | '-' sum
+(define $expr (peg-or sum (peg-concat (char-str ,'-') sum)))
+
+(test (match-all { '1' '2' 'E' } (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "12E") (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "1-2E") (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "-12E") (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "1+2-3-4E") (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "1+2-3*4E") (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "1+-2E") (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "[12]+3*4E") (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "-[12]+3*4E") (List Char) [(expr $x) x]))
+;; (test (match-all (string-to-chars "-[12]+3*4/6E") (List Char) [(expr $x) x]))
+
+(define $repeat (lambda [$i $l] (if (lt-n? i 0) {} {@l @(repeat (- i 1) l)} )))
+(define $longtestdata (lambda [$n] {'[' @(repeat n (string-to-chars "12+3*")) @(string-to-chars "4]+1")}))
+
+;; (test (match-all (longtestdata 10000) (List Char) [(expr $x) x])) -- 5sec
+

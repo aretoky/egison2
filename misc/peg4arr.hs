@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 
--- haskell can parse 200000 in 2sec
+-- haskell can parse 200000 in 6sec by ghc
 
 import Data.Array
 import qualified Data.Set as Set
@@ -75,9 +75,9 @@ expr env = exprres
  where
   parexpr = peg_cat (peg_cat (char_str (=='[')) (peg_existing exprres)) (char_str (==']'))
   value = peg_or num_plus parexpr
-  product = peg_cat value $ peg_asta $ peg_cat (peg_or (char_str (=='*')) (char_str (=='/'))) value
-  sum = peg_cat product $ peg_asta $ peg_cat (peg_or (char_str (=='+')) (char_str (=='-'))) product
-  expr_e = sum
+  prod = peg_cat value $ peg_asta $ peg_cat (peg_or (char_str (=='*')) (char_str (=='/'))) value
+  psum = peg_cat prod $ peg_asta $ peg_cat (peg_or (char_str (=='+')) (char_str (=='-'))) prod
+  expr_e = peg_or psum $ peg_cat (char_str (=='-')) psum
   exprres = expr_e env
 
 ortest = peg_or (char_str numchar_pat) (char_str (=='['))
@@ -110,7 +110,7 @@ main = putStr $ show $ parse expr $ longtestdata 40000
 {-
 parse expr "12E"
 parse expr "[12]+3*4E"
-parse expr $ longtestdata 1000
+parse expr $ longtestdata 10000 -- 10sec on ghci
 
 -}
 
