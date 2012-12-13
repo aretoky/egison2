@@ -23,7 +23,7 @@ egisonVersion = showVersion version
 showBanner :: IO ()
 showBanner = do
   putStrLn $ "Egison Version " ++ egisonVersion ++ " (c) 2011-2012 Satoshi Egi"
-  putStrLn $ "http://hagi.is.s.u-tokyo.ac.jp/~egi/egison/"
+  putStrLn $ "http://egison.pira.jp"
   putStrLn $ "Welcome to Egison Interpreter!"
 
 -- |A utility function to display the egison console byebye message
