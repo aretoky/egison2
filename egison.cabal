@@ -1,5 +1,5 @@
 Name:                egison
-Version:             2.4.3
+Version:             2.4.5
 Synopsis:            An Interpreter and Compiler for the Programming Language Egison
 Description:         An interpreter and compiler for the programming language Egison.
                      A feature of Egison is the strong pattern match facility.
@@ -7,7 +7,7 @@ Description:         An interpreter and compiler for the programming language Eg
                      especially for collection data, such as lists, multisets, sets, and so on.
                      This package include sample Egison program codes "*-test.egi" in "sample/" directory.
                      This package also include Emacs Lisp file "egison-mode.el" in "elisp/" directory.
-Homepage:            http://hagi.is.s.u-tokyo.ac.jp/~egi/egison/
+Homepage:            http://egison.pira.jp
 License:             MIT
 License-file:        LICENSE
 Author:              Satoshi Egi
