@@ -1,6 +1,6 @@
 (define $main
-  (lambda [$: $argv]
-    (do {[$: (write-string : "output : ")]
-         [$: (write : argv)]
-         [$: (write-char : '\n')]}
-        :)))
+  (lambda [$world $argv]
+    (do {[$world (write-string world "output : ")]
+         [$world (write world argv)]
+         [$world (write-char world '\n')]}
+        world)))

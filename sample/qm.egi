@@ -74,32 +74,32 @@
     (findMinimization aSet (findPrimeImplicant aSet))))
 
 (define $main
-  (lambda [$: $argv]
+  (lambda [$world $argv]
     (match argv (List Something)
       {[<cons $i <cons $o _>>
-        (do {[[$: $p] (open-input-file : i)]
-             [[$: $val] (read-from-port : p)]
-             [$: (close-input-port : p)]
-             [[$: $p] (open-output-file : o)]
-             [$: (write-to-port : p (QM val))]
-             [$: (close-output-port : p)]}
-            :)]
+        (do {[[$world $p] (open-input-file world i)]
+             [[$world $val] (read-from-port world p)]
+             [$world (close-input-port world p)]
+             [[$world $p] (open-output-file world o)]
+             [$world (write-to-port world p (QM val))]
+             [$world (close-output-port world p)]}
+            world)]
        [<cons $i _>
-        (do {[[$: $p] (open-input-file : i)]
-             [[$: $val] (read-from-port : p)]
-             [$: (close-input-port : p)]
-             [$: (write-string : "output : ")]
-             [$: (flush :)]
-             [$: (write : (QM val))]
-             [$: (write-char : '\n')]
-             [$: (flush :)]}
-            :)]
+        (do {[[$world $p] (open-input-file world i)]
+             [[$world $val] (read-from-port world p)]
+             [$world (close-input-port world p)]
+             [$world (write-string world "output : ")]
+             [$world (flush world)]
+             [$world (write world (QM val))]
+             [$world (write-char world '\n')]
+             [$world (flush world)]}
+            world)]
         [_
-         (do {[$: (write-string : "input : ")]
-              [$: (flush :)]
-              [[$: $val] (read : )]
-              [$: (write-string : "output : ")]
-              [$: (flush :)]
-              [$: (write : (QM val))]
-              [$: (write-char : '\n')]}
-             :)]})))
+         (do {[$world (write-string world "input : ")]
+              [$world (flush world)]
+              [[$world $val] (read world )]
+              [$world (write-string world "output : ")]
+              [$world (flush world)]
+              [$world (write world (QM val))]
+              [$world (write-char world '\n')]}
+             world)]})))

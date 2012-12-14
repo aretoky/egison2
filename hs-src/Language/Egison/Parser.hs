@@ -46,11 +46,11 @@ whiteSpace = P.whiteSpace lexer
 lexeme = P.lexeme lexer
 
 symbol :: Parser Char
---symbol = oneOf "!$%&|*+-/:<=>?@^_~."
+--symbol = oneOf "!$%&|*+-/<=>?@^_~."
 symbol = oneOf "&*+-/:="
 
 symbol2 :: Parser Char
---symbol = oneOf "!$%&|*+-/:<=>?@^_~."
+--symbol = oneOf "!$%&|*+-/<=>?@^_~."
 symbol2 = oneOf "!?"
 
 parseBool :: Parser EgisonExpr

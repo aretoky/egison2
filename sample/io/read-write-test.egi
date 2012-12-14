@@ -1,9 +1,9 @@
 (define $main
-  (lambda [$: $argv]
-    (do {[$: (write-string : "input : ")]
-         [$: (flush :)]
-         [[$: $val] (read :)]
-         [$: (write-string : "output : ")]
-         [$: (write : val)]
-         [$: (write-char : '\n')]}
-        :)))
+  (lambda [$world $argv]
+    (do {[$world (write-string world "input : ")]
+         [$world (flush world)]
+         [[$world $val] (read world)]
+         [$world (write-string world "output : ")]
+         [$world (write world val)]
+         [$world (write-char world '\n')]}
+        world)))

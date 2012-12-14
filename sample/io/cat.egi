@@ -1,17 +1,17 @@
 (define $main
-  (lambda [$: $argv]
+  (lambda [$world $argv]
     (match argv (List String)
       {[<cons $file1 <nil>>
-        (do {[[$: $port] (open-input-file : file1)]}
-            (letrec {[$copyLoop (lambda [$:]
-                                  (do {[[$: $line] (read-line-from-port : port)]}
+        (do {[[$world $port] (open-input-file world file1)]}
+            (letrec {[$copyLoop (lambda [$world]
+                                  (do {[[$world $line] (read-line-from-port world port)]}
                                       (if (eof? line)
-                                          :
-                                          (do {[$: (write-string : line)]
-                                               [$: (write-char : '\n')]}
-                                              (copyLoop :)))))]}
-              (do {[$: (copyLoop :)]
-                   [$: (close-input-port : port)]}
-                  :)))]
+                                          world
+                                          (do {[$world (write-string world line)]
+                                               [$world (write-char world '\n')]}
+                                              (copyLoop world)))))]}
+              (do {[$world (copyLoop world)]
+                   [$world (close-input-port world port)]}
+                  world)))]
        [_ <argv-error>]})))
 

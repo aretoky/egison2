@@ -1,10 +1,10 @@
 (define $main
-  (lambda [$: $argv]
-    (do {[$: (write-string : "input char : ")]
-         [$: (flush :)]
-         [[$: $c] (read-char :)]
-         [$: (write-char : '\n')]
-         [$: (write-string : "output : ")]
-         [$: (write-char : c)]
-         [$: (write-char : '\n')]}
-        :)))
+  (lambda [$world $argv]
+    (do {[$world (write-string world "input char : ")]
+         [$world (flush world)]
+         [[$world $c] (read-char world)]
+         [$world (write-char world '\n')]
+         [$world (write-string world "output : ")]
+         [$world (write-char world c)]
+         [$world (write-char world '\n')]}
+        world)))

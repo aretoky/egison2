@@ -399,41 +399,41 @@
             [mx my]))))))
 
 (define $main
-  (lambda [$: $argv]
+  (lambda [$world $argv]
     (match argv (List String)
       {[<cons $file <nil>>
-        (do {[[$: $port] (open-input-file : file)]
+        (do {[[$world $port] (open-input-file world file)]
              }
-          (letrec {[$readMapLoop (lambda [$: $lines]
-                                   (do {[[$: $line] (read-line-from-port : port)]}
+          (letrec {[$readMapLoop (lambda [$world $lines]
+                                   (do {[[$world $line] (read-line-from-port world port)]}
                                      (if (or (eof? line) (eq-s? line ""))
-                                         [: lines]
-                                         (readMapLoop : {@lines line}))))]
+                                         [world lines]
+                                         (readMapLoop world {@lines line}))))]
                    }
-            (do {[[$: $lines] (readMapLoop : {})]
+            (do {[[$world $lines] (readMapLoop world {})]
                  [$init-mine (generate-mine lines)]
                  [$init-state <game-state init-mine 0 0 0>]}
               (letrec {[$interactive
-                        (lambda [$: $game-state]
+                        (lambda [$world $game-state]
                           (match game-state GameState
                             {[<game-state $mine $step $score $lambda-count>
                               (do {
-                                   [$: (write-string : (show-mine mine))]
-                                   [$: (write-char : '\n')]
-                                   [$: (write-string : "robot-state: ")]
-                                   [$: (write : (get-robot-state mine))]
-                                   [$: (write-char : '\n')]
-                                   [$: (write-string : "lambda-count: ")]
-                                   [$: (write : lambda-count)]
-                                   [$: (write-char : '\n')]
-                                   [$: (write-string : "score: ")]
-                                   [$: (write : score)]
-                                   [$: (write-char : '\n')]
-                                   [$: (write-string : "command: ")]
-                                   [$: (flush :)]
-                                   [[$: $cmd] (read-char :)]
-                                   [$: (write-char : '\n')]
-                                   [$: (flush :)]
+                                   [$world (write-string world (show-mine mine))]
+                                   [$world (write-char world '\n')]
+                                   [$world (write-string world "robot-state: ")]
+                                   [$world (write world (get-robot-state mine))]
+                                   [$world (write-char world '\n')]
+                                   [$world (write-string world "lambda-count: ")]
+                                   [$world (write world lambda-count)]
+                                   [$world (write-char world '\n')]
+                                   [$world (write-string world "score: ")]
+                                   [$world (write world score)]
+                                   [$world (write-char world '\n')]
+                                   [$world (write-string world "command: ")]
+                                   [$world (flush world)]
+                                   [[$world $cmd] (read-char world)]
+                                   [$world (write-char world '\n')]
+                                   [$world (flush world)]
                                    [$move (char-to-move cmd)]
                                    [$mine2 (ending-update (update-map (move-robot mine move)))]
                                    [$game-state2 <game-state mine2 (+ 1 step)
@@ -447,20 +447,20 @@
                                    }
                                 (if (ending? mine2)
                                     (do {
-                                         [$: (write-string : (show-mine mine2))]
-                                         [$: (write-char : '\n')]
-                                         [$: (write-string : "robot-state: ")]
-                                         [$: (write : (get-robot-state mine2))]
-                                         [$: (write-char : '\n')]
-                                         [$: (write-string : "score: ")]
-                                         [$: (write : (calc-score game-state2))]
-                                         [$: (write-char : '\n')]
+                                         [$world (write-string world (show-mine mine2))]
+                                         [$world (write-char world '\n')]
+                                         [$world (write-string world "robot-state: ")]
+                                         [$world (write world (get-robot-state mine2))]
+                                         [$world (write-char world '\n')]
+                                         [$world (write-string world "score: ")]
+                                         [$world (write world (calc-score game-state2))]
+                                         [$world (write-char world '\n')]
                                          }
-                                      :)
-                                    (interactive : game-state2)))]}))]}
-                (interactive : init-state)))))]
+                                      world)
+                                    (interactive world game-state2)))]}))]}
+                (interactive world init-state)))))]
        [_ (do {
-               [$: (write-string : "usage: mine FILENAME (specify map file)\n")]
+               [$world (write-string world "usage: mine FILENAME (specify map file)\n")]
                }
-            :)]})))
+            world)]})))
 

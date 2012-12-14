@@ -1,4 +1,4 @@
 (define $main
-  (lambda [$: $argv]
-    (do {[$: (print : "Hello world!")]}
-        :)))
+  (lambda [$world $argv]
+    (do {[$world (print world "Hello world!")]}
+        world)))
