@@ -80,104 +80,22 @@ parseChar2 = do chrExpr <- parseChar
                 case chrExpr of
                   CharExpr chr -> return chr
 
-parseOctalNumber :: Parser EgisonExpr
-parseOctalNumber = do
-  _ <- try (string "#o")
-  sign <- many (oneOf "-")
-  num <- many1 (oneOf "01234567")
-  case (length sign) of
-     0 -> return $ NumberExpr $ fst $ Numeric.readOct num !! 0
-     1 -> return $ NumberExpr $ fromInteger $ (*) (-1) $ fst $ Numeric.readOct num !! 0
-     _ -> pzero
-
-parseBinaryNumber :: Parser EgisonExpr
-parseBinaryNumber = do
-  _ <- try (string "#b")
-  sign <- many (oneOf "-")
-  num <- many1 (oneOf "01")
-  case (length sign) of
-     0 -> return $ NumberExpr $ fst $ Numeric.readInt 2 (`elem` "01") Char.digitToInt num !! 0
-     1 -> return $ NumberExpr $ fromInteger $ (*) (-1) $ fst $ Numeric.readInt 2 (`elem` "01") Char.digitToInt num !! 0
-     _ -> pzero
-
-parseHexNumber :: Parser EgisonExpr
-parseHexNumber = do
-  _ <- try (string "#x")
-  sign <- many (oneOf "-")
-  num <- many1 (digit <|> oneOf "abcdefABCDEF")
-  case (length sign) of
-     0 -> return $ NumberExpr $ fst $ Numeric.readHex num !! 0
-     1 -> return $ NumberExpr $ fromInteger $ (*) (-1) $ fst $ Numeric.readHex num !! 0
-     _ -> pzero
-
 parseDecimalNumber :: Parser EgisonExpr
 parseDecimalNumber = do
-  _ <- try (many (string "#d"))
   sign <- many (oneOf "-")
   num <- many1 (digit)
   if (length sign) > 1
      then pzero
      else return $ (NumberExpr . read) $ sign ++ num
 
-parseDecimalNumberMaybeExponent :: Parser EgisonExpr
-parseDecimalNumberMaybeExponent = do
-  num <- parseDecimalNumber
-  result <- parseNumberExponent num
-  return result
-
 parseNumber :: Parser EgisonExpr
-parseNumber = parseDecimalNumberMaybeExponent <|>
-              parseHexNumber <|>
-              parseBinaryNumber <|>
-              parseOctalNumber <?>
-              "Unable to parse number"
+parseNumber = parseDecimalNumber
 
 parseNumber2 :: Parser Integer
 parseNumber2 = do numExpr <- parseNumber
                   case numExpr of
                     NumberExpr n -> return n
               
--- |Parse a floating point number
-parseRealNumber :: Parser EgisonExpr
-parseRealNumber = do
-  sign <- many (oneOf "-+")
-  num <- many1 (digit)
-  _ <- char '.'
-  frac <- many1 (digit)
-  let dec = num ++ "." ++ frac
-  f <- case (length sign) of
-     0 -> return $ FloatExpr $ fst $ Numeric.readFloat dec !! 0
-          -- Bit of a hack, but need to support the + sign as well as the minus.
-     1 -> if sign == "-" 
-             then return $ FloatExpr $ (*) (-1.0) $ fst $ Numeric.readFloat dec !! 0
-             else return $ FloatExpr $ fst $ Numeric.readFloat dec !! 0
-     _ -> pzero
-  result <- parseNumberExponent f
-  return result
-
-parseRealNumber2 :: Parser Double
-parseRealNumber2 = do floatExpr <- parseRealNumber
-                      case floatExpr of
-                        FloatExpr d -> return d
-  
--- | Parse the exponent section of a floating point number
---   in scientific notation. Eg "e10" from "1.0e10"
-parseNumberExponent :: EgisonExpr -> Parser EgisonExpr
-parseNumberExponent n = do 
-  exp <- many $ oneOf "Ee"
-  case (length exp) of
-    0 -> return n
-    1 -> do
-      num <- try (parseDecimalNumber)
-      case num of
-        NumberExpr exp -> buildResult n exp
-        _ -> pzero
-    _ -> pzero
- where 
-  buildResult (NumberExpr num) exp = return $ FloatExpr $ (fromIntegral num) * (10 ** (fromIntegral exp))
-  buildResult (FloatExpr num) exp = return $ FloatExpr $ num * (10 ** (fromIntegral exp))
-  buildResult num _ = pzero
-
 parseEscapedChar :: GenParser Char st Char
 parseEscapedChar = do
   _ <- char '\\'
@@ -370,8 +288,8 @@ parsePrimitivePattern =
          return (PPatBool b)
   <|> do c <- try parseChar2
          return (PPatChar c)
-  <|> do d <- try parseRealNumber2
-         return (PPatFloat d)
+--  <|> do d <- try parseRealNumber2
+--         return (PPatFloat d)
   <|> do n <- try parseNumber2
          return (PPatNumber n)
 
@@ -392,8 +310,8 @@ parseArrayElementExpr =
 -- |Parse an expression
 parseExpr :: Parser EgisonExpr
 parseExpr =
-      try (lexeme parseRealNumber)
-  <|> try (lexeme parseNumber)
+--      try (lexeme parseRealNumber)
+      try (lexeme parseNumber)
   <|> lexeme parseChar
   <|> lexeme parseString
   <|> try (lexeme parseBool)
