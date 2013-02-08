@@ -18,29 +18,10 @@ binaryOp _ emptyList@[] = throwError $ NumArgs 2 emptyList
 binaryOp _ singleVal@[_] = throwError $ NumArgs 2 singleVal
 binaryOp op [a, b] = toEgisonVal <$> liftM2 op (fromEgisonVal a) (fromEgisonVal b)
 
--- |Convert a number to a string; radix is optional, defaults to base 10
---numToString :: [EgisonVal] -> IOThrowsError EgisonVal
---numToString [(Number n), (Number radix)] = do
---  case radix of
---    2 -> do -- Nice tip from StackOverflow question #1959715
---             liftIO $ stringToCharCollection $ showIntAtBase 2 intToDigit n ""
---    8 -> liftIO $ stringToCharCollection $ printf "%o" n
---    10 -> liftIO $ stringToCharCollection $ printf "%d" n
---    16 -> liftIO $ stringToCharCollection $ printf "%x" n
---    _ -> throwError $ BadSpecialForm "Invalid radix value" $ Number radix
-
--- |Convert a float to a string; radix is optional, defaults to base 10
---floatToString :: [EgisonVal] -> IOThrowsError EgisonVal
---floatToString [(Float n)] = liftIO $ stringToCharCollection $ show n
---floatToString [x] = throwError $ TypeMismatch "number" x
---floatToString badArgList = throwError $ NumArgs 1 badArgList
-
 isEgisonEOF :: [EgisonVal] -> ThrowsError EgisonVal
 isEgisonEOF [EOF] = return $ Bool True
 isEgisonEOF [_] = return $ Bool False
 isEgisonEOF badArgList = throwError $ NumArgs 1 badArgList
-
--- - end Numeric operations section
 
 stringToChars :: [EgisonVal] -> ThrowsError EgisonVal
 stringToChars [(String str)] = return $ Collection $ map Char str

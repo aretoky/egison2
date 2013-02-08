@@ -1,5 +1,5 @@
 Name:                egison
-Version:             2.4.5
+Version:             2.4.7
 Synopsis:            An Interpreter and Compiler for the Programming Language Egison
 Description:         An interpreter and compiler for the programming language Egison.
                      A feature of Egison is the strong pattern match facility.
